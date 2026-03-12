@@ -71,7 +71,7 @@ const CandidatesPage = () => {
 
   if (!election) {
     return (
-      <p className="py-24 text-center text-sm text-muted-gray">
+      <p className="py-24 text-center text-sm text-muted-gray font-sans">
         Election not found.
       </p>
     );

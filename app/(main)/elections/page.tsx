@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { ElectionCard } from "@/components/election-card";
 import { Search } from "lucide-react";
 import type { Election } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 type FilterStatus = "all" | Election["status"];
 
@@ -45,8 +46,8 @@ const ElectionsPage = () => {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl italic">Elections</h1>
-      <p className="mt-1 text-sm text-muted-gray">
+      <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold italic">Elections</h1>
+      <p className="mt-1 text-sm md:text-base lg:text-lg text-muted-gray font-sans">
         Browse all association democratic processes.
       </p>
 
@@ -58,7 +59,7 @@ const ElectionsPage = () => {
           placeholder="Search by association..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-border bg-white py-3 pl-10 pr-4 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+          className="w-full font-sans border border-border bg-white py-3 pl-10 pr-4 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
         />
       </div>
 
@@ -68,11 +69,10 @@ const ElectionsPage = () => {
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
-              filter === f.value
-                ? "bg-charcoal text-white"
-                : "border border-border text-charcoal hover:bg-secondary"
-            }`}
+            className={cn('rounded-full font-sans px-4 py-1.5 text-xs font-medium transition-colors', filter === f.value
+              ? "bg-charcoal text-white"
+              : "border border-border text-charcoal hover:bg-secondary"
+            )}
           >
             {f.label}
           </button>
@@ -86,7 +86,7 @@ const ElectionsPage = () => {
             <div className="size-5 animate-spin rounded-full border-2 border-gold border-t-transparent" />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="py-16 text-center text-sm text-muted-gray">
+          <p className="py-16 text-center text-sm text-muted-gray font-sans">
             No elections match your criteria.
           </p>
         ) : (

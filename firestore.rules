@@ -1,0 +1,53 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // Users: owners can read their own doc, admins can read all
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isAdmin();
+    }
+
+    // Elections: anyone signed in can read, only admins can write
+    match /elections/{electionId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+
+      // Positions subcollection
+      match /positions/{positionId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isAdmin();
+      }
+
+      // Candidates subcollection
+      match /candidates/{candidateId} {
+        allow read: if isSignedIn();
+        allow create, update, delete: if isAdmin();
+      }
+    }
+
+    // Votes: verified users can create their own vote, no updates or deletes
+    match /votes/{voteId} {
+      allow read: if isSignedIn() && resource.data.voterId == request.auth.uid;
+      allow create: if isEmailVerified()
+        && request.resource.data.voterId == request.auth.uid
+        && voteId == request.auth.uid + "_" + request.resource.data.positionId;
+      allow update, delete: if false;
+    }
+  }
+}

@@ -3,7 +3,7 @@ import type { Candidate } from "@/lib/types";
 
 export const CandidateCard = ({ candidate }: { candidate: Candidate }) => (
   <div className="overflow-hidden rounded-lg border border-border bg-white">
-    <div className="relative aspect-[4/5] w-full bg-muted">
+    <div className="relative aspect-4/5 w-full bg-muted">
       {candidate.photoUrl ? (
         <Image
           src={candidate.photoUrl}

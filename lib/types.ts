@@ -4,6 +4,7 @@ export interface User {
   email: string;
   fullName: string;
   matricNumber: string;
+  sex: "male" | "female";
   department: string;
   level: string;
   role: "voter" | "admin";
@@ -16,7 +17,8 @@ export interface Election {
   description: string;
   startDate: Timestamp;
   endDate: Timestamp;
-  status: "upcoming" | "active" | "completed";
+  status: "upcoming" | "active" | "closed";
+  candidateCount: number;
   createdBy: string;
   createdAt: Timestamp;
 }

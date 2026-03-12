@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Crimson_Text } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Analytics } from "@vercel/analytics/next"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,18 +20,21 @@ export const metadata: Metadata = {
   description: "The official voting platform for Babcock University",
 };
 
-export default function RootLayout({
+const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
-}>) {
+}>) => {
   return (
     <html lang="en">
       <body
         className={cn(geistSans.variable, crimsonText.variable, "antialiased")}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
 }
+
+export default RootLayout;

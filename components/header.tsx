@@ -25,7 +25,7 @@ export const Header = () => {
       </div>
 
       {menuOpen && (
-        <nav className="border-t border-border bg-white">
+        <nav className="border-t border-border bg-white font-sans">
           <div className="mx-auto flex max-w-2xl flex-col gap-1 px-4 py-3">
             <Link
               href="/"

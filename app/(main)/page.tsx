@@ -34,8 +34,8 @@ const HomePage = () => {
 
   const filtered = search
     ? activeUpcoming.filter((e) =>
-        e.title.toLowerCase().includes(search.toLowerCase()),
-      )
+      e.title.toLowerCase().includes(search.toLowerCase()),
+    )
     : activeUpcoming;
 
   return (
@@ -44,26 +44,26 @@ const HomePage = () => {
       <section className="px-4 pb-8 pt-6">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-gray">
-              <Sparkles className="size-3" />
+            <span className="flex items-center gap-1.5 rounded-full font-sans border border-border px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-gray">
+              <Sparkles className="size-3 text-gold" />
               Official Platform
             </span>
             <button
               onClick={signOut}
-              className="flex items-center gap-1 text-xs font-semibold text-red-600"
+              className="flex items-center gap-1 text-xs font-semibold text-red-600 font-sans bg-red-100 py-1.5 px-3 rounded-full"
             >
               <ArrowRight className="size-3 rotate-180" />
               Sign Out
             </button>
           </div>
 
-          <h1 className="mt-6 font-serif text-4xl font-bold leading-tight">
+          <h1 className="mt-6 font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
             Democracy,
             <br />
-            <span className="italic text-gold">Elevated.</span>
+            <span className="italic text-gold font-normal">Elevated.</span>
           </h1>
 
-          <p className="mt-3 text-sm leading-relaxed text-muted-gray">
+          <p className="mt-3 text-sm md:text-base lg:text-lg leading-relaxed text-muted-gray font-sans">
             Secure, transparent, and seamless elections for Babcock University
             departmental associations.
           </p>
@@ -76,7 +76,7 @@ const HomePage = () => {
               placeholder="Find your association..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white py-3 pl-10 pr-4 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className="w-full font-sans border border-border bg-white py-3 pl-10 pr-4 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
             />
           </div>
         </div>
@@ -88,10 +88,10 @@ const HomePage = () => {
       <section className="px-4 py-6">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg italic">Active & Upcoming</h2>
+            <h2 className="font-serif text-lg md:text-xl lg:text-2xl font-bold">Active & Upcoming</h2>
             <Link
               href="/elections"
-              className="flex items-center gap-1 text-xs font-medium text-muted-gray hover:text-charcoal"
+              className="flex items-center gap-1 text-xs font-sans md:text-sm lg:text-base font-medium text-muted-gray hover:text-charcoal"
             >
               See All <ArrowRight className="size-3" />
             </Link>
@@ -103,7 +103,7 @@ const HomePage = () => {
                 <div className="size-5 animate-spin rounded-full border-2 border-gold border-t-transparent" />
               </div>
             ) : filtered.length === 0 ? (
-              <p className="py-12 text-center text-sm text-muted-gray">
+              <p className="py-12 text-center text-sm text-muted-gray font-sans">
                 No elections found.
               </p>
             ) : (
@@ -114,17 +114,17 @@ const HomePage = () => {
       </section>
 
       {/* Admin Footer */}
-      <section className="bg-charcoal px-4 py-8">
+      <section className="bg-charcoal px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-10">
         <div className="mx-auto max-w-2xl">
-          <h3 className="font-serif text-lg italic text-white">
+          <h3 className="font-serif text-lg md:text-xl lg:text-2xl font-bold italic text-white">
             Association Admin?
           </h3>
-          <p className="mt-1 text-sm text-muted-gray">
+          <p className="mt-1 text-sm md:text-base lg:text-lg text-muted-gray font-sans">
             Access real-time analytics and manage candidate applications.
           </p>
           <Link
             href="/admin"
-            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white px-4 py-2.5 text-xs font-semibold text-charcoal transition-colors hover:bg-white/90"
+            className="mt-4 inline-flex items-center font-sans gap-2 rounded-lg border border-white/20 bg-white px-4 py-2.5 text-xs font-semibold text-charcoal transition-colors hover:bg-white/90"
           >
             Go to Dashboard <ArrowRight className="size-3" />
           </Link>

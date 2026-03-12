@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Crimson_Text } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/next";
+import { AuthProvider } from "@/context/auth-context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,11 +31,13 @@ const RootLayout = ({
       <body
         className={cn(geistSans.variable, crimsonText.variable, "antialiased")}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Analytics />
       </body>
     </html>
   );
-}
+};
 
 export default RootLayout;

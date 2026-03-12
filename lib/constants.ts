@@ -1,3 +1,27 @@
+export const SCHOOL_EMAIL_DOMAIN = "@student.babcock.edu.ng";
+
+export const DEPARTMENTS = [
+  "Accounting",
+  "Agriculture",
+  "Biochemistry",
+  "Business Administration",
+  "Computer Science",
+  "Economics",
+  "English",
+  "History",
+  "International Relations",
+  "Law",
+  "Mass Communication",
+  "Mathematics",
+  "Microbiology",
+  "Nursing",
+  "Political Science",
+  "Public Health",
+  "Software Engineering",
+] as const;
+
+export const LEVELS = ["100", "200", "300", "400", "500", "600"] as const;
+
 export const CREDENTIALS = {
   firebase: {
     apiKey: "AIzaSyDIJKNJWVySg7DOSAphkj5Fe_hdfIzLyho",

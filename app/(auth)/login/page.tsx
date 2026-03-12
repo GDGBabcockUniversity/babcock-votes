@@ -42,8 +42,8 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
-      <h1 className="text-center font-serif text-2xl font-bold">
+    <div className="border border-border bg-white p-8 shadow-sm">
+      <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
         Babcock Votes
       </h1>
 
@@ -55,7 +55,7 @@ const LoginPage = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full rounded-lg border border-border bg-white px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            className="font-sans w-full border border-border bg-white px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
           />
         </div>
 
@@ -66,7 +66,7 @@ const LoginPage = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-lg border border-border bg-white px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+            className="font-sans w-full border border-border bg-white px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
           />
         </div>
 
@@ -77,18 +77,18 @@ const LoginPage = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-charcoal py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="w-full bg-charcoal py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50 font-sans"
         >
           {loading ? "Signing in..." : "Continue"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-muted-gray">
+      {/* <p className="mt-6 text-center text-xs text-muted-gray">
         Don&apos;t have an account?{" "}
         <Link href="/register" className="text-gold underline">
           Register
         </Link>
-      </p>
+      </p> */}
     </div>
   );
 };

@@ -13,6 +13,14 @@ import {
   DEPARTMENTS,
   LEVELS,
 } from "@/lib/constants";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const RegisterPage = () => {
   const router = useRouter();
@@ -67,20 +75,20 @@ const RegisterPage = () => {
   };
 
   const inputClass =
-    "w-full rounded-lg border border-border bg-secondary/40 px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold";
+    "w-full border border-border px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold font-sans";
 
   return (
-    <div className="rounded-2xl border border-border bg-white p-8 shadow-sm">
-      <h1 className="text-center font-serif text-xl font-bold italic">
+    <div className="border border-border bg-white p-8 shadow-sm">
+      <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic">
         Voter Profile Registration
       </h1>
-      <p className="mt-1 text-center text-[10px] uppercase tracking-widest text-muted-gray">
-        &mdash; 2026 Election Cycle &mdash;
+      <p className="mt-1 text-center text-xs uppercase tracking-widest text-muted-gray">
+        &mdash; {new Date().getFullYear()} Election Cycle &mdash;
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
-          <label className="mb-1 block text-xs font-semibold">Full Name</label>
+          <label className="mb-2 block lg:text-lg font-medium">Full Name</label>
           <input
             type="text"
             placeholder="John Doe"
@@ -92,7 +100,7 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold">
+          <label className="mb-2 block lg:text-lg font-medium">
             Email Address
           </label>
           <input
@@ -106,7 +114,7 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold">Password</label>
+          <label className="mb-2 block lg:text-lg font-medium">Password</label>
           <input
             type="password"
             placeholder="Min. 6 characters"
@@ -119,12 +127,12 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold">
-            Matric Number
+          <label className="mb-2 block lg:text-lg font-medium">
+            Matric. Number
           </label>
           <input
             type="text"
-            placeholder="E.G., 21/0456"
+            placeholder="e.g., 21/0456"
             value={matricNumber}
             onChange={(e) => setMatricNumber(e.target.value)}
             required
@@ -133,18 +141,17 @@ const RegisterPage = () => {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-semibold">Sex</label>
+          <label className="mb-2 block lg:text-lg font-medium">Sex</label>
           <div className="grid grid-cols-2 gap-3">
             {(["male", "female"] as const).map((option) => (
               <button
                 key={option}
                 type="button"
                 onClick={() => setSex(option)}
-                className={`rounded-lg border py-2.5 text-sm font-medium capitalize transition-colors ${
-                  sex === option
-                    ? "border-gold bg-gold/10 text-charcoal"
-                    : "border-border text-charcoal hover:border-gold/50"
-                }`}
+                className={cn('border py-2.5 text-sm font-medium font-sans capitalize transition-colors', sex === option
+                  ? "border-gold bg-gold/10 text-charcoal"
+                  : "border-border text-charcoal hover:border-gold/50"
+                )}
               >
                 {option}
               </button>
@@ -154,38 +161,36 @@ const RegisterPage = () => {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-semibold">
+            <label className="mb-2 block lg:text-lg font-medium">
               Department
             </label>
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              required
-              className={inputClass}
-            >
-              <option value="">Select</option>
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+            <Select value={department} onValueChange={(v) => setDepartment(v ?? "")} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent className="font-sans">
+                {DEPARTMENTS.map((d) => (
+                  <SelectItem key={d} value={d}>
+                    {d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-semibold">Level</label>
-            <select
-              value={level}
-              onChange={(e) => setLevel(e.target.value)}
-              required
-              className={inputClass}
-            >
-              <option value="">Select</option>
-              {LEVELS.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </select>
+            <label className="mb-2 block lg:text-lg font-medium">Level</label>
+            <Select value={level} onValueChange={(v) => setLevel(v ?? "")} required>
+              <SelectTrigger>
+                <SelectValue placeholder="Select" />
+              </SelectTrigger>
+              <SelectContent className="font-sans">
+                {LEVELS.map((l) => (
+                  <SelectItem key={l} value={l}>
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -196,7 +201,7 @@ const RegisterPage = () => {
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="flex w-full items-center font-sans justify-center gap-2 bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {loading ? "Creating account..." : "Complete Registration & Vote"}
           {!loading && <span aria-hidden="true">&rsaquo;</span>}

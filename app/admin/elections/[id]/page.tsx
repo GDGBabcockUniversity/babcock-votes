@@ -17,7 +17,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
-import { DEPARTMENTS, LEVELS } from "@/lib/constants";
+import { DEPARTMENTS, LEVELS, PAGES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -309,7 +309,7 @@ const ElectionDetailPage = () => {
       <div className="flex items-start justify-between gap-4">
         <div>
           <button
-            onClick={() => router.push("/admin/elections")}
+            onClick={() => router.push(PAGES.admin.elections)}
             className="mb-2 flex items-center gap-1 text-xs md:text-sm text-muted-gray hover:text-charcoal font-sans"
           >
             <ArrowLeft className="size-3.5 md:size-4" /> Back to Elections
@@ -321,7 +321,7 @@ const ElectionDetailPage = () => {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            href={`/admin/elections/${id}/results`}
+            href={PAGES.admin.electionResults(id)}
             className={cn(
               "font-sans rounded-none",
               "flex w-full items-center justify-center border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",

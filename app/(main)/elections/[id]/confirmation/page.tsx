@@ -7,6 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Check } from "lucide-react";
 import type { Election } from "@/lib/types";
+import { PAGES } from "@/lib/constants";
 
 const ConfirmationPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -41,13 +42,13 @@ const ConfirmationPage = () => {
 
       <div className="mt-10 w-full max-w-xs space-y-3">
         <Link
-          href={`/elections/${id}`}
+          href={PAGES.main.electionDetail(id)}
           className="block rounded-lg bg-white py-3.5 text-center text-sm font-semibold text-charcoal transition-opacity hover:opacity-90"
         >
           View Live Results
         </Link>
         <Link
-          href="/"
+          href={PAGES.main.home}
           className="block py-2 text-center text-xs text-muted-gray underline"
         >
           Return to Dashboard

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { Menu } from "lucide-react";
+import { PAGES } from "@/lib/constants";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const { firebaseUser, userProfile, loading } = useAuth();
@@ -14,13 +15,13 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (!loading) {
       if (!firebaseUser) {
-        router.replace("/login");
+        router.replace(PAGES.auth.login);
       } else if (
         userProfile &&
         userProfile.role !== "super_admin" &&
         userProfile.role !== "dept_admin"
       ) {
-        router.replace("/");
+        router.replace(PAGES.main.home);
       }
     }
   }, [firebaseUser, userProfile, loading, router]);

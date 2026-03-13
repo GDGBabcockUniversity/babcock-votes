@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import { SCHOOL_EMAIL_DOMAIN } from "@/lib/constants";
+import { PAGES, SCHOOL_EMAIL_DOMAIN } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 
 const LoginPage = () => {
@@ -30,9 +30,9 @@ const LoginPage = () => {
       const snap = await getDoc(doc(db, "users", cred.user.uid));
 
       if (snap.exists()) {
-        router.replace("/");
+        router.replace(PAGES.main.home);
       } else {
-        router.replace("/register");
+        router.replace(PAGES.auth.register);
       }
     } catch {
       setError("Invalid email or password. Please try again.");

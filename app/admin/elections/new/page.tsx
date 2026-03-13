@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
-import { DEPARTMENTS } from "@/lib/constants";
+import { DEPARTMENTS, PAGES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,8 +39,6 @@ const NewElectionPage = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!firebaseUser) return;
@@ -58,7 +56,7 @@ const NewElectionPage = () => {
         createdBy: firebaseUser.uid,
         createdAt: serverTimestamp(),
       });
-      router.push(`/admin/elections/${docRef.id}`);
+      router.push(PAGES.admin.electionDetail(docRef.id));
     } catch (err) {
       console.error("Failed to create election:", err);
       setLoading(false);

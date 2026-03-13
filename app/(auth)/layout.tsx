@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useEffect } from "react";
+import { PAGES } from "@/lib/constants";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
   const { firebaseUser, userProfile, loading } = useAuth();
@@ -10,7 +11,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!loading && firebaseUser && userProfile) {
-      router.replace("/");
+      router.replace(PAGES.main.home);
     }
   }, [firebaseUser, userProfile, loading, router]);
 

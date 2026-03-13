@@ -31,6 +31,7 @@ import {
 import { Plus, MoreHorizontal, Pencil, Trash2, BarChart3 } from "lucide-react";
 import type { Election } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { PAGES } from "@/lib/constants";
 
 const statusVariant: Record<Election["status"], "default" | "secondary" | "outline"> = {
   active: "default",
@@ -89,7 +90,7 @@ const AdminElectionsPage = () => {
           </p>
         </div>
         {isSuperAdmin && (
-          <Link href="/admin/elections/new" className={cn(buttonVariants(), "font-sans rounded-none")}>
+          <Link href={PAGES.admin.newElection} className={cn(buttonVariants(), "font-sans rounded-none")}>
             <Plus className="mr-2 size-4" />
             Create Election
           </Link>
@@ -129,7 +130,7 @@ const AdminElectionsPage = () => {
                 <TableRow key={el.id}>
                   <TableCell>
                     <Link
-                      href={`/admin/elections/${el.id}`}
+                      href={PAGES.admin.electionDetail(el.id)}
                       className="font-medium hover:underline"
                     >
                       {el.title}
@@ -159,7 +160,7 @@ const AdminElectionsPage = () => {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           render={
-                            <Link href={`/admin/elections/${el.id}`}>
+                            <Link href={PAGES.admin.electionDetail(el.id)}>
                               <Pencil className="mr-2 size-3.5" />
                               Manage
                             </Link>
@@ -167,7 +168,7 @@ const AdminElectionsPage = () => {
                         />
                         <DropdownMenuItem
                           render={
-                            <Link href={`/admin/elections/${el.id}/results`}>
+                            <Link href={PAGES.admin.electionResults(el.id)}>
                               <BarChart3 className="mr-2 size-3.5" />
                               Results
                             </Link>

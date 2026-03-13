@@ -9,6 +9,7 @@ import { ElectionCard } from "@/components/election-card";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowRight, Sparkles } from "lucide-react";
 import type { Election } from "@/lib/types";
+import { PAGES } from "@/lib/constants";
 
 const HomePage = () => {
   const { signOut } = useAuth();
@@ -91,7 +92,7 @@ const HomePage = () => {
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-lg md:text-xl lg:text-2xl font-bold">Active & Upcoming</h2>
             <Link
-              href="/elections"
+              href={PAGES.main.elections}
               className="flex items-center gap-1 text-xs font-sans md:text-sm lg:text-base font-medium text-muted-gray hover:text-charcoal"
             >
               See All <ArrowRight className="size-3" />
@@ -124,7 +125,7 @@ const HomePage = () => {
             Access real-time analytics and manage candidate applications.
           </p>
           <Link
-            href="/admin"
+            href={PAGES.admin.dashboard}
             className="mt-4 inline-flex items-center font-sans gap-2 rounded-lg border border-white/20 bg-white px-4 py-2.5 text-xs font-semibold text-charcoal transition-colors hover:bg-white/90"
           >
             Go to Dashboard <ArrowRight className="size-3" />

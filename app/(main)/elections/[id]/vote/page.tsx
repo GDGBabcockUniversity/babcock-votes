@@ -16,6 +16,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { AlertTriangle, Check } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
+import { PAGES } from "@/lib/constants";
 
 const VotePage = () => {
   const { id } = useParams<{ id: string }>();
@@ -80,7 +81,7 @@ const VotePage = () => {
       });
 
       await Promise.all(promises);
-      router.replace(`/elections/${id}/confirmation`);
+      router.replace(PAGES.main.confirmation(id));
     } catch (err) {
       console.error("Vote submission failed:", err);
       setSubmitting(false);
@@ -156,11 +157,10 @@ const VotePage = () => {
                     type="button"
                     onClick={() => selectCandidate(position.id, c.id)}
                     disabled={reviewing}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
-                      selected
+                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${selected
                         ? "border-gold bg-gold/5"
                         : "border-border bg-white hover:border-gold/40"
-                    } disabled:cursor-default`}
+                      } disabled:cursor-default`}
                   >
                     <div className="relative size-10 shrink-0 overflow-hidden rounded-full bg-muted">
                       {c.photoUrl ? (
@@ -182,11 +182,10 @@ const VotePage = () => {
                       {c.fullName}
                     </span>
                     <div
-                      className={`flex size-6 items-center justify-center rounded-full border transition-colors ${
-                        selected
+                      className={`flex size-6 items-center justify-center rounded-full border transition-colors ${selected
                           ? "border-gold bg-gold text-white"
                           : "border-border"
-                      }`}
+                        }`}
                     >
                       {selected && <Check className="size-3.5" />}
                     </div>

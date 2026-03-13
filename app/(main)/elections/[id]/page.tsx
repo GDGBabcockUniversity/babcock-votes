@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { CandidateCard } from "@/components/candidate-card";
 import { ArrowLeft, Calendar, Users } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
+import { PAGES } from "@/lib/constants";
 
 const formatDateRange = (start: { seconds: number }, end: { seconds: number }) => {
   const fmt = (ts: { seconds: number }) =>
@@ -138,7 +139,7 @@ const CandidatesPage = () => {
           {election.status === "active" && (
             <div className="mt-8">
               <Link
-                href={`/elections/${id}/vote`}
+                href={PAGES.main.vote(id)}
                 className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
               >
                 Vote Now

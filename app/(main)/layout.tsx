@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { Header } from "@/components/header";
 import { useEffect } from "react";
+import { PAGES } from "@/lib/constants";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const { firebaseUser, loading } = useAuth();
@@ -11,7 +12,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (!loading && !firebaseUser) {
-      router.replace("/login");
+      router.replace(PAGES.auth.login);
     }
   }, [firebaseUser, loading, router]);
 

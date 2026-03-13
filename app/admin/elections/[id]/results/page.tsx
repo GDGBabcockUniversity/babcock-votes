@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, Users, Vote } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
+import { PAGES } from "@/lib/constants";
 
 const ResultsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -131,7 +132,7 @@ const ResultsPage = () => {
   return (
     <div>
       <button
-        onClick={() => router.push(`/admin/elections/${id}`)}
+        onClick={() => router.push(PAGES.admin.electionDetail(id))}
         className="mb-2 flex items-center gap-1 text-xs font-sans text-muted-gray hover:text-charcoal"
       >
         <ArrowLeft className="size-3.5" /> Back to Election

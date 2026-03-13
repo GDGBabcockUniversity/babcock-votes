@@ -32,3 +32,25 @@ export const CREDENTIALS = {
     appId: "1:386049332302:web:d037d90c8303a58daa1f1f",
   },
 };
+
+export const PAGES = {
+  auth: {
+    login: "/login",
+    register: "/register",
+  },
+  main: {
+    home: "/",
+    elections: "/elections",
+    electionDetail: (id: string) => `/elections/${id}`,
+    vote: (id: string) => `/elections/${id}/vote`,
+    confirmation: (id: string) => `/elections/${id}/confirmation`,
+  },
+  admin: {
+    dashboard: "/admin",
+    elections: "/admin/elections",
+    newElection: "/admin/elections/new",
+    electionDetail: (id: string) => `/admin/elections/${id}`,
+    electionResults: (id: string) => `/admin/elections/${id}/results`,
+    users: "/admin/users",
+  },
+} as const;

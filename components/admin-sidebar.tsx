@@ -13,11 +13,12 @@ import {
   LogOut,
   X,
 } from "lucide-react";
+import { PAGES } from "@/lib/constants";
 
 const navItems = [
-  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "dept_admin"] },
-  { href: "/admin/elections", label: "Elections", icon: Vote, roles: ["super_admin", "dept_admin"] },
-  { href: "/admin/users", label: "Users", icon: Users, roles: ["super_admin"] },
+  { href: PAGES.admin.dashboard, label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "dept_admin"] },
+  { href: PAGES.admin.elections, label: "Elections", icon: Vote, roles: ["super_admin", "dept_admin"] },
+  { href: PAGES.admin.users, label: "Users", icon: Users, roles: ["super_admin"] },
 ];
 
 export const AdminSidebar = ({
@@ -90,7 +91,7 @@ export const AdminSidebar = ({
         {/* Footer */}
         <div className="space-y-1 px-3 py-4">
           <Link
-            href="/"
+            href={PAGES.main.home}
             onClick={onClose}
             className="flex items-center gap-3 font-sans px-3 py-2 text-sm text-muted-gray hover:bg-secondary hover:text-charcoal"
           >

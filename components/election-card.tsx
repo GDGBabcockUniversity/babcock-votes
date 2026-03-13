@@ -3,6 +3,7 @@ import { Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./status-badge";
 import type { Election } from "@/lib/types";
+import { PAGES } from "@/lib/constants";
 
 const formatDate = (ts: { seconds: number }) =>
   new Date(ts.seconds * 1000).toLocaleDateString("en-US", {
@@ -14,7 +15,7 @@ export const ElectionCard = ({ election }: { election: Election }) => {
   const isActive = election.status === "active";
 
   return (
-    <Link href={`/elections/${election.id}`}>
+    <Link href={PAGES.main.electionDetail(election.id)}>
       <div
         className={cn(
           "rounded-xl border p-5 transition-shadow hover:shadow-md",

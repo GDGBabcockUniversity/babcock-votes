@@ -98,18 +98,18 @@ const CandidatesPage = () => {
             <StatusBadge status={election.status} />
           </div>
 
-          <h1 className="mt-3 font-serif text-2xl font-bold italic">
+          <h1 className="mt-3 font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic">
             {election.title}
           </h1>
 
-          <div className="mt-2 flex items-center gap-4 text-xs text-white/60">
-            <span className="flex items-center gap-1">
-              <Calendar className="size-3.5" />
+          <div className="mt-2 flex items-center gap-4 text-xs md:text-sm text-white/60 font-sans">
+            <span className="flex items-center gap-2 font-medium">
+              <Calendar className="size-3.5 md:size-4 lg:size-5" />
               {formatDateRange(election.startDate, election.endDate)}
             </span>
-            <span className="flex items-center gap-1">
-              <Users className="size-3.5" />
-              {election.candidateCount} Candidates
+            <span className="flex items-center gap-2 font-medium">
+              <Users className="size-3.5 md:size-4 lg:size-5" />
+              {election.candidateCount} cand{election.candidateCount === 1 ? "idate" : "idates"}
             </span>
           </div>
         </div>
@@ -118,16 +118,16 @@ const CandidatesPage = () => {
       {/* Candidates by position */}
       <div className="px-4 py-6">
         <div className="mx-auto max-w-2xl">
-          <h2 className="font-serif text-xl italic text-gold">
+          <h2 className="font-serif text-xl md:text-2xl lg:text-3xl font-semibold italic text-gold">
             The Candidates
           </h2>
 
           {grouped.map(({ position, candidates: cands }) => (
             <section key={position.id} className="mt-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-charcoal">
+              <h3 className="text-sm md:text-base lg:text-lg font-sans font-semibold uppercase tracking-wider text-charcoal">
                 {position.title}
               </h3>
-              <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+              <div className="mt-3 grid grid-cols-2 gap-3">
                 {cands.map((c) => (
                   <CandidateCard key={c.id} candidate={c} />
                 ))}

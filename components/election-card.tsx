@@ -23,17 +23,17 @@ export const ElectionCard = ({ election }: { election: Election }) => {
       >
         <StatusBadge status={election.status} />
 
-        <h3 className="mt-3 font-serif text-lg italic">{election.title}</h3>
+        <h3 className="my-4 font-serif text-lg md:text-xl lg:text-2xl font-bold italic">{election.title}</h3>
 
-        <div className="mt-2 flex items-center gap-3 text-xs text-muted-gray">
-          <span className="flex items-center gap-1">
-            <Calendar className="size-3.5" />
+        <div className="flex items-center gap-3 text-xs md:text-sm text-muted-gray font-sans">
+          <span className="flex items-center gap-2 font-medium">
+            <Calendar className="size-3.5 md:size-4 lg:size-5" />
             {formatDate(election.startDate)}
           </span>
           <span className="text-muted-gray/40">&#8226;</span>
-          <span className="flex items-center gap-1">
-            <Users className="size-3.5" />
-            {election.candidateCount} Cands.
+          <span className="flex items-center gap-2 font-medium">
+            <Users className="size-3.5 md:size-4 lg:size-5" />
+            {election.candidateCount} cand{election.candidateCount === 1 ? "idate" : "idates"}
           </span>
         </div>
       </div>

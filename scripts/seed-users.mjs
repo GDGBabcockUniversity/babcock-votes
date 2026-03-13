@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, Timestamp } from "firebase/firestore";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { getFirestore, doc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDIJKNJWVySg7DOSAphkj5Fe_hdfIzLyho",
@@ -26,7 +26,7 @@ const users = [
       sex: "male",
       department: "Computer Science",
       level: "400",
-      role: "admin",
+      role: "super_admin",
       createdAt: Timestamp.now(),
     },
   },
@@ -52,12 +52,19 @@ for (const user of users) {
     await setDoc(doc(db, "users", cred.user.uid), user.profile);
     console.log(`Created ${user.profile.role}: ${user.email}`);
   } catch (err) {
-    console.error(`Failed for ${user.email}:`, err.message);
+    if (err.code === "auth/email-already-in-use") {
+      // User exists, update their profile (especially role)
+      const cred = await signInWithEmailAndPassword(auth, user.email, user.password);
+      await updateDoc(doc(db, "users", cred.user.uid), { role: user.profile.role });
+      console.log(`Updated ${user.email} role to ${user.profile.role}`);
+    } else {
+      console.error(`Failed for ${user.email}:`, err.message);
+    }
   }
 }
 
 console.log("\nDone! Credentials:");
-console.log("  Admin: admin@student.babcock.edu.ng / admin123");
-console.log("  Voter: voter@student.babcock.edu.ng / voter123");
+console.log("  Super Admin: admin@student.babcock.edu.ng / admin123");
+console.log("  Voter:       voter@student.babcock.edu.ng / voter123");
 
 process.exit(0);

@@ -7,7 +7,7 @@ export interface User {
   sex: "male" | "female";
   department: string;
   level: string;
-  role: "voter" | "admin";
+  role: "voter" | "dept_admin" | "super_admin";
   createdAt: Timestamp;
 }
 
@@ -15,6 +15,7 @@ export interface Election {
   id: string;
   title: string;
   description: string;
+  department: string;
   startDate: Timestamp;
   endDate: Timestamp;
   status: "upcoming" | "active" | "closed";

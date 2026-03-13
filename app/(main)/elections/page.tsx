@@ -60,6 +60,7 @@ const ElectionsPage = () => {
           placeholder="Search by association..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          className="pl-10"
         />
       </div>
 

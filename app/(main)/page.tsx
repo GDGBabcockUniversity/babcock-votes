@@ -6,6 +6,7 @@ import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { ElectionCard } from "@/components/election-card";
+import { Input } from "@/components/ui/input";
 import { Search, ArrowRight, Sparkles } from "lucide-react";
 import type { Election } from "@/lib/types";
 
@@ -71,12 +72,12 @@ const HomePage = () => {
           {/* Search */}
           <div className="relative mt-8">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-gray" />
-            <input
+            <Input
               type="text"
               placeholder="Find your association..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full font-sans border border-border bg-white py-3 pl-10 pr-4 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
+              className="pl-10"
             />
           </div>
         </div>

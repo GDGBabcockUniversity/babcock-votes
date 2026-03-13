@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -18,7 +18,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { DEPARTMENTS, LEVELS } from "@/lib/constants";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -94,7 +94,7 @@ const ElectionDetailPage = () => {
 
   const elRef = doc(db, "elections", id);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     const elSnap = await getDoc(elRef);
     if (!elSnap.exists()) return;
 
@@ -114,11 +114,36 @@ const ElectionDetailPage = () => {
       candSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Candidate),
     );
     setLoading(false);
-  }, [id]);
+  };
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const load = async () => {
+      const ref = doc(db, "elections", id);
+      const elSnap = await getDoc(ref);
+      if (!elSnap.exists()) {
+        setLoading(false);
+        return;
+      }
+
+      const elData = { id: elSnap.id, ...elSnap.data() } as Election;
+      setElection(elData);
+      setStatusValue(elData.status);
+
+      const [posSnap, candSnap] = await Promise.all([
+        getDocs(query(collection(ref, "positions"), orderBy("order", "asc"))),
+        getDocs(collection(ref, "candidates")),
+      ]);
+
+      setPositions(
+        posSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Position),
+      );
+      setCandidates(
+        candSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Candidate),
+      );
+      setLoading(false);
+    };
+    load();
+  }, [id]);
 
   // --- Position CRUD ---
   const resetPosForm = () => {

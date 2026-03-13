@@ -11,39 +11,51 @@ service cloud.firestore {
       return isSignedIn() && request.auth.token.email_verified;
     }
 
-    function isAdmin() {
-      return isSignedIn()
-        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
-    // Users: owners can read their own doc, admins can read all
+    function isSuperAdmin() {
+      return isSignedIn() && getUserData().role == "super_admin";
+    }
+
+    function isDeptAdmin() {
+      return isSignedIn() && getUserData().role == "dept_admin";
+    }
+
+    function isAnyAdmin() {
+      return isSuperAdmin() || isDeptAdmin();
+    }
+
+    // Users: owners can read their own doc, any admin can read all, only super_admin can update roles
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());
       allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isAdmin();
+      allow update: if isSuperAdmin();
     }
 
-    // Elections: anyone signed in can read, only admins can write
+    // Elections: anyone signed in can read, only super_admin can write
     match /elections/{electionId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow create, update, delete: if isSuperAdmin();
 
       // Positions subcollection
       match /positions/{positionId} {
         allow read: if isSignedIn();
-        allow create, update, delete: if isAdmin();
+        allow create, update, delete: if isSuperAdmin();
       }
 
       // Candidates subcollection
       match /candidates/{candidateId} {
         allow read: if isSignedIn();
-        allow create, update, delete: if isAdmin();
+        allow create, update, delete: if isSuperAdmin();
       }
     }
 
-    // Votes: verified users can create their own vote, no updates or deletes
+    // Votes: verified users can create their own vote, admins can read for results
     match /votes/{voteId} {
-      allow read: if isSignedIn() && resource.data.voterId == request.auth.uid;
+      allow read: if isSignedIn()
+        && (resource.data.voterId == request.auth.uid || isAnyAdmin());
       allow create: if isEmailVerified()
         && request.resource.data.voterId == request.auth.uid
         && voteId == request.auth.uid + "_" + request.resource.data.positionId;

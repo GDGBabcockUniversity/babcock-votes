@@ -14,6 +14,7 @@ import {
   LEVELS,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -74,9 +75,6 @@ const RegisterPage = () => {
     }
   };
 
-  const inputClass =
-    "w-full border border-border px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold font-sans";
-
   return (
     <div className="border border-border bg-white p-8 shadow-sm">
       <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic">
@@ -89,13 +87,12 @@ const RegisterPage = () => {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="mb-2 block lg:text-lg font-medium">Full Name</label>
-          <input
+          <Input
             type="text"
             placeholder="John Doe"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
-            className={inputClass}
           />
         </div>
 
@@ -103,26 +100,24 @@ const RegisterPage = () => {
           <label className="mb-2 block lg:text-lg font-medium">
             Email Address
           </label>
-          <input
+          <Input
             type="email"
             placeholder={`johndoe${SCHOOL_EMAIL_DOMAIN}`}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className={inputClass}
           />
         </div>
 
         <div>
           <label className="mb-2 block lg:text-lg font-medium">Password</label>
-          <input
+          <Input
             type="password"
             placeholder="Min. 6 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={6}
-            className={inputClass}
           />
         </div>
 
@@ -130,13 +125,12 @@ const RegisterPage = () => {
           <label className="mb-2 block lg:text-lg font-medium">
             Matric. Number
           </label>
-          <input
+          <Input
             type="text"
             placeholder="e.g., 21/0456"
             value={matricNumber}
             onChange={(e) => setMatricNumber(e.target.value)}
             required
-            className={inputClass}
           />
         </div>
 

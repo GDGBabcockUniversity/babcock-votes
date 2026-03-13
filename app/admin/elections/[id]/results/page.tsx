@@ -115,7 +115,7 @@ const ResultsPage = () => {
 
   if (!election) {
     return (
-      <p className="py-24 text-center text-sm text-muted-gray">
+      <p className="py-24 text-center text-sm font-sans text-muted-gray">
         Election not found.
       </p>
     );
@@ -133,46 +133,46 @@ const ResultsPage = () => {
     <div>
       <button
         onClick={() => router.push(`/admin/elections/${id}`)}
-        className="mb-2 flex items-center gap-1 text-xs text-muted-gray hover:text-charcoal"
+        className="mb-2 flex items-center gap-1 text-xs font-sans text-muted-gray hover:text-charcoal"
       >
         <ArrowLeft className="size-3.5" /> Back to Election
       </button>
 
-      <h1 className="font-serif text-3xl font-bold">Results</h1>
-      <p className="mt-1 text-sm text-muted-gray">{election.title}</p>
+      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">Results</h1>
+      <p className="mt-1 text-sm font-sans text-muted-gray">{election.title}</p>
 
       {/* Overview cards */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-gray">
+            <CardTitle className="text-xs font-sans font-medium uppercase tracking-wider text-muted-gray">
               Total Ballots
             </CardTitle>
             <Vote className="size-4 text-gold" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{totalVotes}</p>
+            <p className="text-2xl font-sans font-bold">{totalVotes}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-gray">
+            <CardTitle className="text-xs font-sans font-medium uppercase tracking-wider text-muted-gray">
               Unique Voters
             </CardTitle>
             <Users className="size-4 text-gold" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{voterCount}</p>
+            <p className="text-2xl font-sans font-bold">{voterCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium uppercase tracking-wider text-muted-gray">
+            <CardTitle className="text-xs font-sans font-medium uppercase tracking-wider text-muted-gray">
               Positions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">{positions.length}</p>
+            <p className="text-2xl font-sans font-bold">{positions.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -185,7 +185,7 @@ const ResultsPage = () => {
         {grouped.map(({ position, candidates: cands, totalForPos }) => (
           <Card key={position.id}>
             <CardHeader>
-              <CardTitle className="text-base">{position.title}</CardTitle>
+              <CardTitle className="text-lg font-serif md:text-2xl font-semibold">{position.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {cands.map((c, idx) => {
@@ -195,7 +195,7 @@ const ResultsPage = () => {
                     : 0;
                 return (
                   <div key={c.id}>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-sm font-sans">
                       <span className="font-medium">
                         {idx === 0 && c.voteCount > 0 && (
                           <Badge variant="default" className="mr-2 text-[10px]">
@@ -208,9 +208,9 @@ const ResultsPage = () => {
                         {c.voteCount} votes ({pct}%)
                       </span>
                     </div>
-                    <div className="mt-1 h-2 w-full rounded-full bg-secondary">
+                    <div className="mt-1 h-2 w-full bg-secondary">
                       <div
-                        className="h-full rounded-full bg-gold transition-all"
+                        className="h-full bg-gold transition-all"
                         style={{ width: `${pct}%` }}
                       />
                     </div>
@@ -218,7 +218,7 @@ const ResultsPage = () => {
                 );
               })}
               {cands.length === 0 && (
-                <p className="text-sm text-muted-gray">No candidates.</p>
+                <p className="text-sm font-sans text-muted-gray">No candidates.</p>
               )}
             </CardContent>
           </Card>
@@ -229,14 +229,14 @@ const ResultsPage = () => {
 
       {/* Voter log */}
       <h2 className="font-serif text-xl font-bold">Voter Log</h2>
-      <p className="mt-1 text-xs text-muted-gray">
+      <p className="mt-1 text-xs font-sans text-muted-gray">
         Who has voted (ballot choices are secret).
       </p>
-      <div className="mt-4 rounded-lg border border-border">
-        <Table>
+      <div className="mt-4 border border-border">
+        <Table className="font-sans rounded-none">
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead className="pl-4">Name</TableHead>
               <TableHead>Matric No.</TableHead>
               <TableHead>Voted At</TableHead>
             </TableRow>
@@ -244,14 +244,14 @@ const ResultsPage = () => {
           <TableBody>
             {voters.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="py-8 text-center text-sm text-muted-gray">
+                <TableCell colSpan={3} className="py-8 text-center text-sm font-sans text-muted-gray">
                   No votes yet.
                 </TableCell>
               </TableRow>
             ) : (
               voters.map((v, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-medium">{v.name}</TableCell>
+                  <TableCell className="font-medium pl-4">{v.name}</TableCell>
                   <TableCell className="text-muted-gray">{v.matric}</TableCell>
                   <TableCell className="text-muted-gray">{v.votedAt}</TableCell>
                 </TableRow>

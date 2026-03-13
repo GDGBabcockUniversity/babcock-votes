@@ -71,18 +71,18 @@ const UsersPage = () => {
 
   const filtered = search
     ? users.filter(
-        (u) =>
-          u.fullName.toLowerCase().includes(search.toLowerCase()) ||
-          u.email.toLowerCase().includes(search.toLowerCase()) ||
-          u.matricNumber.toLowerCase().includes(search.toLowerCase()) ||
-          u.department.toLowerCase().includes(search.toLowerCase()),
-      )
+      (u) =>
+        u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase()) ||
+        u.matricNumber.toLowerCase().includes(search.toLowerCase()) ||
+        u.department.toLowerCase().includes(search.toLowerCase()),
+    )
     : users;
 
   return (
     <div>
-      <h1 className="font-serif text-3xl font-bold">User Management</h1>
-      <p className="mt-1 text-sm text-muted-gray">
+      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">User Management</h1>
+      <p className="mt-1 text-sm md:text-base lg:text-lg font-sans text-muted-gray">
         View all registered users and manage their roles.
       </p>
 
@@ -96,11 +96,11 @@ const UsersPage = () => {
         />
       </div>
 
-      <div className="mt-4 rounded-lg border border-border">
-        <Table>
+      <div className="mt-4 border border-border">
+        <Table className="font-sans rounded-none">
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
+              <TableHead className="pl-4">Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Matric</TableHead>
               <TableHead>Department</TableHead>
@@ -129,7 +129,7 @@ const UsersPage = () => {
                 const isSelf = u.uid === firebaseUser?.uid;
                 return (
                   <TableRow key={u.uid}>
-                    <TableCell className="font-medium">{u.fullName}</TableCell>
+                    <TableCell className="font-medium pl-4">{u.fullName}</TableCell>
                     <TableCell className="text-muted-gray">{u.email}</TableCell>
                     <TableCell className="text-muted-gray">
                       {u.matricNumber}
@@ -150,9 +150,9 @@ const UsersPage = () => {
                           disabled={updating === u.uid}
                         >
                           <SelectTrigger className="h-8 w-28 text-xs">
-                            <SelectValue />
+                            <SelectValue className='capitalize' />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="font-sans">
                             {ROLES.map((r) => (
                               <SelectItem key={r} value={r}>
                                 {roleLabel[r]}

@@ -267,7 +267,7 @@ const ElectionDetailPage = () => {
 
   if (!election) {
     return (
-      <p className="py-24 text-center text-sm text-muted-gray">
+      <p className="py-24 text-center text-sm text-muted-gray font-sans">
         Election not found.
       </p>
     );
@@ -285,28 +285,31 @@ const ElectionDetailPage = () => {
         <div>
           <button
             onClick={() => router.push("/admin/elections")}
-            className="mb-2 flex items-center gap-1 text-xs text-muted-gray hover:text-charcoal"
+            className="mb-2 flex items-center gap-1 text-xs md:text-sm text-muted-gray hover:text-charcoal font-sans"
           >
-            <ArrowLeft className="size-3.5" /> Back to Elections
+            <ArrowLeft className="size-3.5 md:size-4" /> Back to Elections
           </button>
-          <h1 className="font-serif text-3xl font-bold">{election.title}</h1>
-          <p className="mt-1 text-sm text-muted-gray">
-            {election.department} &middot; {candidates.length} candidates
+          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic my-4">{election.title}</h1>
+          <p className="mt-1 text-sm md:text-base text-muted-gray font-sans">
+            {election.department} <span className="text-muted-gray/40">&#8226;</span> {candidates.length} cand{candidates.length === 1 ? "idate" : "idates"}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href={`/admin/elections/${id}/results`}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+            className={cn(
+              "font-sans rounded-none",
+              "flex w-full items-center justify-center border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            )}
           >
             <BarChart3 className="mr-2 size-3.5" /> Results
           </Link>
           {isSuperAdmin && (
             <Select value={statusValue} onValueChange={(v) => v && handleStatusChange(v)}>
               <SelectTrigger className="w-32">
-                <SelectValue />
+                <SelectValue className="capitalize" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="font-sans">
                 {(["upcoming", "active", "closed"] as const).map((s) => (
                   <SelectItem key={s} value={s} className="capitalize">
                     {s}
@@ -327,19 +330,19 @@ const ElectionDetailPage = () => {
 
       {/* Positions + Candidates */}
       <div className="flex items-center justify-between">
-        <h2 className="font-serif text-xl font-bold">
+        <h2 className="font-serif text-xl md:text-2xl font-semibold">
           Positions & Candidates
         </h2>
         {isSuperAdmin && (
           <Dialog open={posDialogOpen} onOpenChange={(o) => { setPosDialogOpen(o); if (!o) resetPosForm(); }}>
             <DialogTrigger
               render={
-                <Button size="sm" variant="outline">
+                <Button size="sm" variant="outline" className="font-sans rounded-none">
                   <Plus className="mr-2 size-3.5" /> Add Position
                 </Button>
               }
             />
-            <DialogContent>
+            <DialogContent className="font-sans rounded-none p-6">
               <DialogHeader>
                 <DialogTitle>
                   {editingPosId ? "Edit Position" : "Add Position"}
@@ -377,9 +380,9 @@ const ElectionDetailPage = () => {
               </div>
               <div className="flex justify-end gap-2">
                 <DialogClose
-                  render={<Button variant="outline">Cancel</Button>}
+                  render={<Button variant="outline" className="font-sans rounded-none">Cancel</Button>}
                 />
-                <Button onClick={handleSavePosition} disabled={saving || !posTitle}>
+                <Button onClick={handleSavePosition} disabled={saving || !posTitle} className="font-sans rounded-none">
                   {saving ? "Saving..." : "Save"}
                 </Button>
               </div>
@@ -390,16 +393,16 @@ const ElectionDetailPage = () => {
 
       <div className="mt-4 space-y-6">
         {grouped.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-gray">
+          <p className="py-8 text-center text-sm text-muted-gray font-sans">
             No positions yet. Add one to get started.
           </p>
         )}
 
         {grouped.map(({ position, candidates: cands }) => (
-          <Card key={position.id}>
+          <Card key={position.id} className="font-sans rounded-none">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-base">{position.title}</CardTitle>
+                <CardTitle className="text-lg font-serif md:text-xl lg:text-2xl font-semibold">{position.title}</CardTitle>
                 {position.description && (
                   <CardDescription>{position.description}</CardDescription>
                 )}
@@ -430,7 +433,7 @@ const ElectionDetailPage = () => {
                 {cands.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-start gap-3 rounded-lg border border-border p-3"
+                    className="flex items-start gap-3 border border-border p-3"
                   >
                     <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
                       {c.photoUrl ? (
@@ -482,7 +485,7 @@ const ElectionDetailPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="mt-3"
+                  className="mt-3 font-sans rounded-none"
                   onClick={() => openAddCandForPosition(position.id)}
                 >
                   <Plus className="mr-1 size-3.5" /> Add Candidate
@@ -495,7 +498,7 @@ const ElectionDetailPage = () => {
 
       {/* Candidate Dialog */}
       <Dialog open={candDialogOpen} onOpenChange={(o) => { setCandDialogOpen(o); if (!o) resetCandForm(); }}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto font-sans rounded-none p-6">
           <DialogHeader>
             <DialogTitle>
               {editingCandId ? "Edit Candidate" : "Add Candidate"}
@@ -527,7 +530,7 @@ const ElectionDetailPage = () => {
                     />
                   </div>
                 )}
-                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-charcoal">
+                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-charcoal">
                   <Upload className="size-4" />
                   Upload photo
                   <input
@@ -557,7 +560,7 @@ const ElectionDetailPage = () => {
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="font-sans w-full">
                     {DEPARTMENTS.map((d) => (
                       <SelectItem key={d} value={d}>
                         {d}
@@ -572,7 +575,7 @@ const ElectionDetailPage = () => {
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="font-sans w-full">
                     {LEVELS.map((l) => (
                       <SelectItem key={l} value={l}>
                         {l}
@@ -585,11 +588,12 @@ const ElectionDetailPage = () => {
           </div>
           <div className="flex justify-end gap-2">
             <DialogClose
-              render={<Button variant="outline">Cancel</Button>}
+              render={<Button variant="outline" className="rounded-none">Cancel</Button>}
             />
             <Button
               onClick={handleSaveCandidate}
               disabled={saving || !candName || !candPositionId}
+              className="rounded-none"
             >
               {saving ? "Saving..." : "Save"}
             </Button>

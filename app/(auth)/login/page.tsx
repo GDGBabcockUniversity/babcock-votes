@@ -7,6 +7,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { SCHOOL_EMAIL_DOMAIN } from "@/lib/constants";
+import { Input } from "@/components/ui/input";
 
 const LoginPage = () => {
   const router = useRouter();
@@ -49,24 +50,22 @@ const LoginPage = () => {
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         <div>
-          <input
+          <Input
             type="email"
             placeholder="Student Email Address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="font-sans w-full border border-border bg-white px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
           />
         </div>
 
         <div>
-          <input
+          <Input
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="font-sans w-full border border-border bg-white px-4 py-3 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
           />
         </div>
 

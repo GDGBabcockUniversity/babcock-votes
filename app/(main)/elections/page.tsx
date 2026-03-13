@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ElectionCard } from "@/components/election-card";
+import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import type { Election } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -54,12 +55,11 @@ const ElectionsPage = () => {
       {/* Search */}
       <div className="relative mt-6">
         <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-gray" />
-        <input
+        <Input
           type="text"
           placeholder="Search by association..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full font-sans border border-border bg-white py-3 pl-10 pr-4 text-sm placeholder:text-muted-gray focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold"
         />
       </div>
 

@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Candidate } from "@/lib/types";
 
 export const CandidateCard = ({ candidate }: { candidate: Candidate }) => (
-  <div className="overflow-hidden rounded-lg border border-border bg-white">
+  <div className="overflow-hidden rounded-lg border border-border bg-white font-sans">
     <div className="relative aspect-4/5 w-full bg-muted">
       {candidate.photoUrl ? (
         <Image
@@ -18,11 +18,11 @@ export const CandidateCard = ({ candidate }: { candidate: Candidate }) => (
       )}
     </div>
     <div className="p-3">
-      <p className="font-sans text-sm font-semibold leading-tight">
+      <p className="font-sans md:text-lg font-semibold leading-tight">
         {candidate.fullName}
       </p>
       {candidate.manifesto && (
-        <p className="mt-1 line-clamp-2 text-xs text-muted-gray">
+        <p className="mt-1 line-clamp-2 text-xs md:text-sm text-muted-gray">
           {candidate.manifesto}
         </p>
       )}

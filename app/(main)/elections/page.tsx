@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ElectionCard } from "@/components/election-card";
+import { ElectionCardSkeleton } from "@/components/skeleton-loader";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import type { Election } from "@/lib/types";
@@ -83,9 +84,12 @@ const ElectionsPage = () => {
       {/* List */}
       <div className="mt-6 space-y-3">
         {loading ? (
-          <div className="flex justify-center py-16">
-            <div className="size-5 animate-spin rounded-full border-2 border-gold border-t-transparent" />
-          </div>
+          <>
+            <ElectionCardSkeleton />
+            <ElectionCardSkeleton />
+            <ElectionCardSkeleton />
+            <ElectionCardSkeleton />
+          </>
         ) : filtered.length === 0 ? (
           <p className="py-16 text-center text-sm text-muted-gray font-sans">
             No elections match your criteria.

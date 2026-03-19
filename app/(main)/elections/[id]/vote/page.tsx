@@ -7,10 +7,11 @@ import {
   doc,
   getDoc,
   getDocs,
-  setDoc,
+  writeBatch,
   collection,
   query,
   orderBy,
+  where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -32,10 +33,29 @@ const VotePage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!firebaseUser?.uid) return;
+
     const fetch = async () => {
+      // Check if user has already voted
+      const voteCheckQuery = query(
+        collection(db, "votes"),
+        where("electionId", "==", id),
+        where("voterId", "==", firebaseUser.uid)
+      );
+      const voteSnap = await getDocs(voteCheckQuery);
+
+      if (!voteSnap.empty) {
+        // User already voted
+        router.replace(PAGES.main.confirmation(id));
+        return;
+      }
+
       const elRef = doc(db, "elections", id);
       const elSnap = await getDoc(elRef);
-      if (!elSnap.exists()) return;
+      if (!elSnap.exists()) {
+        setLoading(false);
+        return;
+      }
 
       setElection({ id: elSnap.id, ...elSnap.data() } as Election);
 
@@ -55,7 +75,7 @@ const VotePage = () => {
       setLoading(false);
     };
     fetch();
-  }, [id]);
+  }, [id, firebaseUser, router]);
 
   const selectCandidate = (positionId: string, candidateId: string) => {
     if (reviewing) return;
@@ -69,9 +89,12 @@ const VotePage = () => {
     setSubmitting(true);
 
     try {
-      const promises = positions.map((pos) => {
+      const batch = writeBatch(db);
+
+      positions.forEach((pos) => {
         const voteDocId = `${firebaseUser.uid}_${pos.id}`;
-        return setDoc(doc(db, "votes", voteDocId), {
+        const voteRef = doc(db, "votes", voteDocId);
+        batch.set(voteRef, {
           electionId: id,
           positionId: pos.id,
           candidateId: selections[pos.id],
@@ -80,7 +103,7 @@ const VotePage = () => {
         });
       });
 
-      await Promise.all(promises);
+      await batch.commit();
       router.replace(PAGES.main.confirmation(id));
     } catch (err) {
       console.error("Vote submission failed:", err);

@@ -14,6 +14,7 @@ import {
 import { db } from "@/lib/firebase";
 import { StatusBadge } from "@/components/status-badge";
 import { CandidateCard } from "@/components/candidate-card";
+import { CandidateCardSkeleton, SkeletonLoader } from "@/components/skeleton-loader";
 import { ArrowLeft, Calendar, Users } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
@@ -64,8 +65,27 @@ const CandidatesPage = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-24">
-        <div className="size-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+      <div className="-mx-4 -mt-6">
+        <div className="bg-linear-to-b from-charcoal to-charcoal/90 px-4 pb-6 pt-4">
+          <div className="mx-auto max-w-2xl">
+            <div className="mt-8 flex flex-col gap-3">
+              <SkeletonLoader className="h-8 w-3/4 opacity-20" />
+              <div className="flex gap-4">
+                <SkeletonLoader className="h-4 w-1/4 opacity-20" />
+                <SkeletonLoader className="h-4 w-1/5 opacity-20" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 py-6">
+          <div className="mx-auto max-w-2xl">
+            <SkeletonLoader className="h-8 w-48 mb-6" />
+            <div className="grid grid-cols-2 gap-3">
+              <CandidateCardSkeleton />
+              <CandidateCardSkeleton />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

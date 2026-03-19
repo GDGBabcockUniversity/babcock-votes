@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "ts-lint": "tsc --noEmit --incremental"
+    "ts-lint": "tsc --noEmit --incremental",
+    "stress-test": "node scripts/stress-test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -28,8 +29,10 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "firebase-admin": "^13.7.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

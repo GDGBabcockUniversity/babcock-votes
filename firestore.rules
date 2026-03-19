@@ -58,7 +58,8 @@ service cloud.firestore {
         && (resource.data.voterId == request.auth.uid || isAnyAdmin());
       allow create: if isEmailVerified()
         && request.resource.data.voterId == request.auth.uid
-        && voteId == request.auth.uid + "_" + request.resource.data.positionId;
+        && voteId == request.auth.uid + "_" + request.resource.data.positionId
+        && !exists(/databases/$(database)/documents/votes/$(voteId));
       allow update, delete: if false;
     }
   }

@@ -65,8 +65,8 @@ const ResultsPage = () => {
         (d) => ({ id: d.id, ...d.data() }) as Position,
       );
       setPositions(posItems);
-      setCandidates(
-        candSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Candidate),
+      const candItems = candSnap.docs.map(
+        (d) => ({ id: d.id, ...d.data() }) as Candidate,
       );
 
       // Get votes for this election
@@ -74,6 +74,14 @@ const ResultsPage = () => {
         query(collection(db, "votes"), where("electionId", "==", id)),
       );
       setTotalVotes(votesSnap.size);
+
+      // Dynamically tally candidate votes from ballots
+      const votesData = votesSnap.docs.map((d) => d.data());
+      const talliedCands = candItems.map((c) => ({
+        ...c,
+        voteCount: votesData.filter((v) => v.candidateId === c.id).length,
+      }));
+      setCandidates(talliedCands);
 
       // Unique voters
       const voterIds = [

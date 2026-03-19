@@ -6,6 +6,7 @@ import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { ElectionCard } from "@/components/election-card";
+import { ElectionCardSkeleton } from "@/components/skeleton-loader";
 import { Input } from "@/components/ui/input";
 import { Search, ArrowRight, Sparkles } from "lucide-react";
 import type { Election } from "@/lib/types";
@@ -101,9 +102,11 @@ const HomePage = () => {
 
           <div className="mt-4 space-y-3">
             {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="size-5 animate-spin rounded-full border-2 border-gold border-t-transparent" />
-              </div>
+              <>
+                <ElectionCardSkeleton />
+                <ElectionCardSkeleton />
+                <ElectionCardSkeleton />
+              </>
             ) : filtered.length === 0 ? (
               <p className="py-12 text-center text-sm text-muted-gray font-sans">
                 No elections found.

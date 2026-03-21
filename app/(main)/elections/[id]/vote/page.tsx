@@ -33,14 +33,14 @@ const VotePage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!firebaseUser?.uid) return;
+    if (!firebaseUser?.uid || !userProfile) return;
 
     const fetch = async () => {
       // Check if user has already voted
       const voteCheckQuery = query(
         collection(db, "votes"),
         where("electionId", "==", id),
-        where("voterId", "==", firebaseUser.uid)
+        where("voterId", "==", firebaseUser.uid),
       );
       const voteSnap = await getDocs(voteCheckQuery);
 
@@ -57,12 +57,17 @@ const VotePage = () => {
         return;
       }
 
-      setElection({ id: elSnap.id, ...elSnap.data() } as Election);
+      const elData = { id: elSnap.id, ...elSnap.data() } as Election;
+
+      if (elData.departmentId !== userProfile.departmentId) {
+        router.replace(PAGES.main.electionDetail(id));
+        return;
+      }
+
+      setElection(elData);
 
       const [posSnap, candSnap] = await Promise.all([
-        getDocs(
-          query(collection(elRef, "positions"), orderBy("order", "asc")),
-        ),
+        getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
         getDocs(collection(elRef, "candidates")),
       ]);
 
@@ -75,7 +80,7 @@ const VotePage = () => {
       setLoading(false);
     };
     fetch();
-  }, [id, firebaseUser, router]);
+  }, [id, firebaseUser, userProfile, router]);
 
   const selectCandidate = (positionId: string, candidateId: string) => {
     if (reviewing) return;
@@ -180,10 +185,11 @@ const VotePage = () => {
                     type="button"
                     onClick={() => selectCandidate(position.id, c.id)}
                     disabled={reviewing}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${selected
+                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
+                      selected
                         ? "border-gold bg-gold/5"
                         : "border-border bg-white hover:border-gold/40"
-                      } disabled:cursor-default`}
+                    } disabled:cursor-default`}
                   >
                     <div className="relative size-10 shrink-0 overflow-hidden rounded-full bg-muted">
                       {c.photoUrl ? (
@@ -205,10 +211,11 @@ const VotePage = () => {
                       {c.fullName}
                     </span>
                     <div
-                      className={`flex size-6 items-center justify-center rounded-full border transition-colors ${selected
+                      className={`flex size-6 items-center justify-center rounded-full border transition-colors ${
+                        selected
                           ? "border-gold bg-gold text-white"
                           : "border-border"
-                        }`}
+                      }`}
                     >
                       {selected && <Check className="size-3.5" />}
                     </div>

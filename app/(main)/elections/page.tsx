@@ -40,15 +40,15 @@ const ElectionsPage = () => {
 
   const filtered = elections.filter((e) => {
     const matchesFilter = filter === "all" || e.status === filter;
-    const matchesSearch = e.title
-      .toLowerCase()
-      .includes(search.toLowerCase());
+    const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   return (
     <div>
-      <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold italic">Elections</h1>
+      <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold italic">
+        Elections
+      </h1>
       <p className="mt-1 text-sm md:text-base lg:text-lg text-muted-gray font-sans">
         Browse all association democratic processes.
       </p>
@@ -71,9 +71,11 @@ const ElectionsPage = () => {
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
-            className={cn('rounded-full font-sans px-4 py-1.5 text-xs font-medium transition-colors', filter === f.value
-              ? "bg-charcoal text-white"
-              : "border border-border text-charcoal hover:bg-secondary"
+            className={cn(
+              "rounded-full font-sans px-4 py-1.5 text-xs font-medium transition-colors",
+              filter === f.value
+                ? "bg-charcoal text-white"
+                : "border border-border text-charcoal hover:bg-secondary",
             )}
           >
             {f.label}
@@ -82,7 +84,7 @@ const ElectionsPage = () => {
       </div>
 
       {/* List */}
-      <div className="mt-6 space-y-3">
+      <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           <>
             <ElectionCardSkeleton />

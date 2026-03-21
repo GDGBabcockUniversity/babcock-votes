@@ -19,7 +19,7 @@ import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { DEPARTMENTS, LEVELS, PAGES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getDepartmentName } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -202,7 +202,7 @@ const ElectionDetailPage = () => {
   const openEditCand = (cand: Candidate) => {
     setCandName(cand.fullName);
     setCandManifesto(cand.manifesto);
-    setCandDept(cand.department);
+    setCandDept(cand.departmentId);
     setCandLevel(cand.level);
     setCandPositionId(cand.positionId);
     setCandPhotoPreview(cand.photoUrl || "");
@@ -233,7 +233,7 @@ const ElectionDetailPage = () => {
     const data = {
       fullName: candName,
       manifesto: candManifesto,
-      department: candDept,
+      departmentId: candDept,
       level: candLevel,
       positionId: candPositionId,
       photoUrl,
@@ -314,9 +314,14 @@ const ElectionDetailPage = () => {
           >
             <ArrowLeft className="size-3.5 md:size-4" /> Back to Elections
           </button>
-          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic my-4">{election.title}</h1>
+          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic my-4">
+            {election.title}
+          </h1>
           <p className="mt-1 text-sm md:text-base text-muted-gray font-sans">
-            {election.department} <span className="text-muted-gray/40">&#8226;</span> {candidates.length} cand{candidates.length === 1 ? "idate" : "idates"}
+            {getDepartmentName(election.departmentId)}{" "}
+            <span className="text-muted-gray/40">&#8226;</span>{" "}
+            {candidates.length} cand
+            {candidates.length === 1 ? "idate" : "idates"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -330,7 +335,10 @@ const ElectionDetailPage = () => {
             <BarChart3 className="mr-2 size-3.5" /> Results
           </Link>
           {isSuperAdmin && (
-            <Select value={statusValue} onValueChange={(v) => v && handleStatusChange(v)}>
+            <Select
+              value={statusValue}
+              onValueChange={(v) => v && handleStatusChange(v)}
+            >
               <SelectTrigger className="w-32">
                 <SelectValue className="capitalize" />
               </SelectTrigger>
@@ -359,10 +367,20 @@ const ElectionDetailPage = () => {
           Positions & Candidates
         </h2>
         {isSuperAdmin && (
-          <Dialog open={posDialogOpen} onOpenChange={(o) => { setPosDialogOpen(o); if (!o) resetPosForm(); }}>
+          <Dialog
+            open={posDialogOpen}
+            onOpenChange={(o) => {
+              setPosDialogOpen(o);
+              if (!o) resetPosForm();
+            }}
+          >
             <DialogTrigger
               render={
-                <Button size="sm" variant="outline" className="font-sans rounded-none">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="font-sans rounded-none"
+                >
                   <Plus className="mr-2 size-3.5" /> Add Position
                 </Button>
               }
@@ -405,9 +423,20 @@ const ElectionDetailPage = () => {
               </div>
               <div className="flex justify-end gap-2">
                 <DialogClose
-                  render={<Button variant="outline" className="font-sans rounded-none">Cancel</Button>}
+                  render={
+                    <Button
+                      variant="outline"
+                      className="font-sans rounded-none"
+                    >
+                      Cancel
+                    </Button>
+                  }
                 />
-                <Button onClick={handleSavePosition} disabled={saving || !posTitle} className="font-sans rounded-none">
+                <Button
+                  onClick={handleSavePosition}
+                  disabled={saving || !posTitle}
+                  className="font-sans rounded-none"
+                >
                   {saving ? "Saving..." : "Save"}
                 </Button>
               </div>
@@ -427,7 +456,9 @@ const ElectionDetailPage = () => {
           <Card key={position.id} className="font-sans rounded-none">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-lg font-serif md:text-xl lg:text-2xl font-semibold">{position.title}</CardTitle>
+                <CardTitle className="text-lg font-serif md:text-xl lg:text-2xl font-semibold">
+                  {position.title}
+                </CardTitle>
                 {position.description && (
                   <CardDescription>{position.description}</CardDescription>
                 )}
@@ -479,7 +510,7 @@ const ElectionDetailPage = () => {
                         {c.fullName}
                       </p>
                       <p className="truncate text-xs text-muted-gray">
-                        {c.department} &middot; {c.level}L
+                        {getDepartmentName(c.departmentId)} &middot; {c.level}L
                       </p>
                     </div>
                     {isSuperAdmin && (
@@ -522,7 +553,13 @@ const ElectionDetailPage = () => {
       </div>
 
       {/* Candidate Dialog */}
-      <Dialog open={candDialogOpen} onOpenChange={(o) => { setCandDialogOpen(o); if (!o) resetCandForm(); }}>
+      <Dialog
+        open={candDialogOpen}
+        onOpenChange={(o) => {
+          setCandDialogOpen(o);
+          if (!o) resetCandForm();
+        }}
+      >
         <DialogContent className="max-h-[90dvh] overflow-y-auto font-sans rounded-none p-6">
           <DialogHeader>
             <DialogTitle>
@@ -581,14 +618,17 @@ const ElectionDetailPage = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Department</Label>
-                <Select value={candDept} onValueChange={(v) => setCandDept(v ?? "")}>
+                <Select
+                  value={candDept}
+                  onValueChange={(v) => setCandDept(v ?? "")}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent className="font-sans w-full">
                     {DEPARTMENTS.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -596,7 +636,10 @@ const ElectionDetailPage = () => {
               </div>
               <div className="space-y-2">
                 <Label>Level</Label>
-                <Select value={candLevel} onValueChange={(v) => setCandLevel(v ?? "")}>
+                <Select
+                  value={candLevel}
+                  onValueChange={(v) => setCandLevel(v ?? "")}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
@@ -613,7 +656,11 @@ const ElectionDetailPage = () => {
           </div>
           <div className="flex justify-end gap-2">
             <DialogClose
-              render={<Button variant="outline" className="rounded-none">Cancel</Button>}
+              render={
+                <Button variant="outline" className="rounded-none">
+                  Cancel
+                </Button>
+              }
             />
             <Button
               onClick={handleSaveCandidate}

@@ -6,11 +6,10 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
 } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, getDocs, query, collection, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import {
   SCHOOL_EMAIL_DOMAIN,
-  DEPARTMENTS,
   LEVELS,
 } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -33,33 +32,61 @@ const RegisterPage = () => {
   const [password, setPassword] = useState("");
   const [matricNumber, setMatricNumber] = useState("");
   const [sex, setSex] = useState<"male" | "female" | "">("");
-  const [department, setDepartment] = useState("");
   const [level, setLevel] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    if (!email.endsWith(SCHOOL_EMAIL_DOMAIN)) {
+    const safeEmail = email.trim().toLowerCase();
+    const safeMatric = matricNumber.trim();
+
+    if (!safeEmail.endsWith(SCHOOL_EMAIL_DOMAIN)) {
       setError(`Please use your school email (${SCHOOL_EMAIL_DOMAIN})`);
       return;
     }
+    
+    const matricRegex = /^\d{2}\/\d{4}$/;
+    if (!matricRegex.test(safeMatric)) {
+      setError("Matric number must be in format XX/XXXX (e.g., 21/0456).");
+      return;
+    }
+
     if (!sex) {
       setError("Please select your sex.");
+      return;
+    }
+    if (!level) {
+      setError("Please select your level.");
       return;
     }
 
     setLoading(true);
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      // Whitelist check
+      const whitelistQuery = query(
+        collection(db, "eligible_voters"),
+        where("email", "==", safeEmail),
+        where("matricNumber", "==", safeMatric)
+      );
+      const whitelistSnap = await getDocs(whitelistQuery);
+
+      if (whitelistSnap.empty) {
+        throw new Error("You are not listed as an eligible voter. Please contact your association admin.");
+      }
+
+      const eligibleData = whitelistSnap.docs[0].data();
+      const mappedDepartmentId = eligibleData.departmentId;
+
+      const cred = await createUserWithEmailAndPassword(auth, safeEmail, password);
       await sendEmailVerification(cred.user);
 
       await setDoc(doc(db, "users", cred.user.uid), {
-        email,
-        fullName,
-        matricNumber,
+        email: safeEmail,
+        fullName: fullName.trim(),
+        matricNumber: safeMatric,
         sex,
-        department,
+        departmentId: mappedDepartmentId,
         level,
         role: "voter",
         createdAt: serverTimestamp(),
@@ -153,24 +180,7 @@ const RegisterPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="mb-2 block lg:text-lg font-medium">
-              Department
-            </label>
-            <Select value={department} onValueChange={(v) => setDepartment(v ?? "")} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent className="font-sans">
-                {DEPARTMENTS.map((d) => (
-                  <SelectItem key={d} value={d}>
-                    {d}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="grid grid-cols-1 gap-3">
           <div>
             <label className="mb-2 block lg:text-lg font-medium">Level</label>
             <Select value={level} onValueChange={(v) => setLevel(v ?? "")} required>

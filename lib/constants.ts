@@ -1,24 +1,26 @@
 export const SCHOOL_EMAIL_DOMAIN = "@student.babcock.edu.ng";
 
 export const DEPARTMENTS = [
-  "Accounting",
-  "Agriculture",
-  "Biochemistry",
-  "Business Administration",
-  "Computer Science",
-  "Economics",
-  "English",
-  "History",
-  "International Relations",
-  "Law",
-  "Mass Communication",
-  "Mathematics",
-  "Microbiology",
-  "Nursing",
-  "Political Science",
-  "Public Health",
-  "Software Engineering",
+  { id: "accounting", name: "Accounting" },
+  { id: "agriculture", name: "Agriculture" },
+  { id: "biochemistry", name: "Biochemistry" },
+  { id: "business_admin", name: "Business Administration" },
+  { id: "computer_science", name: "Computer Science" },
+  { id: "economics", name: "Economics" },
+  { id: "english", name: "English" },
+  { id: "history", name: "History" },
+  { id: "international_relations", name: "International Relations" },
+  { id: "law", name: "Law" },
+  { id: "mass_comm", name: "Mass Communication" },
+  { id: "mathematics", name: "Mathematics" },
+  { id: "microbiology", name: "Microbiology" },
+  { id: "nursing", name: "Nursing" },
+  { id: "political_science", name: "Political Science" },
+  { id: "public_health", name: "Public Health" },
+  { id: "software_engineering", name: "Software Engineering" },
 ] as const;
+
+export type DepartmentId = (typeof DEPARTMENTS)[number]["id"];
 
 export const LEVELS = ["100", "200", "300", "400", "500", "600"] as const;
 

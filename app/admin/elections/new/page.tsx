@@ -34,7 +34,7 @@ const NewElectionPage = () => {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [department, setDepartment] = useState("");
+  const [departmentId, setDepartmentId] = useState("");
   const [status, setStatus] = useState<string>("upcoming");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -48,7 +48,7 @@ const NewElectionPage = () => {
       const docRef = await addDoc(collection(db, "elections"), {
         title,
         description,
-        department,
+        departmentId,
         status,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
@@ -106,8 +106,8 @@ const NewElectionPage = () => {
               <div className="space-y-2">
                 <Label className="lg:text-lg font-medium">Department</Label>
                 <Select
-                  value={department}
-                  onValueChange={(v) => setDepartment(v ?? "")}
+                  value={departmentId}
+                  onValueChange={(v) => setDepartmentId(v ?? "")}
                   required
                 >
                   <SelectTrigger>
@@ -115,8 +115,8 @@ const NewElectionPage = () => {
                   </SelectTrigger>
                   <SelectContent className="font-sans">
                     {DEPARTMENTS.map((d) => (
-                      <SelectItem key={d} value={d}>
-                        {d}
+                      <SelectItem key={d.id} value={d.id}>
+                        {d.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

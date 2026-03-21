@@ -174,7 +174,7 @@ const CandidatesPage = () => {
                 </Link>
               ) : (
                 <div className="rounded-lg border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans">
-                  You can only vote in your own department's elections.
+                  You can only vote in your own department&apos;s elections.
                 </div>
               )}
             </div>

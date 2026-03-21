@@ -30,10 +30,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Plus, MoreHorizontal, Pencil, Trash2, BarChart3 } from "lucide-react";
 import type { Election } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getDepartmentName } from "@/lib/utils";
 import { PAGES } from "@/lib/constants";
 
-const statusVariant: Record<Election["status"], "default" | "secondary" | "outline"> = {
+const statusVariant: Record<
+  Election["status"],
+  "default" | "secondary" | "outline"
+> = {
   active: "default",
   upcoming: "secondary",
   closed: "outline",
@@ -58,19 +61,19 @@ const AdminElectionsPage = () => {
       const snap = await getDocs(
         query(collection(db, "elections"), orderBy("createdAt", "desc")),
       );
-      let items = snap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Election,
-      );
+      let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Election);
 
-      if (!isSuperAdmin && userProfile?.department) {
-        items = items.filter((e) => e.department === userProfile.department);
+      if (!isSuperAdmin && userProfile?.departmentId) {
+        items = items.filter(
+          (e) => e.departmentId === userProfile.departmentId,
+        );
       }
 
       setElections(items);
       setLoading(false);
     };
     fetch();
-  }, [isSuperAdmin, userProfile?.department]);
+  }, [isSuperAdmin, userProfile?.departmentId]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this election? This cannot be undone.")) return;
@@ -82,15 +85,20 @@ const AdminElectionsPage = () => {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">Elections</h1>
+          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+            Elections
+          </h1>
           <p className="mt-1 text-sm md:text-base lg:text-lg text-muted-gray font-sans">
             {isSuperAdmin
               ? "Manage all elections."
-              : `Elections for ${userProfile?.department}.`}
+              : `Elections for ${getDepartmentName(userProfile?.departmentId || "")}.`}
           </p>
         </div>
         {isSuperAdmin && (
-          <Link href={PAGES.admin.newElection} className={cn(buttonVariants(), "font-sans rounded-none")}>
+          <Link
+            href={PAGES.admin.newElection}
+            className={cn(buttonVariants(), "font-sans rounded-none")}
+          >
             <Plus className="mr-2 size-4" />
             Create Election
           </Link>
@@ -137,7 +145,7 @@ const AdminElectionsPage = () => {
                     </Link>
                   </TableCell>
                   <TableCell className="text-muted-gray">
-                    {el.department}
+                    {getDepartmentName(el.departmentId)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={statusVariant[el.status]}>
@@ -152,7 +160,11 @@ const AdminElectionsPage = () => {
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         render={
-                          <Button variant="ghost" size="icon" className="size-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8"
+                          >
                             <MoreHorizontal className="size-4" />
                           </Button>
                         }

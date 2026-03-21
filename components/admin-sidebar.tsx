@@ -14,11 +14,27 @@ import {
   X,
 } from "lucide-react";
 import { PAGES } from "@/lib/constants";
+import { getDepartmentName } from "@/lib/utils";
 
 const navItems = [
-  { href: PAGES.admin.dashboard, label: "Dashboard", icon: LayoutDashboard, roles: ["super_admin", "dept_admin"] },
-  { href: PAGES.admin.elections, label: "Elections", icon: Vote, roles: ["super_admin", "dept_admin"] },
-  { href: PAGES.admin.users, label: "Users", icon: Users, roles: ["super_admin"] },
+  {
+    href: PAGES.admin.dashboard,
+    label: "Dashboard",
+    icon: LayoutDashboard,
+    roles: ["super_admin", "dept_admin"],
+  },
+  {
+    href: PAGES.admin.elections,
+    label: "Elections",
+    icon: Vote,
+    roles: ["super_admin", "dept_admin"],
+  },
+  {
+    href: PAGES.admin.users,
+    label: "Users",
+    icon: Users,
+    roles: ["super_admin"],
+  },
 ];
 
 export const AdminSidebar = ({
@@ -113,10 +129,12 @@ export const AdminSidebar = ({
         {/* User info */}
         {userProfile && (
           <div className="border-t border-border px-4 py-3 font-sans">
-            <p className="truncate text-sm font-medium">{userProfile.fullName}</p>
+            <p className="truncate text-sm font-medium">
+              {userProfile.fullName}
+            </p>
             <p className="truncate text-xs text-muted-gray">
               {role === "super_admin" ? "Super Admin" : "Dept Admin"} &middot;{" "}
-              {userProfile.department}
+              {getDepartmentName(userProfile.departmentId)}
             </p>
           </div>
         )}

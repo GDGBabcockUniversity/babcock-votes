@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, doc, updateDoc, query, orderBy } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  query,
+  orderBy,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import {
@@ -23,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import type { User } from "@/lib/types";
+import { getDepartmentName } from "@/lib/utils";
 
 const ROLES = ["voter", "dept_admin", "super_admin"] as const;
 
@@ -51,7 +59,9 @@ const UsersPage = () => {
         query(collection(db, "users"), orderBy("createdAt", "desc")),
       );
       setUsers(
-        snap.docs.map((d) => ({ uid: d.id, ...d.data() }) as User & { uid: string }),
+        snap.docs.map(
+          (d) => ({ uid: d.id, ...d.data() }) as User & { uid: string },
+        ),
       );
       setLoading(false);
     };
@@ -71,17 +81,21 @@ const UsersPage = () => {
 
   const filtered = search
     ? users.filter(
-      (u) =>
-        u.fullName.toLowerCase().includes(search.toLowerCase()) ||
-        u.email.toLowerCase().includes(search.toLowerCase()) ||
-        u.matricNumber.toLowerCase().includes(search.toLowerCase()) ||
-        u.department.toLowerCase().includes(search.toLowerCase()),
-    )
+        (u) =>
+          u.fullName.toLowerCase().includes(search.toLowerCase()) ||
+          u.email.toLowerCase().includes(search.toLowerCase()) ||
+          u.matricNumber.toLowerCase().includes(search.toLowerCase()) ||
+          getDepartmentName(u.departmentId)
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+      )
     : users;
 
   return (
     <div>
-      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">User Management</h1>
+      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+        User Management
+      </h1>
       <p className="mt-1 text-sm md:text-base lg:text-lg font-sans text-muted-gray">
         View all registered users and manage their roles.
       </p>
@@ -129,13 +143,15 @@ const UsersPage = () => {
                 const isSelf = u.uid === firebaseUser?.uid;
                 return (
                   <TableRow key={u.uid}>
-                    <TableCell className="font-medium pl-4">{u.fullName}</TableCell>
+                    <TableCell className="font-medium pl-4">
+                      {u.fullName}
+                    </TableCell>
                     <TableCell className="text-muted-gray">{u.email}</TableCell>
                     <TableCell className="text-muted-gray">
                       {u.matricNumber}
                     </TableCell>
                     <TableCell className="text-muted-gray">
-                      {u.department}
+                      {getDepartmentName(u.departmentId)}
                     </TableCell>
                     <TableCell className="text-muted-gray">{u.level}</TableCell>
                     <TableCell>
@@ -146,11 +162,13 @@ const UsersPage = () => {
                       ) : (
                         <Select
                           value={u.role}
-                          onValueChange={(v) => handleRoleChange(u.uid, v ?? u.role)}
+                          onValueChange={(v) =>
+                            handleRoleChange(u.uid, v ?? u.role)
+                          }
                           disabled={updating === u.uid}
                         >
                           <SelectTrigger className="h-8 w-28 text-xs">
-                            <SelectValue className='capitalize' />
+                            <SelectValue className="capitalize" />
                           </SelectTrigger>
                           <SelectContent className="font-sans">
                             {ROLES.map((r) => (

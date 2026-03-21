@@ -5,7 +5,7 @@ export interface User {
   fullName: string;
   matricNumber: string;
   sex: "male" | "female";
-  department: string;
+  departmentId: string;
   level: string;
   role: "voter" | "dept_admin" | "super_admin";
   createdAt: Timestamp;
@@ -15,7 +15,7 @@ export interface Election {
   id: string;
   title: string;
   description: string;
-  department: string;
+  departmentId: string;
   startDate: Timestamp;
   endDate: Timestamp;
   status: "upcoming" | "active" | "closed";
@@ -37,7 +37,7 @@ export interface Candidate {
   fullName: string;
   photoUrl: string;
   manifesto: string;
-  department: string;
+  departmentId: string;
   level: string;
   voteCount: number;
 }

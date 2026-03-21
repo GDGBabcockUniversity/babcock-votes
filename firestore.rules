@@ -27,6 +27,12 @@ service cloud.firestore {
       return isSuperAdmin() || isDeptAdmin();
     }
 
+    // Eligible Voters: anyone can read (for registration checks), only super_admin can write
+    match /eligible_voters/{docId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
     // Users: owners can read their own doc, any admin can read all, only super_admin can update roles
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());

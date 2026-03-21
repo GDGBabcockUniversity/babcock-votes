@@ -45,7 +45,7 @@ const HomePage = () => {
     <div className="-mx-4 -mt-6">
       {/* Hero */}
       <section className="px-4 pb-8 pt-6">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 rounded-full font-sans border border-border px-3 py-1 text-[10px] font-medium uppercase tracking-wider text-muted-gray">
               <Sparkles className="size-3 text-gold" />
@@ -89,7 +89,7 @@ const HomePage = () => {
 
       {/* Active & Upcoming */}
       <section className="px-4 py-6">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-lg md:text-xl lg:text-2xl font-bold">Active & Upcoming</h2>
             <Link
@@ -100,7 +100,7 @@ const HomePage = () => {
             </Link>
           </div>
 
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
               <>
                 <ElectionCardSkeleton />
@@ -120,7 +120,7 @@ const HomePage = () => {
 
       {/* Admin Footer */}
       <section className="bg-charcoal px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-10">
-        <div className="mx-auto max-w-2xl">
+        <div className="mx-auto max-w-5xl">
           <h3 className="font-serif text-lg md:text-xl lg:text-2xl font-bold italic text-white">
             Association Admin?
           </h3>

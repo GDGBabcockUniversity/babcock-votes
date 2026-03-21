@@ -12,14 +12,21 @@ import {
   orderBy,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useAuth } from "@/context/auth-context";
 import { StatusBadge } from "@/components/status-badge";
 import { CandidateCard } from "@/components/candidate-card";
-import { CandidateCardSkeleton, SkeletonLoader } from "@/components/skeleton-loader";
+import {
+  CandidateCardSkeleton,
+  SkeletonLoader,
+} from "@/components/skeleton-loader";
 import { ArrowLeft, Calendar, Users } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
 
-const formatDateRange = (start: { seconds: number }, end: { seconds: number }) => {
+const formatDateRange = (
+  start: { seconds: number },
+  end: { seconds: number },
+) => {
   const fmt = (ts: { seconds: number }) =>
     new Date(ts.seconds * 1000).toLocaleDateString("en-US", {
       month: "short",
@@ -32,6 +39,7 @@ const formatDateRange = (start: { seconds: number }, end: { seconds: number }) =
 const CandidatesPage = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { userProfile } = useAuth();
   const [election, setElection] = useState<Election | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
@@ -46,9 +54,7 @@ const CandidatesPage = () => {
       setElection({ id: elSnap.id, ...elSnap.data() } as Election);
 
       const [posSnap, candSnap] = await Promise.all([
-        getDocs(
-          query(collection(elRef, "positions"), orderBy("order", "asc")),
-        ),
+        getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
         getDocs(collection(elRef, "candidates")),
       ]);
 
@@ -67,7 +73,7 @@ const CandidatesPage = () => {
     return (
       <div className="-mx-4 -mt-6">
         <div className="bg-linear-to-b from-charcoal to-charcoal/90 px-4 pb-6 pt-4">
-          <div className="mx-auto max-w-2xl">
+          <div className="mx-auto max-w-5xl">
             <div className="mt-8 flex flex-col gap-3">
               <SkeletonLoader className="h-8 w-3/4 opacity-20" />
               <div className="flex gap-4">
@@ -78,7 +84,7 @@ const CandidatesPage = () => {
           </div>
         </div>
         <div className="px-4 py-6">
-          <div className="mx-auto max-w-2xl">
+          <div className="mx-auto max-w-5xl">
             <SkeletonLoader className="h-8 w-48 mb-6" />
             <div className="grid grid-cols-2 gap-3">
               <CandidateCardSkeleton />
@@ -130,7 +136,8 @@ const CandidatesPage = () => {
             </span>
             <span className="flex items-center gap-2 font-medium">
               <Users className="size-3.5 md:size-4 lg:size-5" />
-              {election.candidateCount} cand{election.candidateCount === 1 ? "idate" : "idates"}
+              {election.candidateCount} cand
+              {election.candidateCount === 1 ? "idate" : "idates"}
             </span>
           </div>
         </div>
@@ -158,14 +165,31 @@ const CandidatesPage = () => {
 
           {election.status === "active" && (
             <div className="mt-8">
-              <Link
-                href={PAGES.main.vote(id)}
-                className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                Vote Now
-              </Link>
+              {userProfile?.departmentId === election.departmentId ? (
+                <Link
+                  href={PAGES.main.vote(id)}
+                  className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                >
+                  Vote Now
+                </Link>
+              ) : (
+                <div className="rounded-lg border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans">
+                  You can only vote in your own department's elections.
+                </div>
+              )}
             </div>
           )}
+
+          {/* {election.status === "closed" && (
+            <div className="mt-8">
+              <Link
+                href={PAGES.main.electionResults(id)}
+                className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              >
+                View Public Results 
+              </Link>
+            </div>
+          )} */}
         </div>
       </div>
     </div>

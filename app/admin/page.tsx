@@ -6,6 +6,7 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Vote, Users, CalendarCheck, BarChart3 } from "lucide-react";
+import { getDepartmentName } from "@/lib/utils";
 
 const AdminDashboard = () => {
   const { userProfile } = useAuth();
@@ -30,8 +31,10 @@ const AdminDashboard = () => {
       const scoped = isSuperAdmin
         ? allElections
         : allElections.filter(
-          (e) => (e as { department?: string }).department === userProfile?.department,
-        );
+            (e) =>
+              (e as { departmentId?: string }).departmentId ===
+              userProfile?.departmentId,
+          );
 
       const activeCount = scoped.filter(
         (e) => (e as { status?: string }).status === "active",
@@ -47,7 +50,7 @@ const AdminDashboard = () => {
         const usersSnap = await getDocs(
           query(
             collection(db, "users"),
-            where("department", "==", userProfile?.department),
+            where("departmentId", "==", userProfile?.departmentId),
           ),
         );
         usersCount = usersSnap.size;
@@ -62,10 +65,14 @@ const AdminDashboard = () => {
       setLoading(false);
     };
     fetchStats();
-  }, [isSuperAdmin, userProfile?.department]);
+  }, [isSuperAdmin, userProfile?.departmentId]);
 
   const cards = [
-    { title: "Total Elections", value: stats.totalElections, icon: CalendarCheck },
+    {
+      title: "Total Elections",
+      value: stats.totalElections,
+      icon: CalendarCheck,
+    },
     { title: "Active Now", value: stats.activeElections, icon: BarChart3 },
     { title: "Votes Cast", value: stats.totalVotes, icon: Vote },
     { title: "Registered Voters", value: stats.totalUsers, icon: Users },
@@ -74,11 +81,13 @@ const AdminDashboard = () => {
   return (
     <div>
       <div>
-        <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">Dashboard</h1>
+        <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+          Dashboard
+        </h1>
         <p className="mt-1 text-sm md:text-base lg:text-lg text-muted-gray font-sans">
           {isSuperAdmin
             ? "Overview of all elections across departments."
-            : `Elections for ${userProfile?.department}.`}
+            : `Elections for ${getDepartmentName(userProfile?.departmentId || "")}.`}
         </p>
       </div>
 
@@ -95,7 +104,9 @@ const AdminDashboard = () => {
               {loading ? (
                 <div className="h-8 w-16 animate-pulse rounded bg-secondary" />
               ) : (
-                <p className="text-2xl md:text-3xl font-sans font-bold">{card.value}</p>
+                <p className="text-2xl md:text-3xl font-sans font-bold">
+                  {card.value}
+                </p>
               )}
             </CardContent>
           </Card>

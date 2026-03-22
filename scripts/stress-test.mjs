@@ -11,7 +11,8 @@
   npm run stress-test <ELECTION_ID>
 */
 
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env" });
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 

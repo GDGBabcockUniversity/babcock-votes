@@ -27,10 +27,17 @@ service cloud.firestore {
       return isSuperAdmin() || isDeptAdmin();
     }
 
-    // Eligible Voters: anyone can read (for registration checks), only super_admin can write
+    // Eligible Voters: anyone can read, super_admin can create/delete,
+    // signed-in users can claim unclaimed docs (add claimedByUid + claimedEmail)
     match /eligible_voters/{docId} {
       allow read: if true;
-      allow write: if isSuperAdmin();
+      allow create, delete: if isSuperAdmin();
+      allow update: if isSuperAdmin() ||
+        (isSignedIn()
+         && !("claimedByUid" in resource.data)
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["claimedByUid", "claimedEmail"])
+         && request.resource.data.claimedByUid == request.auth.uid
+         && request.resource.data.claimedEmail == request.auth.token.email);
     }
 
     // Users: owners can read their own doc, any admin can read all, only super_admin can update roles

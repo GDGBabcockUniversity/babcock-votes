@@ -4,11 +4,18 @@ export interface User {
   email: string;
   fullName: string;
   matricNumber: string;
-  sex: "male" | "female";
   departmentId: string;
   level: string;
   role: "voter" | "dept_admin" | "super_admin";
   createdAt: Timestamp;
+}
+
+export interface EligibleVoter {
+  fullName: string;
+  departmentId: string;
+  level: string;
+  claimedByUid?: string;
+  claimedEmail?: string;
 }
 
 export interface Election {

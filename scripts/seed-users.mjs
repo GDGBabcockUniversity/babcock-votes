@@ -1,70 +1,76 @@
-import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { getFirestore, doc, setDoc, updateDoc, Timestamp } from "firebase/firestore";
+/**
+ * Seed admin users for the voting platform.
+ *
+ * With Google Sign-In, admins sign in normally via Google, then this script
+ * upgrades their role. Run this AFTER the admin has signed in at least once
+ * (so their users/{uid} doc exists).
+ *
+ * Usage:
+ *   node scripts/seed-users.mjs
+ *
+ * Environment:
+ *   GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
+ */
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDIJKNJWVySg7DOSAphkj5Fe_hdfIzLyho",
-  authDomain: "babcock-votes.firebaseapp.com",
-  projectId: "babcock-votes",
-  storageBucket: "babcock-votes.firebasestorage.app",
-  messagingSenderId: "386049332302",
-  appId: "1:386049332302:web:d037d90c8303a58daa1f1f",
-};
+import { readFileSync } from "fs";
+import { resolve } from "path";
+import { initializeApp, cert } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+const keyPath = process.argv[2] || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+if (!keyPath) {
+  console.error(
+    "Provide a service account key via GOOGLE_APPLICATION_CREDENTIALS or as the first argument.",
+  );
+  process.exit(1);
+}
+
+const serviceAccount = JSON.parse(readFileSync(resolve(keyPath), "utf-8"));
+const app = initializeApp({ credential: cert(serviceAccount) });
+const adminAuth = getAuth(app);
 const db = getFirestore(app);
 
-const users = [
+// --- Define admins by their school email ---
+const admins = [
   {
     email: "admin@student.babcock.edu.ng",
-    password: "admin123",
-    profile: {
-      email: "admin@student.babcock.edu.ng",
-      fullName: "Admin User",
-      matricNumber: "20/0001",
-      sex: "male",
-      department: "Computer Science",
-      level: "400",
-      role: "super_admin",
-      createdAt: Timestamp.now(),
-    },
+    role: "super_admin",
   },
-  {
-    email: "voter@student.babcock.edu.ng",
-    password: "voter123",
-    profile: {
-      email: "voter@student.babcock.edu.ng",
-      fullName: "John Doe",
-      matricNumber: "22/2847",
-      sex: "male",
-      department: "Software Engineering",
-      level: "300",
-      role: "voter",
-      createdAt: Timestamp.now(),
-    },
-  },
+  // Add more admins as needed:
+  // { email: "deptadmin@student.babcock.edu.ng", role: "dept_admin" },
 ];
 
-for (const user of users) {
+for (const admin of admins) {
   try {
-    const cred = await createUserWithEmailAndPassword(auth, user.email, user.password);
-    await setDoc(doc(db, "users", cred.user.uid), user.profile);
-    console.log(`Created ${user.profile.role}: ${user.email}`);
+    // Look up the Firebase Auth user by email
+    const userRecord = await adminAuth.getUserByEmail(admin.email);
+    const uid = userRecord.uid;
+
+    // Update their role in Firestore
+    const userRef = db.collection("users").doc(uid);
+    const snap = await userRef.get();
+
+    if (!snap.exists) {
+      console.warn(
+        `⚠ No user doc found for ${admin.email} (uid: ${uid}). Has this user signed in yet?`,
+      );
+      continue;
+    }
+
+    await userRef.update({ role: admin.role });
+    console.log(`✓ Updated ${admin.email} → ${admin.role}`);
   } catch (err) {
-    if (err.code === "auth/email-already-in-use") {
-      // User exists, update their profile (especially role)
-      const cred = await signInWithEmailAndPassword(auth, user.email, user.password);
-      await updateDoc(doc(db, "users", cred.user.uid), { role: user.profile.role });
-      console.log(`Updated ${user.email} role to ${user.profile.role}`);
+    if (err.code === "auth/user-not-found") {
+      console.warn(
+        `⚠ ${admin.email} has not signed in yet. They need to sign in with Google first.`,
+      );
     } else {
-      console.error(`Failed for ${user.email}:`, err.message);
+      console.error(`✗ Failed for ${admin.email}:`, err.message);
     }
   }
 }
 
-console.log("\nDone! Credentials:");
-console.log("  Super Admin: admin@student.babcock.edu.ng / admin123");
-console.log("  Voter:       voter@student.babcock.edu.ng / voter123");
-
+console.log("\nDone!");
 process.exit(0);

@@ -9,17 +9,20 @@ import {
 } from "react";
 import {
   onAuthStateChanged,
+  signInWithPopup,
   signOut as firebaseSignOut,
   type User as FirebaseUser,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth, db, googleProvider } from "@/lib/firebase";
+import { SCHOOL_EMAIL_DOMAIN } from "@/lib/constants";
 import type { User } from "@/lib/types";
 
 interface AuthState {
   firebaseUser: FirebaseUser | null;
   userProfile: User | null;
   loading: boolean;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -27,6 +30,7 @@ const AuthContext = createContext<AuthState>({
   firebaseUser: null,
   userProfile: null,
   loading: true,
+  signInWithGoogle: async () => {},
   signOut: async () => {},
 });
 
@@ -54,6 +58,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return unsubscribe;
   }, []);
 
+  const signInWithGoogle = async () => {
+    const result = await signInWithPopup(auth, googleProvider);
+
+    if (!result.user.email?.endsWith(SCHOOL_EMAIL_DOMAIN)) {
+      await firebaseSignOut(auth);
+      throw new Error(`Please use your student email (${SCHOOL_EMAIL_DOMAIN})`);
+    }
+  };
+
   const signOut = async () => {
     await firebaseSignOut(auth);
     setFirebaseUser(null);
@@ -61,7 +74,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ firebaseUser, userProfile, loading, signOut }}>
+    <AuthContext.Provider
+      value={{ firebaseUser, userProfile, loading, signInWithGoogle, signOut }}
+    >
       {children}
     </AuthContext.Provider>
   );

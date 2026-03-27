@@ -18,13 +18,15 @@ export const ElectionCard = ({ election }: { election: Election }) => {
     <Link href={PAGES.main.electionDetail(election.id)}>
       <div
         className={cn(
-          "rounded-xl border p-5 transition-shadow hover:shadow-md",
+          "border p-5 transition-shadow hover:shadow-md",
           isActive ? "border-gold/30 bg-gold-tint" : "border-border bg-white",
         )}
       >
         <StatusBadge status={election.status} />
 
-        <h3 className="my-4 font-serif text-lg md:text-xl lg:text-2xl font-bold italic">{election.title}</h3>
+        <h3 className="my-4 font-serif text-lg md:text-xl lg:text-2xl font-bold italic">
+          {election.title}
+        </h3>
 
         <div className="flex items-center gap-3 text-xs md:text-sm text-muted-gray font-sans">
           <span className="flex items-center gap-2 font-medium">
@@ -34,7 +36,8 @@ export const ElectionCard = ({ election }: { election: Election }) => {
           <span className="text-muted-gray/40">&#8226;</span>
           <span className="flex items-center gap-2 font-medium">
             <Users className="size-3.5 md:size-4 lg:size-5" />
-            {election.candidateCount} cand{election.candidateCount === 1 ? "idate" : "idates"}
+            {election.candidateCount} cand
+            {election.candidateCount === 1 ? "idate" : "idates"}
           </span>
         </div>
       </div>

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
-import { DEPARTMENTS } from "@/lib/constants";
+import { DEPARTMENTS, PAGES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import type { EligibleVoter } from "@/lib/types";
 import { matricToDocId } from "@/lib/utils";
@@ -12,13 +13,14 @@ import { matricToDocId } from "@/lib/utils";
 type Step = "matric" | "confirm";
 
 const RegisterPage = () => {
-  const { firebaseUser, refreshProfile } = useAuth();
+  const router = useRouter();
+  const { firebaseUser, loading: authLoading, refreshProfile } = useAuth();
 
   const [step, setStep] = useState<Step>("matric");
   const [matricNumber, setMatricNumber] = useState("");
   const [voterData, setVoterData] = useState<EligibleVoter | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +34,7 @@ const RegisterPage = () => {
       return;
     }
 
-    setLoading(true);
+    setSubmitting(true);
     try {
       const docId = matricToDocId(safeMatric);
       const snap = await getDoc(doc(db, "eligible_voters", docId));
@@ -58,7 +60,7 @@ const RegisterPage = () => {
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -66,7 +68,7 @@ const RegisterPage = () => {
     if (!firebaseUser || !voterData) return;
 
     setError("");
-    setLoading(true);
+    setSubmitting(true);
 
     try {
       const safeMatric = matricNumber.trim();
@@ -97,7 +99,7 @@ const RegisterPage = () => {
         "Registration failed. This matric may have just been claimed. Please try again.",
       );
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -108,7 +110,18 @@ const RegisterPage = () => {
     setError("");
   };
 
-  if (!firebaseUser) return null;
+  if (authLoading) {
+    return (
+      <div className="flex justify-center py-24">
+        <div className="size-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!firebaseUser) {
+    router.replace(PAGES.auth.login);
+    return null;
+  }
 
   return (
     <div className="border border-border bg-white p-8 shadow-sm">
@@ -138,10 +151,10 @@ const RegisterPage = () => {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={submitting}
             className="flex w-full items-center font-sans justify-center gap-2 bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {loading ? "Looking up..." : "Look me up"}
+            {submitting ? "Looking up..." : "Look me up"}
           </button>
         </form>
       )}
@@ -184,17 +197,17 @@ const RegisterPage = () => {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={handleReject}
-              disabled={loading}
+              disabled={submitting}
               className="border border-border py-3 text-sm font-sans font-medium text-charcoal transition-colors hover:border-gold/50 disabled:opacity-50"
             >
               That&rsquo;s not me
             </button>
             <button
               onClick={handleConfirm}
-              disabled={loading}
+              disabled={submitting}
               className="bg-gold py-3 text-sm font-sans font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {loading ? "Registering..." : "Confirm & Continue"}
+              {submitting ? "Registering..." : "Confirm & Continue"}
             </button>
           </div>
         </div>

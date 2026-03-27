@@ -39,7 +39,7 @@ const LoginPage = () => {
       <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
         Babcock Votes
       </h1>
-      <p className="mt-1 text-center text-xs uppercase tracking-widest text-muted-gray">
+      <p className="mt-1 text-center text-xs uppercase tracking-widest text-muted-gray font-sans">
         &mdash; {new Date().getFullYear()} Election Cycle &mdash;
       </p>
 
@@ -78,7 +78,7 @@ const LoginPage = () => {
 
         {error && <p className="text-center text-xs text-red-600">{error}</p>}
 
-        <p className="text-center text-xs text-muted-gray">
+        <p className="text-center text-xs text-muted-gray font-sans">
           Use your <strong>@student.babcock.edu.ng</strong> email to continue.
         </p>
       </div>

@@ -211,7 +211,10 @@ const EligibleVotersPage = () => {
         <label className="mb-2 block text-sm font-medium font-sans">
           Department
         </label>
-        <Select value={department} onValueChange={(v) => setDepartment(v ?? "")}>
+        <Select
+          value={department}
+          onValueChange={(v) => setDepartment(v ?? "")}
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select a department" />
           </SelectTrigger>
@@ -296,7 +299,10 @@ const EligibleVotersPage = () => {
                   <label className="mb-1 block font-sans text-xs font-medium">
                     Level
                   </label>
-                  <Select value={addLevel} onValueChange={(v) => setAddLevel(v ?? "")}>
+                  <Select
+                    value={addLevel}
+                    onValueChange={(v) => setAddLevel(v ?? "")}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select" />
                     </SelectTrigger>

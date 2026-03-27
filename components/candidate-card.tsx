@@ -2,7 +2,7 @@ import Image from "next/image";
 import type { Candidate } from "@/lib/types";
 
 export const CandidateCard = ({ candidate }: { candidate: Candidate }) => (
-  <div className="overflow-hidden rounded-lg border border-border bg-white font-sans">
+  <div className="overflow-hidden border border-border bg-white font-sans">
     <div className="relative aspect-4/5 w-full bg-muted">
       {candidate.photoUrl ? (
         <Image

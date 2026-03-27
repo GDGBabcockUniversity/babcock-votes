@@ -19,7 +19,11 @@ const HomePage = () => {
   useEffect(() => {
     const fetchElections = async () => {
       const snap = await getDocs(
-        query(collection(db, "elections"), orderBy("startDate", "desc"), limit(6)),
+        query(
+          collection(db, "elections"),
+          orderBy("startDate", "desc"),
+          limit(6),
+        ),
       );
       setElections(
         snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Election),
@@ -35,8 +39,8 @@ const HomePage = () => {
 
   const filtered = search
     ? activeUpcoming.filter((e) =>
-      e.title.toLowerCase().includes(search.toLowerCase()),
-    )
+        e.title.toLowerCase().includes(search.toLowerCase()),
+      )
     : activeUpcoming;
 
   return (
@@ -44,10 +48,10 @@ const HomePage = () => {
       {/* Hero */}
       <section className="px-4 pb-10 pt-8 md:pb-14 md:pt-12">
         <div className="mx-auto max-w-5xl">
-          <span className="inline-flex items-center gap-1.5 border border-border px-3 py-1 font-sans text-[10px] font-medium uppercase tracking-wider text-muted-gray">
+          {/* <span className="inline-flex items-center gap-1.5 border border-border px-3 py-1 font-sans text-[10px] font-medium uppercase tracking-wider text-muted-gray">
             <Sparkles className="size-3 text-gold" />
             Official Platform
-          </span>
+          </span> */}
 
           <h1 className="mt-6 font-serif text-4xl font-bold leading-tight md:mt-8 md:text-5xl lg:text-6xl">
             Democracy,
@@ -80,7 +84,9 @@ const HomePage = () => {
       <section className="px-4 py-6 md:py-8">
         <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between">
-            <h2 className="font-serif text-lg font-bold md:text-xl lg:text-2xl">Active & Upcoming</h2>
+            <h2 className="font-serif text-lg font-bold md:text-xl lg:text-2xl">
+              Active & Upcoming
+            </h2>
             <Link
               href={PAGES.main.elections}
               className="flex items-center gap-1 font-sans text-xs font-medium text-muted-gray hover:text-charcoal md:text-sm"

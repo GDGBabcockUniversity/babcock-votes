@@ -1,16 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
+import { PAGES } from "@/lib/constants";
 
 const LoginPage = () => {
-  const { signInWithGoogle } = useAuth();
+  const { firebaseUser, userProfile, loading, signInWithGoogle } = useAuth();
+  const router = useRouter();
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+
+  // If signed in but no profile, redirect to register
+  if (!loading && firebaseUser && !userProfile) {
+    router.replace(PAGES.auth.register);
+    return null;
+  }
 
   const handleGoogleSignIn = async () => {
     setError("");
-    setLoading(true);
+    setSigningIn(true);
 
     try {
       await signInWithGoogle();
@@ -21,7 +30,7 @@ const LoginPage = () => {
           : "Sign-in failed. Please try again.";
       setError(message);
     } finally {
-      setLoading(false);
+      setSigningIn(false);
     }
   };
 
@@ -37,10 +46,10 @@ const LoginPage = () => {
       <div className="mt-8 space-y-4">
         <button
           onClick={handleGoogleSignIn}
-          disabled={loading}
+          disabled={signingIn}
           className="flex w-full items-center font-sans justify-center gap-3 bg-charcoal py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
         >
-          {loading ? (
+          {signingIn ? (
             "Signing in..."
           ) : (
             <>

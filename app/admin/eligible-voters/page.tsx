@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   collection,
   getDocs,
@@ -24,7 +24,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -32,33 +41,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Plus, Pencil, Trash2, X, Check } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import type { EligibleVoter } from "@/lib/types";
 
 type VoterRow = EligibleVoter & { docId: string; matricNumber: string };
+
+const PAGE_SIZE = 50;
 
 const EligibleVotersPage = () => {
   const [department, setDepartment] = useState("");
   const [voters, setVoters] = useState<VoterRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
 
-  // Add form
-  const [showAdd, setShowAdd] = useState(false);
-  const [addName, setAddName] = useState("");
-  const [addMatric, setAddMatric] = useState("");
-  const [addLevel, setAddLevel] = useState("");
-  const [addError, setAddError] = useState("");
-  const [addLoading, setAddLoading] = useState(false);
+  // Dialog states
+  const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // Edit state
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editLevel, setEditLevel] = useState("");
-  const [editLoading, setEditLoading] = useState(false);
+  // Form data
+  const [formName, setFormName] = useState("");
+  const [formMatric, setFormMatric] = useState("");
+  const [formLevel, setFormLevel] = useState("");
+  const [formError, setFormError] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
 
-  // Delete state
-  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  // Selected voter for edit/delete
+  const [selectedVoter, setSelectedVoter] = useState<VoterRow | null>(null);
 
   const fetchVoters = async (deptId: string) => {
     setLoading(true);
@@ -80,120 +97,140 @@ const EligibleVotersPage = () => {
   useEffect(() => {
     if (department) {
       fetchVoters(department);
-      setShowAdd(false);
-      setEditId(null);
+      setPage(1);
+      setSearch("");
     } else {
       setVoters([]);
     }
   }, [department]);
 
-  const filtered = search
-    ? voters.filter(
-        (v) =>
-          v.fullName.toLowerCase().includes(search.toLowerCase()) ||
-          v.matricNumber.toLowerCase().includes(search.toLowerCase()),
-      )
-    : voters;
+  const filtered = useMemo(() => {
+    if (!search) return voters;
+    const lower = search.toLowerCase();
+    return voters.filter(
+      (v) =>
+        v.fullName.toLowerCase().includes(lower) ||
+        v.matricNumber.toLowerCase().includes(lower),
+    );
+  }, [voters, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search]);
 
   // --- Add ---
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAddError("");
+  const openAddDialog = () => {
+    setFormName("");
+    setFormMatric("");
+    setFormLevel("");
+    setFormError("");
+    setAddOpen(true);
+  };
 
-    const safeMatric = addMatric.trim();
+  const handleAdd = async () => {
+    setFormError("");
+    const safeMatric = formMatric.trim();
     if (!/^\d{2}\/\d{4}$/.test(safeMatric)) {
-      setAddError("Matric must be in format XX/XXXX (e.g., 21/0456).");
+      setFormError("Matric must be in format XX/XXXX (e.g., 21/0456).");
       return;
     }
-    if (!addLevel) {
-      setAddError("Please select a level.");
+    if (!formName.trim()) {
+      setFormError("Full name is required.");
+      return;
+    }
+    if (!formLevel) {
+      setFormError("Please select a level.");
       return;
     }
 
-    setAddLoading(true);
+    setFormLoading(true);
     try {
       const docId = matricToDocId(safeMatric);
       const existing = await getDoc(doc(db, "eligible_voters", docId));
       if (existing.exists()) {
-        setAddError("A voter with this matric number already exists.");
-        setAddLoading(false);
+        setFormError("A voter with this matric number already exists.");
+        setFormLoading(false);
         return;
       }
 
       await setDoc(doc(db, "eligible_voters", docId), {
-        fullName: addName.trim(),
+        fullName: formName.trim(),
         departmentId: department,
-        level: addLevel,
+        level: formLevel,
       });
 
-      // Refresh
-      setAddName("");
-      setAddMatric("");
-      setAddLevel("");
-      setShowAdd(false);
+      setAddOpen(false);
       await fetchVoters(department);
     } catch {
-      setAddError("Failed to add voter. Please try again.");
+      setFormError("Failed to add voter. Please try again.");
     } finally {
-      setAddLoading(false);
+      setFormLoading(false);
     }
   };
 
   // --- Edit ---
-  const startEdit = (voter: VoterRow) => {
-    setEditId(voter.docId);
-    setEditName(voter.fullName);
-    setEditLevel(voter.level);
+  const openEditDialog = (voter: VoterRow) => {
+    setSelectedVoter(voter);
+    setFormName(voter.fullName);
+    setFormLevel(voter.level);
+    setFormError("");
+    setEditOpen(true);
   };
 
-  const cancelEdit = () => {
-    setEditId(null);
-  };
+  const handleEdit = async () => {
+    if (!selectedVoter) return;
+    if (!formName.trim()) {
+      setFormError("Full name is required.");
+      return;
+    }
+    if (!formLevel) {
+      setFormError("Please select a level.");
+      return;
+    }
 
-  const saveEdit = async (docId: string) => {
-    setEditLoading(true);
+    setFormLoading(true);
     try {
-      await updateDoc(doc(db, "eligible_voters", docId), {
-        fullName: editName.trim(),
-        level: editLevel,
+      await updateDoc(doc(db, "eligible_voters", selectedVoter.docId), {
+        fullName: formName.trim(),
+        level: formLevel,
       });
       setVoters((prev) =>
         prev.map((v) =>
-          v.docId === docId
-            ? { ...v, fullName: editName.trim(), level: editLevel }
+          v.docId === selectedVoter.docId
+            ? { ...v, fullName: formName.trim(), level: formLevel }
             : v,
         ),
       );
-      setEditId(null);
+      setEditOpen(false);
     } catch {
-      // silent
+      setFormError("Failed to update voter.");
     } finally {
-      setEditLoading(false);
+      setFormLoading(false);
     }
   };
 
   // --- Delete ---
-  const handleDelete = async (voter: VoterRow) => {
-    if (voter.claimedByUid) {
-      if (
-        !window.confirm(
-          "This voter has already registered. Deleting will NOT remove their user account. Continue?",
-        )
-      )
-        return;
-    } else {
-      if (!window.confirm(`Delete ${voter.fullName} (${voter.matricNumber})?`))
-        return;
-    }
+  const openDeleteDialog = (voter: VoterRow) => {
+    setSelectedVoter(voter);
+    setDeleteOpen(true);
+  };
 
-    setDeleteLoading(voter.docId);
+  const handleDelete = async () => {
+    if (!selectedVoter) return;
+    setFormLoading(true);
     try {
-      await deleteDoc(doc(db, "eligible_voters", voter.docId));
-      setVoters((prev) => prev.filter((v) => v.docId !== voter.docId));
+      await deleteDoc(doc(db, "eligible_voters", selectedVoter.docId));
+      setVoters((prev) =>
+        prev.filter((v) => v.docId !== selectedVoter.docId),
+      );
+      setDeleteOpen(false);
     } catch {
       // silent
     } finally {
-      setDeleteLoading(null);
+      setFormLoading(false);
     }
   };
 
@@ -202,15 +239,13 @@ const EligibleVotersPage = () => {
       <h1 className="font-serif text-2xl font-bold md:text-3xl lg:text-4xl">
         Eligible Voters
       </h1>
-      <p className="mt-1 font-sans text-sm text-muted-gray md:text-base lg:text-lg">
+      <p className="mt-1 font-sans text-sm text-muted-gray md:text-base">
         Manage the voter whitelist by department.
       </p>
 
       {/* Department selector */}
       <div className="mt-6 max-w-sm">
-        <label className="mb-2 block text-sm font-medium font-sans">
-          Department
-        </label>
+        <Label className="mb-2 font-sans text-sm">Department</Label>
         <Select
           value={department}
           onValueChange={(v) => setDepartment(v ?? "")}
@@ -250,95 +285,18 @@ const EligibleVotersPage = () => {
 
             <div className="flex items-center gap-3">
               <span className="font-sans text-sm text-muted-gray">
-                {voters.length} voter{voters.length !== 1 ? "s" : ""} in{" "}
+                {filtered.length} voter{filtered.length !== 1 ? "s" : ""} in{" "}
                 {getDepartmentName(department)}
               </span>
-              <button
-                onClick={() => {
-                  setShowAdd(!showAdd);
-                  setAddError("");
-                }}
-                className="flex items-center gap-1.5 bg-gold px-3 py-2 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90"
+              <Button
+                onClick={openAddDialog}
+                className="rounded-none bg-gold font-sans text-sm font-semibold text-white hover:bg-gold/90"
               >
-                <Plus className="size-4" />
+                <Plus className="mr-1.5 size-4" />
                 Add Voter
-              </button>
+              </Button>
             </div>
           </div>
-
-          {/* Add form */}
-          {showAdd && (
-            <form
-              onSubmit={handleAdd}
-              className="mt-4 border border-border bg-white p-4"
-            >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                <div>
-                  <label className="mb-1 block font-sans text-xs font-medium">
-                    Full Name
-                  </label>
-                  <Input
-                    placeholder="John Doe"
-                    value={addName}
-                    onChange={(e) => setAddName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block font-sans text-xs font-medium">
-                    Matric Number
-                  </label>
-                  <Input
-                    placeholder="e.g., 21/0456"
-                    value={addMatric}
-                    onChange={(e) => setAddMatric(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block font-sans text-xs font-medium">
-                    Level
-                  </label>
-                  <Select
-                    value={addLevel}
-                    onValueChange={(v) => setAddLevel(v ?? "")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent className="font-sans">
-                      {LEVELS.map((l) => (
-                        <SelectItem key={l} value={l}>
-                          {l}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-end gap-2">
-                  <button
-                    type="submit"
-                    disabled={addLoading}
-                    className="bg-gold px-4 py-2 font-sans text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-                  >
-                    {addLoading ? "Adding..." : "Add"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAdd(false)}
-                    className="border border-border px-4 py-2 font-sans text-sm font-medium text-charcoal transition-colors hover:border-gold/50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-              {addError && (
-                <p className="mt-2 font-sans text-xs text-red-600">
-                  {addError}
-                </p>
-              )}
-            </form>
-          )}
 
           {/* Table */}
           <div className="mt-4 border border-border">
@@ -349,7 +307,7 @@ const EligibleVotersPage = () => {
                   <TableHead>Matric</TableHead>
                   <TableHead>Level</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-24 text-right pr-4">
+                  <TableHead className="w-20 pr-4 text-right">
                     Actions
                   </TableHead>
                 </TableRow>
@@ -361,7 +319,7 @@ const EligibleVotersPage = () => {
                       <div className="mx-auto size-5 animate-spin rounded-full border-2 border-gold border-t-transparent" />
                     </TableCell>
                   </TableRow>
-                ) : filtered.length === 0 ? (
+                ) : paged.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={5}
@@ -373,96 +331,241 @@ const EligibleVotersPage = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((v) => {
-                    const isEditing = editId === v.docId;
-                    return (
-                      <TableRow key={v.docId}>
-                        <TableCell className="pl-4 font-medium">
-                          {isEditing ? (
-                            <Input
-                              value={editName}
-                              onChange={(e) => setEditName(e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          ) : (
-                            v.fullName
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-gray">
-                          {v.matricNumber}
-                        </TableCell>
-                        <TableCell className="text-muted-gray">
-                          {isEditing ? (
-                            <Select
-                              value={editLevel}
-                              onValueChange={(v) => setEditLevel(v ?? "")}
-                            >
-                              <SelectTrigger className="h-8 w-20 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="font-sans">
-                                {LEVELS.map((l) => (
-                                  <SelectItem key={l} value={l}>
-                                    {l}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ) : (
-                            v.level
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {v.claimedByUid ? (
-                            <Badge variant="default">Claimed</Badge>
-                          ) : (
-                            <Badge variant="outline">Unclaimed</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="pr-4 text-right">
-                          {isEditing ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                onClick={() => saveEdit(v.docId)}
-                                disabled={editLoading}
-                                className="p-1 text-green-600 hover:bg-green-50"
-                              >
-                                <Check className="size-4" />
-                              </button>
-                              <button
-                                onClick={cancelEdit}
-                                className="p-1 text-muted-gray hover:bg-secondary"
-                              >
-                                <X className="size-4" />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1">
-                              <button
-                                onClick={() => startEdit(v)}
-                                className="p-1 text-muted-gray hover:bg-secondary hover:text-charcoal"
-                              >
-                                <Pencil className="size-3.5" />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(v)}
-                                disabled={deleteLoading === v.docId}
-                                className="p-1 text-muted-gray hover:bg-red-50 hover:text-red-600"
-                              >
-                                <Trash2 className="size-3.5" />
-                              </button>
-                            </div>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  paged.map((v) => (
+                    <TableRow key={v.docId}>
+                      <TableCell className="pl-4 font-medium">
+                        {v.fullName}
+                      </TableCell>
+                      <TableCell className="text-muted-gray">
+                        {v.matricNumber}
+                      </TableCell>
+                      <TableCell className="text-muted-gray">
+                        {v.level}
+                      </TableCell>
+                      <TableCell>
+                        {v.claimedByUid ? (
+                          <Badge variant="default">Claimed</Badge>
+                        ) : (
+                          <Badge variant="outline">Unclaimed</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="pr-4 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => openEditDialog(v)}
+                            className="p-1 text-muted-gray hover:bg-secondary hover:text-charcoal"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                          <button
+                            onClick={() => openDeleteDialog(v)}
+                            className="p-1 text-muted-gray hover:bg-red-50 hover:text-red-600"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
                 )}
               </TableBody>
             </Table>
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-4 flex items-center justify-between font-sans text-sm">
+              <span className="text-muted-gray">
+                Page {page} of {totalPages}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className="rounded-none"
+                >
+                  <ChevronLeft className="mr-1 size-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className="rounded-none"
+                >
+                  Next
+                  <ChevronRight className="ml-1 size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </>
       )}
+
+      {/* Add Dialog */}
+      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <DialogContent className="font-sans sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Add Eligible Voter</DialogTitle>
+            <DialogDescription>
+              Add a new voter to the {getDepartmentName(department)} whitelist.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label>Full Name</Label>
+              <Input
+                placeholder="John Doe"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Matric Number</Label>
+              <Input
+                placeholder="e.g., 21/0456"
+                value={formMatric}
+                onChange={(e) => setFormMatric(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Level</Label>
+              <Select
+                value={formLevel}
+                onValueChange={(v) => setFormLevel(v ?? "")}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select level" />
+                </SelectTrigger>
+                <SelectContent className="font-sans">
+                  {LEVELS.map((l) => (
+                    <SelectItem key={l} value={l}>
+                      {l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {formError && (
+              <p className="text-xs text-red-600">{formError}</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setAddOpen(false)}
+                className="rounded-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAdd}
+                disabled={formLoading}
+                className="rounded-none bg-gold text-white hover:bg-gold/90"
+              >
+                {formLoading ? "Adding..." : "Add Voter"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="font-sans sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Edit Voter</DialogTitle>
+            <DialogDescription>
+              {selectedVoter?.matricNumber} — Matric number cannot be changed.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div>
+              <Label>Full Name</Label>
+              <Input
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Level</Label>
+              <Select
+                value={formLevel}
+                onValueChange={(v) => setFormLevel(v ?? "")}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="font-sans">
+                  {LEVELS.map((l) => (
+                    <SelectItem key={l} value={l}>
+                      {l}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {formError && (
+              <p className="text-xs text-red-600">{formError}</p>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditOpen(false)}
+                className="rounded-none"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleEdit}
+                disabled={formLoading}
+                className="rounded-none bg-gold text-white hover:bg-gold/90"
+              >
+                {formLoading ? "Saving..." : "Save Changes"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="font-sans sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-serif">Delete Voter</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove{" "}
+              <strong>{selectedVoter?.fullName}</strong> (
+              {selectedVoter?.matricNumber})?
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVoter?.claimedByUid && (
+            <p className="text-xs text-red-600">
+              ⚠ This voter has already registered. Deleting will NOT remove
+              their user account.
+            </p>
+          )}
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteOpen(false)}
+              className="rounded-none"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDelete}
+              disabled={formLoading}
+              variant="destructive"
+              className="rounded-none"
+            >
+              {formLoading ? "Deleting..." : "Delete"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

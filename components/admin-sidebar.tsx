@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Vote,
   Users,
+  ClipboardList,
   ArrowLeft,
   LogOut,
   X,
@@ -33,6 +34,12 @@ const navItems = [
     href: PAGES.admin.users,
     label: "Users",
     icon: Users,
+    roles: ["super_admin"],
+  },
+  {
+    href: PAGES.admin.eligibleVoters,
+    label: "Eligible Voters",
+    icon: ClipboardList,
     roles: ["super_admin"],
   },
 ];

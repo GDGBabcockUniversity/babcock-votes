@@ -3,8 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
-import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarSeparator,
+} from "@/components/ui/sidebar";
 import {
   LayoutDashboard,
   Vote,
@@ -12,7 +23,6 @@ import {
   ClipboardList,
   ArrowLeft,
   LogOut,
-  X,
 } from "lucide-react";
 import { PAGES } from "@/lib/constants";
 import { getDepartmentName } from "@/lib/utils";
@@ -44,13 +54,7 @@ const navItems = [
   },
 ];
 
-export const AdminSidebar = ({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) => {
+export const AdminSidebar = () => {
   const pathname = usePathname();
   const { userProfile, signOut } = useAuth();
   const role = userProfile?.role ?? "voter";
@@ -58,84 +62,70 @@ export const AdminSidebar = ({
   const filtered = navItems.filter((item) => item.roles.includes(role));
 
   return (
-    <>
-      {/* Mobile overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
-          onClick={onClose}
-        />
-      )}
+    <Sidebar>
+      <SidebarHeader className="h-14 flex-row items-center justify-center border-b border-sidebar-border px-4">
+        <span className="font-sans text-sm font-bold uppercase tracking-widest">
+          Babcock Votes
+        </span>
+      </SidebarHeader>
 
-      <aside
-        className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-white transition-transform duration-200 md:static md:translate-x-0",
-          open ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        {/* Header */}
-        <div className="flex h-14 items-center justify-between border-b border-border px-4">
-          <span className="text-xs md:text-sm lg:text-base font-bold uppercase tracking-widest font-sans">
-            Babcock Votes
-          </span>
-          <button onClick={onClose} className="md:hidden">
-            <X className="size-4" />
-          </button>
-        </div>
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel className="font-sans text-[10px] uppercase tracking-widest">
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {filtered.map((item) => {
+                const isActive =
+                  item.href === "/admin"
+                    ? pathname === "/admin"
+                    : pathname.startsWith(item.href);
+                return (
+                  <SidebarMenuItem key={item.href}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      tooltip={item.label}
+                      render={<Link href={item.href} />}
+                      className="font-sans rounded-none"
+                    >
+                      <item.icon className="size-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3 py-4">
-          {filtered.map((item) => {
-            const isActive =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  "flex items-center gap-3 font-sans px-3 py-2 text-sm transition-colors",
-                  isActive
-                    ? "bg-gold/10 font-semibold text-gold"
-                    : "text-muted-gray hover:bg-secondary hover:text-charcoal",
-                )}
-              >
-                <item.icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+      <SidebarSeparator />
 
-        <Separator />
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              render={<Link href={PAGES.main.home} />}
+              className="font-sans rounded-none"
+            >
+              <ArrowLeft className="size-4" />
+              <span>Back to Voting</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={signOut}
+              className="font-sans rounded-none text-red-600 hover:text-red-600"
+            >
+              <LogOut className="size-4" />
+              <span>Sign Out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
 
-        {/* Footer */}
-        <div className="space-y-1 px-3 py-4">
-          <Link
-            href={PAGES.main.home}
-            onClick={onClose}
-            className="flex items-center gap-3 font-sans px-3 py-2 text-sm text-muted-gray hover:bg-secondary hover:text-charcoal"
-          >
-            <ArrowLeft className="size-4" />
-            Back to Voting
-          </Link>
-          <button
-            onClick={() => {
-              signOut();
-              onClose();
-            }}
-            className="flex w-full items-center gap-3 font-sans cursor-pointer px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-          >
-            <LogOut className="size-4" />
-            Sign Out
-          </button>
-        </div>
-
-        {/* User info */}
         {userProfile && (
-          <div className="border-t border-border px-4 py-3 font-sans">
+          <div className="border-t border-sidebar-border px-2 py-3 font-sans">
             <p className="truncate text-sm font-medium">
               {userProfile.fullName}
             </p>
@@ -145,7 +135,7 @@ export const AdminSidebar = ({
             </p>
           </div>
         )}
-      </aside>
-    </>
+      </SidebarFooter>
+    </Sidebar>
   );
 };

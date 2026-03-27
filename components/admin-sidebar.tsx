@@ -63,19 +63,19 @@ export const AdminSidebar = () => {
 
   return (
     <Sidebar>
-      <SidebarHeader className="h-14 flex-row items-center justify-center border-b border-sidebar-border px-4">
+      <SidebarHeader className="flex h-14 flex-row items-center border-b border-sidebar-border px-5">
         <span className="font-sans text-sm font-bold uppercase tracking-widest">
           Babcock Votes
         </span>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-2 pt-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="font-sans text-[10px] uppercase tracking-widest">
+          <SidebarGroupLabel className="mb-1 px-3 font-sans text-[10px] uppercase tracking-widest text-muted-gray">
             Navigation
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-1">
               {filtered.map((item) => {
                 const isActive =
                   item.href === "/admin"
@@ -87,7 +87,8 @@ export const AdminSidebar = () => {
                       isActive={isActive}
                       tooltip={item.label}
                       render={<Link href={item.href} />}
-                      className="font-sans rounded-none"
+                      size="lg"
+                      className="rounded-none px-3 font-sans"
                     >
                       <item.icon className="size-4" />
                       <span>{item.label}</span>
@@ -102,12 +103,12 @@ export const AdminSidebar = () => {
 
       <SidebarSeparator />
 
-      <SidebarFooter>
-        <SidebarMenu>
+      <SidebarFooter className="px-2 pb-4">
+        <SidebarMenu className="gap-1">
           <SidebarMenuItem>
             <SidebarMenuButton
               render={<Link href={PAGES.main.home} />}
-              className="font-sans rounded-none"
+              className="rounded-none px-3 font-sans"
             >
               <ArrowLeft className="size-4" />
               <span>Back to Voting</span>
@@ -116,7 +117,7 @@ export const AdminSidebar = () => {
           <SidebarMenuItem>
             <SidebarMenuButton
               onClick={signOut}
-              className="font-sans rounded-none text-red-600 hover:text-red-600"
+              className="rounded-none px-3 font-sans text-red-600 hover:text-red-600"
             >
               <LogOut className="size-4" />
               <span>Sign Out</span>
@@ -125,11 +126,11 @@ export const AdminSidebar = () => {
         </SidebarMenu>
 
         {userProfile && (
-          <div className="border-t border-sidebar-border px-2 py-3 font-sans">
+          <div className="mt-2 border-t border-sidebar-border px-3 pt-3 font-sans">
             <p className="truncate text-sm font-medium">
               {userProfile.fullName}
             </p>
-            <p className="truncate text-xs text-muted-gray">
+            <p className="mt-0.5 truncate text-xs text-muted-gray">
               {role === "super_admin" ? "Super Admin" : "Dept Admin"} &middot;{" "}
               {getDepartmentName(userProfile.departmentId)}
             </p>

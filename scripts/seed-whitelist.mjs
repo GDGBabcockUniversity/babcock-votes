@@ -5,11 +5,15 @@
  *   fullName,matricNumber,departmentId,level
  *
  * Usage:
- *   node scripts/seed-whitelist.mjs ./data/eligible_voters.csv
+ *   node scripts/seed-whitelist.mjs ./data/eligible_voters.csv ./service-account-key.json
  *
  * Environment:
  *   GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
  *   (or pass as second argument)
+ *
+ * Duplicate handling:
+ *   If a document with the same matric number already exists,
+ *   it is skipped (not overwritten) and logged.
  */
 
 import { readFileSync } from "fs";
@@ -66,19 +70,21 @@ const rows = lines.slice(1).map((line) => {
 
 console.log(`Parsed ${rows.length} rows from CSV.\n`);
 
-// --- Seed in batches of 500 ---
+// --- Seed in batches of 500, skipping existing docs ---
 const BATCH_SIZE = 500;
 let written = 0;
-let skipped = 0;
+let skippedNoMatric = 0;
+let skippedExists = 0;
 
 for (let i = 0; i < rows.length; i += BATCH_SIZE) {
   const chunk = rows.slice(i, i + BATCH_SIZE);
   const batch = db.batch();
+  let batchCount = 0;
 
   for (const row of chunk) {
     const matric = row.matricNumber;
     if (!matric) {
-      skipped++;
+      skippedNoMatric++;
       continue;
     }
 
@@ -86,26 +92,35 @@ for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const docId = matric.replace(/\//g, "-");
     const ref = db.collection("eligible_voters").doc(docId);
 
-    batch.set(
-      ref,
-      {
-        fullName: row.fullName,
-        departmentId: row.departmentId,
-        level: row.level,
-      },
-      { merge: true },
-    );
+    // Check if doc already exists
+    const existing = await ref.get();
+    if (existing.exists) {
+      console.log(`  ⚠ Skipping ${docId} (already exists): ${row.fullName}`);
+      skippedExists++;
+      continue;
+    }
 
+    batch.set(ref, {
+      fullName: row.fullName,
+      departmentId: row.departmentId,
+      level: row.level,
+    });
+
+    batchCount++;
     written++;
   }
 
-  await batch.commit();
+  if (batchCount > 0) {
+    await batch.commit();
+  }
+
+  const batchNum = Math.floor(i / BATCH_SIZE) + 1;
   console.log(
-    `  Batch ${Math.floor(i / BATCH_SIZE) + 1}: wrote ${chunk.length} docs`,
+    `  Batch ${batchNum}: ${batchCount} written, ${chunk.length - batchCount} skipped`,
   );
 }
 
 console.log(
-  `\nDone! ${written} eligible voters seeded, ${skipped} skipped (no matric).`,
+  `\nDone! ${written} written, ${skippedExists} skipped (already exist), ${skippedNoMatric} skipped (no matric).`,
 );
 process.exit(0);

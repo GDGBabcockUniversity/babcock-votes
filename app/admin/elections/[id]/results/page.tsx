@@ -19,6 +19,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
@@ -28,9 +29,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Users, Vote } from "lucide-react";
+import { ArrowLeft, Users, Vote, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
+
+const VOTER_PAGE_SIZE = 25;
 
 const ResultsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +46,7 @@ const ResultsPage = () => {
   const [voterCount, setVoterCount] = useState(0);
   const [voters, setVoters] = useState<{ name: string; matric: string; votedAt: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [voterPage, setVoterPage] = useState(1);
 
   useEffect(() => {
     const fetch = async () => {
@@ -69,13 +73,11 @@ const ResultsPage = () => {
         (d) => ({ id: d.id, ...d.data() }) as Candidate,
       );
 
-      // Get votes for this election
       const votesSnap = await getDocs(
         query(collection(db, "votes"), where("electionId", "==", id)),
       );
       setTotalVotes(votesSnap.size);
 
-      // Dynamically tally candidate votes from ballots
       const votesData = votesSnap.docs.map((d) => d.data());
       const talliedCands = candItems.map((c) => ({
         ...c,
@@ -83,13 +85,11 @@ const ResultsPage = () => {
       }));
       setCandidates(talliedCands);
 
-      // Unique voters
       const voterIds = [
         ...new Set(votesSnap.docs.map((d) => d.data().voterId as string)),
       ];
       setVoterCount(voterIds.length);
 
-      // Fetch voter details
       const voterDetails = await Promise.all(
         voterIds.map(async (uid) => {
           const userSnap = await getDoc(doc(db, "users", uid));
@@ -123,7 +123,7 @@ const ResultsPage = () => {
 
   if (!election) {
     return (
-      <p className="py-24 text-center text-sm font-sans text-muted-gray">
+      <p className="py-24 text-center font-sans text-sm text-muted-gray">
         Election not found.
       </p>
     );
@@ -137,50 +137,56 @@ const ResultsPage = () => {
     return { position: pos, candidates: cands, totalForPos };
   });
 
+  const voterTotalPages = Math.max(1, Math.ceil(voters.length / VOTER_PAGE_SIZE));
+  const pagedVoters = voters.slice(
+    (voterPage - 1) * VOTER_PAGE_SIZE,
+    voterPage * VOTER_PAGE_SIZE,
+  );
+
   return (
     <div>
       <button
         onClick={() => router.push(PAGES.admin.electionDetail(id))}
-        className="mb-2 flex items-center gap-1 text-xs font-sans text-muted-gray hover:text-charcoal"
+        className="mb-2 flex items-center gap-1 font-sans text-xs text-muted-gray hover:text-charcoal"
       >
         <ArrowLeft className="size-3.5" /> Back to Election
       </button>
 
-      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">Results</h1>
-      <p className="mt-1 text-sm font-sans text-muted-gray">{election.title}</p>
+      <h1 className="font-serif text-2xl font-bold md:text-3xl lg:text-4xl">Results</h1>
+      <p className="mt-1 font-sans text-sm text-muted-gray">{election.title}</p>
 
       {/* Overview cards */}
       <div className="mt-6 grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-sans font-medium uppercase tracking-wider text-muted-gray">
+            <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
               Total Ballots
             </CardTitle>
             <Vote className="size-4 text-gold" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-sans font-bold">{totalVotes}</p>
+            <p className="font-sans text-2xl font-bold">{totalVotes}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-sans font-medium uppercase tracking-wider text-muted-gray">
+            <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
               Unique Voters
             </CardTitle>
             <Users className="size-4 text-gold" />
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-sans font-bold">{voterCount}</p>
+            <p className="font-sans text-2xl font-bold">{voterCount}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-sans font-medium uppercase tracking-wider text-muted-gray">
+            <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
               Positions
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-sans font-bold">{positions.length}</p>
+            <p className="font-sans text-2xl font-bold">{positions.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -193,7 +199,7 @@ const ResultsPage = () => {
         {grouped.map(({ position, candidates: cands, totalForPos }) => (
           <Card key={position.id}>
             <CardHeader>
-              <CardTitle className="text-lg font-serif md:text-2xl font-semibold">{position.title}</CardTitle>
+              <CardTitle className="font-serif text-lg font-semibold md:text-2xl">{position.title}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {cands.map((c, idx) => {
@@ -203,7 +209,7 @@ const ResultsPage = () => {
                     : 0;
                 return (
                   <div key={c.id}>
-                    <div className="flex items-center justify-between text-sm font-sans">
+                    <div className="flex items-center justify-between font-sans text-sm">
                       <span className="font-medium">
                         {idx === 0 && c.voteCount > 0 && (
                           <Badge variant="default" className="mr-2 text-[10px]">
@@ -226,7 +232,7 @@ const ResultsPage = () => {
                 );
               })}
               {cands.length === 0 && (
-                <p className="text-sm font-sans text-muted-gray">No candidates.</p>
+                <p className="font-sans text-sm text-muted-gray">No candidates.</p>
               )}
             </CardContent>
           </Card>
@@ -237,11 +243,11 @@ const ResultsPage = () => {
 
       {/* Voter log */}
       <h2 className="font-serif text-xl font-bold">Voter Log</h2>
-      <p className="mt-1 text-xs font-sans text-muted-gray">
-        Who has voted (ballot choices are secret).
+      <p className="mt-1 font-sans text-xs text-muted-gray">
+        Who has voted (ballot choices are secret). {voters.length} total voter{voters.length !== 1 ? "s" : ""}.
       </p>
       <div className="mt-4 border border-border">
-        <Table className="font-sans rounded-none">
+        <Table className="rounded-none font-sans">
           <TableHeader>
             <TableRow>
               <TableHead className="pl-4">Name</TableHead>
@@ -250,16 +256,16 @@ const ResultsPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {voters.length === 0 ? (
+            {pagedVoters.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="py-8 text-center text-sm font-sans text-muted-gray">
+                <TableCell colSpan={3} className="py-8 text-center font-sans text-sm text-muted-gray">
                   No votes yet.
                 </TableCell>
               </TableRow>
             ) : (
-              voters.map((v, i) => (
+              pagedVoters.map((v, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-medium pl-4">{v.name}</TableCell>
+                  <TableCell className="pl-4 font-medium">{v.name}</TableCell>
                   <TableCell className="text-muted-gray">{v.matric}</TableCell>
                   <TableCell className="text-muted-gray">{v.votedAt}</TableCell>
                 </TableRow>
@@ -268,6 +274,37 @@ const ResultsPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Voter Log Pagination */}
+      {voterTotalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between font-sans text-sm">
+          <span className="text-muted-gray">
+            Page {voterPage} of {voterTotalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={voterPage <= 1}
+              onClick={() => setVoterPage((p) => p - 1)}
+              className="rounded-none"
+            >
+              <ChevronLeft className="mr-1 size-4" />
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={voterPage >= voterTotalPages}
+              onClick={() => setVoterPage((p) => p + 1)}
+              className="rounded-none"
+            >
+              Next
+              <ChevronRight className="ml-1 size-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

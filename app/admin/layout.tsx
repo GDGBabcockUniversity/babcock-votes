@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { Menu } from "lucide-react";
+import {
+  SidebarProvider,
+  SidebarInset,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
 import { PAGES } from "@/lib/constants";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const { firebaseUser, userProfile, loading } = useAuth();
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading) {
@@ -43,24 +46,21 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="flex min-h-dvh bg-background">
-      <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-14 items-center border-b border-border px-4 md:hidden">
-          <button onClick={() => setSidebarOpen(true)}>
-            <Menu className="size-5" />
-          </button>
-          <span className="ml-3 text-sm lg:text-base font-bold uppercase tracking-widest font-sans">
+    <SidebarProvider>
+      <AdminSidebar />
+      <SidebarInset>
+        <header className="flex h-14 items-center gap-2 border-b border-border px-4 md:hidden">
+          <SidebarTrigger />
+          <span className="font-sans text-sm font-bold uppercase tracking-widest">
             Admin
           </span>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
+        <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">
           <div className="mx-auto max-w-5xl">{children}</div>
-        </main>
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 };
 

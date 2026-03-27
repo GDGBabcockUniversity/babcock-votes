@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
-import { PAGES } from "@/lib/constants";
+import { DEPARTMENTS } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import type { EligibleVoter } from "@/lib/types";
 import { matricToDocId } from "@/lib/utils";
@@ -13,8 +12,7 @@ import { matricToDocId } from "@/lib/utils";
 type Step = "matric" | "confirm";
 
 const RegisterPage = () => {
-  const router = useRouter();
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, refreshProfile } = useAuth();
 
   const [step, setStep] = useState<Step>("matric");
   const [matricNumber, setMatricNumber] = useState("");
@@ -93,7 +91,7 @@ const RegisterPage = () => {
       });
 
       await batch.commit();
-      router.replace(PAGES.main.home);
+      await refreshProfile();
     } catch {
       setError(
         "Registration failed. This matric may have just been claimed. Please try again.",
@@ -169,7 +167,9 @@ const RegisterPage = () => {
               <span className="text-xs uppercase tracking-wider text-muted-gray">
                 Department
               </span>
-              <p className="font-medium">{voterData.departmentId}</p>
+              <p className="font-medium">
+                {DEPARTMENTS.find((d) => d.id === voterData.departmentId)?.name}
+              </p>
             </div>
             <div>
               <span className="text-xs uppercase tracking-wider text-muted-gray">

@@ -139,5 +139,7 @@
 }
 
 * {
-  transition: all 0.3s ease-in-out;
+  transition-property: color, background-color, border-color, opacity, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-in-out;
 }

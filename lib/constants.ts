@@ -54,5 +54,6 @@ export const PAGES = {
     electionDetail: (id: string) => `/admin/elections/${id}`,
     electionResults: (id: string) => `/admin/elections/${id}/results`,
     users: "/admin/users",
+    eligibleVoters: "/admin/eligible-voters",
   },
 } as const;

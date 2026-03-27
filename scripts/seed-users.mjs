@@ -35,7 +35,7 @@ const db = getFirestore(app);
 // --- Define admins by their school email ---
 const admins = [
   {
-    email: "admin@student.babcock.edu.ng",
+    email: "ibironkev5569@student.babcock.edu.ng",
     role: "super_admin",
   },
   // Add more admins as needed:

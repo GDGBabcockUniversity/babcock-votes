@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useCallback,
   type ReactNode,
 } from "react";
 import {
@@ -23,6 +24,7 @@ interface AuthState {
   userProfile: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -31,6 +33,7 @@ const AuthContext = createContext<AuthState>({
   userProfile: null,
   loading: true,
   signInWithGoogle: async () => {},
+  refreshProfile: async () => {},
   signOut: async () => {},
 });
 
@@ -67,6 +70,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const refreshProfile = useCallback(async () => {
+    if (!firebaseUser) return;
+    const snap = await getDoc(doc(db, "users", firebaseUser.uid));
+    setUserProfile(snap.exists() ? (snap.data() as User) : null);
+  }, [firebaseUser]);
+
   const signOut = async () => {
     await firebaseSignOut(auth);
     setFirebaseUser(null);
@@ -75,7 +84,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ firebaseUser, userProfile, loading, signInWithGoogle, signOut }}
+      value={{
+        firebaseUser,
+        userProfile,
+        loading,
+        signInWithGoogle,
+        refreshProfile,
+        signOut,
+      }}
     >
       {children}
     </AuthContext.Provider>

@@ -7,7 +7,7 @@ import { db } from "@/lib/firebase";
 import { ElectionCard } from "@/components/election-card";
 import { ElectionCardSkeleton } from "@/components/skeleton-loader";
 import { Input } from "@/components/ui/input";
-import { Search, ArrowRight, Sparkles } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import type { Election } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
 

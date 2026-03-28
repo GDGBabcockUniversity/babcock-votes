@@ -187,7 +187,7 @@ const VotePage = () => {
 
       {/* Voter info */}
       {userProfile && (
-        <div className="mt-5 font-sans flex items-center gap-3 rounded-xl bg-linear-to-r from-charcoal to-charcoal/80 px-4 py-3 text-white">
+        <div className="mt-5 font-sans flex items-center gap-3 bg-linear-to-r from-charcoal to-charcoal/80 px-4 py-3 text-white">
           <div className="flex size-10 items-center justify-center rounded-full bg-gold text-sm font-bold text-white">
             {userProfile.fullName.charAt(0)}
           </div>
@@ -218,7 +218,7 @@ const VotePage = () => {
                     type="button"
                     onClick={() => selectCandidate(position.id, c.id)}
                     disabled={reviewing}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
+                    className={`flex w-full items-center gap-3 border px-4 py-3 text-left transition-all ${
                       selected
                         ? "border-gold bg-gold/5"
                         : "border-border bg-white hover:border-gold/40"
@@ -262,7 +262,7 @@ const VotePage = () => {
 
       {/* Review section */}
       {reviewing && (
-        <div className="mt-8 rounded-2xl border border-gold/30 bg-white p-5 shadow-lg font-sans">
+        <div className="mt-8 border border-gold/30 bg-white p-5 shadow-lg font-sans">
           <div className="flex flex-col items-center text-center">
             <AlertTriangle className="size-8 text-gold" />
             <h2 className="mt-2 font-serif text-lg font-bold">
@@ -284,7 +284,9 @@ const VotePage = () => {
                   <p className="text-[10px] uppercase tracking-wider text-gold">
                     {pos.title}
                   </p>
-                  <p className={`text-sm font-semibold ${!selections[pos.id] ? "italic text-muted-gray" : ""}`}>
+                  <p
+                    className={`text-sm font-semibold ${!selections[pos.id] ? "italic text-muted-gray" : ""}`}
+                  >
                     {getCandidateName(selections[pos.id])}
                   </p>
                 </div>
@@ -307,14 +309,14 @@ const VotePage = () => {
           <div className="mt-5 grid grid-cols-2 gap-3">
             <button
               onClick={() => setReviewing(false)}
-              className="rounded-lg border border-border py-2.5 text-sm font-semibold transition-colors hover:bg-secondary"
+              className="border border-border py-2.5 text-sm font-semibold transition-colors hover:bg-secondary"
             >
               Edit Choices
             </button>
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex items-center justify-center gap-2 rounded-lg bg-gold py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex items-center justify-center gap-2 bg-gold py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "Submitting..." : "Submit Ballot"}
             </button>
@@ -327,7 +329,7 @@ const VotePage = () => {
         <div className="mt-8 font-sans">
           <button
             onClick={() => setReviewing(true)}
-            className="w-full rounded-lg bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="w-full bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             Review & Submit Ballot
           </button>

@@ -92,6 +92,14 @@ const ElectionDetailPage = () => {
   // Status editing
   const [statusValue, setStatusValue] = useState<string>("");
 
+  // Edit election details
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editDeptId, setEditDeptId] = useState("");
+  const [editStartDate, setEditStartDate] = useState("");
+  const [editEndDate, setEditEndDate] = useState("");
+
   const elRef = doc(db, "elections", id);
 
   const fetchData = async () => {
@@ -282,6 +290,37 @@ const ElectionDetailPage = () => {
     setCandPhotoPreview(URL.createObjectURL(file));
   };
 
+  // --- Edit Election Details ---
+  const toDatetimeLocal = (ts: { toDate: () => Date } | Date) => {
+    const d = "toDate" in ts ? ts.toDate() : ts;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  const openEditDetails = () => {
+    if (!election) return;
+    setEditTitle(election.title);
+    setEditDesc(election.description);
+    setEditDeptId(election.departmentId);
+    setEditStartDate(toDatetimeLocal(election.startDate));
+    setEditEndDate(toDatetimeLocal(election.endDate));
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveDetails = async () => {
+    setSaving(true);
+    await updateDoc(elRef, {
+      title: editTitle,
+      description: editDesc,
+      departmentId: editDeptId,
+      startDate: new Date(editStartDate),
+      endDate: new Date(editEndDate),
+    });
+    setEditDialogOpen(false);
+    setSaving(false);
+    fetchData();
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-24">
@@ -334,6 +373,16 @@ const ElectionDetailPage = () => {
           >
             <BarChart3 className="mr-2 size-3.5" /> Results
           </Link>
+          {isSuperAdmin && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="font-sans rounded-none"
+              onClick={openEditDetails}
+            >
+              <Pencil className="mr-2 size-3.5" /> Edit
+            </Button>
+          )}
           {isSuperAdmin && (
             <Select
               value={statusValue}
@@ -668,6 +717,89 @@ const ElectionDetailPage = () => {
               className="rounded-none"
             >
               {saving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Election Details Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-h-[90dvh] overflow-y-auto font-sans rounded-none p-6">
+          <DialogHeader>
+            <DialogTitle>Edit Election Details</DialogTitle>
+            <DialogDescription>
+              Update the core details of this election.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="e.g. BUCC 2026 Executive"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                placeholder="Brief description of the election..."
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Department</Label>
+              <Select
+                value={editDeptId}
+                onValueChange={(v) => setEditDeptId(v ?? "")}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select department" />
+                </SelectTrigger>
+                <SelectContent className="font-sans">
+                  {DEPARTMENTS.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Start Date</Label>
+                <Input
+                  type="datetime-local"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>End Date</Label>
+                <Input
+                  type="datetime-local"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <DialogClose
+              render={
+                <Button variant="outline" className="rounded-none">
+                  Cancel
+                </Button>
+              }
+            />
+            <Button
+              onClick={handleSaveDetails}
+              disabled={saving || !editTitle || !editDeptId}
+              className="rounded-none"
+            >
+              {saving ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DialogContent>

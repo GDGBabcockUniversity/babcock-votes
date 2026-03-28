@@ -72,7 +72,8 @@ service cloud.firestore {
       allow create: if isEmailVerified()
         && request.resource.data.voterId == request.auth.uid
         && voteId == request.auth.uid + "_" + request.resource.data.positionId
-        && !exists(/databases/$(database)/documents/votes/$(voteId));
+        && !exists(/databases/$(database)/documents/votes/$(voteId))
+        && get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.status == "active";
       allow update, delete: if false;
     }
   }

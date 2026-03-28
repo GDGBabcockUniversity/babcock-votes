@@ -244,7 +244,7 @@ const VotePage = () => {
                       {c.fullName}
                     </span>
                     <div
-                      className={`flex size-6 items-center justify-center rounded-full border transition-colors ${
+                      className={`flex size-6 shrink-0 items-center justify-center rounded-full border transition-colors ${
                         selected
                           ? "border-gold bg-gold text-white"
                           : "border-border"

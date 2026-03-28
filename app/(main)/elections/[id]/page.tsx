@@ -19,9 +19,18 @@ import {
   CandidateCardSkeleton,
   SkeletonLoader,
 } from "@/components/skeleton-loader";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { ArrowLeft, Calendar, Users } from "lucide-react";
+import Image from "next/image";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
+import { getDepartmentName } from "@/lib/utils";
 
 const formatDateRange = (
   start: { seconds: number },
@@ -44,6 +53,9 @@ const CandidatesPage = () => {
   const [positions, setPositions] = useState<Position[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewingCandidate, setViewingCandidate] = useState<Candidate | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetch = async () => {
@@ -157,7 +169,13 @@ const CandidatesPage = () => {
               </h3>
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {cands.map((c) => (
-                  <CandidateCard key={c.id} candidate={c} />
+                  <div
+                    key={c.id}
+                    onClick={() => c.manifesto && setViewingCandidate(c)}
+                    className={c.manifesto ? "cursor-pointer" : ""}
+                  >
+                    <CandidateCard candidate={c} />
+                  </div>
                 ))}
               </div>
             </section>
@@ -180,18 +198,74 @@ const CandidatesPage = () => {
             </div>
           )}
 
-          {/* {election.status === "closed" && (
-            <div className="mt-8">
-              <Link
-                href={PAGES.main.electionResults(id)}
-                className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
-              >
-                View Public Results 
-              </Link>
+          {election.status === "closed" && (
+            <div className="rounded-lg border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans mt-8">
+              This election has closed. You can no longer vote.
             </div>
-          )} */}
+          )}
         </div>
       </div>
+
+      {/* Manifesto Viewer Dialog */}
+      <Dialog
+        open={!!viewingCandidate}
+        onOpenChange={(open) => {
+          if (!open) setViewingCandidate(null);
+        }}
+      >
+        {viewingCandidate && (
+          <DialogContent className="max-h-[85dvh] overflow-y-auto font-sans p-6">
+            <DialogHeader>
+              <DialogTitle className="text-lg">
+                {viewingCandidate.fullName}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="relative size-16 shrink-0 overflow-hidden rounded-full bg-muted">
+                  {viewingCandidate.photoUrl ? (
+                    <Image
+                      src={viewingCandidate.photoUrl}
+                      alt={viewingCandidate.fullName}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <span className="flex size-full items-center justify-center text-xl font-bold text-muted-gray">
+                      {viewingCandidate.fullName.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm text-muted-gray">
+                    {getDepartmentName(viewingCandidate.departmentId)} &middot;{" "}
+                    {viewingCandidate.level}L
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gold">
+                  Manifesto
+                </p>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-charcoal">
+                  {viewingCandidate.manifesto}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <DialogClose
+                render={
+                  <button className="border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
+                    Close
+                  </button>
+                }
+              />
+            </div>
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 };

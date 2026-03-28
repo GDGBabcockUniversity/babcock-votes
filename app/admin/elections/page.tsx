@@ -9,6 +9,8 @@ import {
   orderBy,
   deleteDoc,
   doc,
+  where,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -76,8 +78,36 @@ const AdminElectionsPage = () => {
   }, [isSuperAdmin, userProfile?.departmentId]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this election? This cannot be undone.")) return;
-    await deleteDoc(doc(db, "elections", id));
+    if (!confirm("Delete this election? This will also remove all positions, candidates, and votes. This cannot be undone.")) return;
+
+    const elRef = doc(db, "elections", id);
+
+    // Delete positions subcollection
+    const posSnap = await getDocs(collection(elRef, "positions"));
+    const batch1 = writeBatch(db);
+    posSnap.docs.forEach((d) => batch1.delete(d.ref));
+    if (!posSnap.empty) await batch1.commit();
+
+    // Delete candidates subcollection
+    const candSnap = await getDocs(collection(elRef, "candidates"));
+    const batch2 = writeBatch(db);
+    candSnap.docs.forEach((d) => batch2.delete(d.ref));
+    if (!candSnap.empty) await batch2.commit();
+
+    // Delete votes for this election
+    const votesSnap = await getDocs(
+      query(collection(db, "votes"), where("electionId", "==", id)),
+    );
+    // Batch delete in chunks of 500 (Firestore limit)
+    for (let i = 0; i < votesSnap.docs.length; i += 500) {
+      const chunk = votesSnap.docs.slice(i, i + 500);
+      const batch = writeBatch(db);
+      chunk.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+
+    // Delete the election document itself
+    await deleteDoc(elRef);
     setElections((prev) => prev.filter((e) => e.id !== id));
   };
 

@@ -223,9 +223,7 @@ const EligibleVotersPage = () => {
     setFormLoading(true);
     try {
       await deleteDoc(doc(db, "eligible_voters", selectedVoter.docId));
-      setVoters((prev) =>
-        prev.filter((v) => v.docId !== selectedVoter.docId),
-      );
+      setVoters((prev) => prev.filter((v) => v.docId !== selectedVoter.docId));
       setDeleteOpen(false);
     } catch {
       // silent
@@ -245,13 +243,18 @@ const EligibleVotersPage = () => {
 
       {/* Department selector */}
       <div className="mt-6 max-w-sm">
-        <Label className="mb-2 font-sans text-sm">Department</Label>
+        <Label className="mb-2 font-sans">Department</Label>
         <Select
           value={department}
           onValueChange={(v) => setDepartment(v ?? "")}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Select a department" />
+            <SelectValue
+              placeholder="Select a department"
+              render={
+                <p>{DEPARTMENTS.find((e) => e.id === department)?.name}</p>
+              }
+            />
           </SelectTrigger>
           <SelectContent className="font-sans">
             {DEPARTMENTS.map((d) => (
@@ -409,13 +412,13 @@ const EligibleVotersPage = () => {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="font-sans sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif">Add Eligible Voter</DialogTitle>
+            <DialogTitle>Add Eligible Voter</DialogTitle>
             <DialogDescription>
               Add a new voter to the {getDepartmentName(department)} whitelist.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <div>
+            <div className="space-y-2">
               <Label>Full Name</Label>
               <Input
                 placeholder="John Doe"
@@ -423,7 +426,7 @@ const EligibleVotersPage = () => {
                 onChange={(e) => setFormName(e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Matric Number</Label>
               <Input
                 placeholder="e.g., 21/0456"
@@ -431,7 +434,7 @@ const EligibleVotersPage = () => {
                 onChange={(e) => setFormMatric(e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Level</Label>
               <Select
                 value={formLevel}
@@ -449,9 +452,7 @@ const EligibleVotersPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            {formError && (
-              <p className="text-xs text-red-600">{formError}</p>
-            )}
+            {formError && <p className="text-xs text-red-600">{formError}</p>}
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
@@ -476,20 +477,20 @@ const EligibleVotersPage = () => {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="font-sans sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-serif">Edit Voter</DialogTitle>
+            <DialogTitle>Edit Voter</DialogTitle>
             <DialogDescription>
               {selectedVoter?.matricNumber} — Matric number cannot be changed.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
-            <div>
+            <div className="space-y-2">
               <Label>Full Name</Label>
               <Input
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>Level</Label>
               <Select
                 value={formLevel}
@@ -507,9 +508,7 @@ const EligibleVotersPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            {formError && (
-              <p className="text-xs text-red-600">{formError}</p>
-            )}
+            {formError && <p className="text-xs text-red-600">{formError}</p>}
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
@@ -534,7 +533,7 @@ const EligibleVotersPage = () => {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="font-sans sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-serif">Delete Voter</DialogTitle>
+            <DialogTitle>Delete Voter</DialogTitle>
             <DialogDescription>
               Are you sure you want to remove{" "}
               <strong>{selectedVoter?.fullName}</strong> (

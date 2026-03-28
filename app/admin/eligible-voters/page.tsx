@@ -56,7 +56,7 @@ type VoterRow = EligibleVoter & { docId: string; matricNumber: string };
 const PAGE_SIZE = 50;
 
 const EligibleVotersPage = () => {
-  const [department, setDepartment] = useState("");
+  const [department, setDepartment] = useState("accounting");
   const [voters, setVoters] = useState<VoterRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");

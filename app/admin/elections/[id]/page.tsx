@@ -563,7 +563,7 @@ const ElectionDetailPage = () => {
                     key={c.id}
                     className="flex items-start gap-3 border border-border p-3"
                   >
-                    <div className="relative size-12 shrink-0 overflow-hidden rounded-lg bg-muted">
+                    <div className="relative size-12 shrink-0 overflow-hidden bg-muted">
                       {c.photoUrl ? (
                         <Image
                           src={c.photoUrl}
@@ -655,7 +655,7 @@ const ElectionDetailPage = () => {
               <Label>Photo</Label>
               <div className="flex items-center gap-4">
                 {candPhotoPreview && (
-                  <div className="relative size-16 overflow-hidden rounded-lg bg-muted">
+                  <div className="relative size-16 overflow-hidden bg-muted">
                     <Image
                       src={candPhotoPreview}
                       alt="Preview"

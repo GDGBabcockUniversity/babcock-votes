@@ -84,16 +84,38 @@ const VotePage = () => {
 
   const selectCandidate = (positionId: string, candidateId: string) => {
     if (reviewing) return;
-    setSelections((prev) => ({ ...prev, [positionId]: candidateId }));
+    setSelections((prev) => {
+      if (prev[positionId] === candidateId) {
+        const next = { ...prev };
+        delete next[positionId];
+        return next;
+      }
+      return { ...prev, [positionId]: candidateId };
+    });
   };
 
-  const allSelected = positions.every((p) => selections[p.id]);
+  const [submitError, setSubmitError] = useState("");
 
   const handleSubmit = async () => {
-    if (!firebaseUser || !allSelected) return;
+    if (!firebaseUser) return;
     setSubmitting(true);
+    setSubmitError("");
 
     try {
+      // Re-check election status before submitting
+      const freshSnap = await getDoc(doc(db, "elections", id));
+      if (!freshSnap.exists()) {
+        setSubmitError("This election no longer exists.");
+        setSubmitting(false);
+        return;
+      }
+      const freshStatus = freshSnap.data().status;
+      if (freshStatus !== "active") {
+        setSubmitError("This election is no longer accepting votes.");
+        setSubmitting(false);
+        return;
+      }
+
       const batch = writeBatch(db);
 
       positions.forEach((pos) => {
@@ -102,7 +124,7 @@ const VotePage = () => {
         batch.set(voteRef, {
           electionId: id,
           positionId: pos.id,
-          candidateId: selections[pos.id],
+          candidateId: selections[pos.id] || "abstain",
           voterId: firebaseUser.uid,
           votedAt: new Date(),
         });
@@ -111,6 +133,17 @@ const VotePage = () => {
       await batch.commit();
       router.replace(PAGES.main.confirmation(id));
     } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (
+        message.includes("PERMISSION_DENIED") ||
+        message.includes("permission")
+      ) {
+        setSubmitError(
+          "Your vote could not be submitted. The election may have been closed. Please refresh and try again.",
+        );
+      } else {
+        setSubmitError("Something went wrong. Please try again.");
+      }
       console.error("Vote submission failed:", err);
       setSubmitting(false);
     }
@@ -137,24 +170,24 @@ const VotePage = () => {
     candidates: candidates.filter((c) => c.positionId === pos.id),
   }));
 
-  const getCandidateName = (candidateId: string) =>
-    candidates.find((c) => c.id === candidateId)?.fullName ?? "";
+  const getCandidateName = (candidateId: string) => {
+    if (!candidateId) return "Abstain";
+    return candidates.find((c) => c.id === candidateId)?.fullName ?? "Abstain";
+  };
 
   return (
     <div>
       {/* Header */}
       <div className="text-center">
-        <span className="inline-block rounded-full border border-gold/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold">
+        <span className="font-sans inline-block rounded-full border border-gold/40 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-gold">
           Official Ballot
         </span>
-        <h1 className="mt-3 font-serif text-xl font-bold italic">
-          {election.title}
-        </h1>
+        <h1 className="mt-3 font-serif text-xl font-bold">{election.title}</h1>
       </div>
 
       {/* Voter info */}
       {userProfile && (
-        <div className="mt-5 flex items-center gap-3 rounded-xl bg-linear-to-r from-charcoal to-charcoal/80 px-4 py-3 text-white">
+        <div className="mt-5 font-sans flex items-center gap-3 rounded-xl bg-linear-to-r from-charcoal to-charcoal/80 px-4 py-3 text-white">
           <div className="flex size-10 items-center justify-center rounded-full bg-gold text-sm font-bold text-white">
             {userProfile.fullName.charAt(0)}
           </div>
@@ -172,7 +205,7 @@ const VotePage = () => {
       {/* Positions + candidates */}
       <div className="mt-6 space-y-6">
         {grouped.map(({ position, candidates: cands }) => (
-          <section key={position.id}>
+          <section key={position.id} className="font-sans">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-gray">
               {position.title}
             </h3>
@@ -229,10 +262,10 @@ const VotePage = () => {
 
       {/* Review section */}
       {reviewing && (
-        <div className="mt-8 rounded-2xl border border-gold/30 bg-white p-5 shadow-lg">
+        <div className="mt-8 rounded-2xl border border-gold/30 bg-white p-5 shadow-lg font-sans">
           <div className="flex flex-col items-center text-center">
             <AlertTriangle className="size-8 text-gold" />
-            <h2 className="mt-2 font-serif text-lg font-bold italic">
+            <h2 className="mt-2 font-serif text-lg font-bold">
               Review Your Selections
             </h2>
             <p className="mt-1 text-xs text-muted-gray">
@@ -251,7 +284,7 @@ const VotePage = () => {
                   <p className="text-[10px] uppercase tracking-wider text-gold">
                     {pos.title}
                   </p>
-                  <p className="text-sm font-semibold">
+                  <p className={`text-sm font-semibold ${!selections[pos.id] ? "italic text-muted-gray" : ""}`}>
                     {getCandidateName(selections[pos.id])}
                   </p>
                 </div>
@@ -264,6 +297,12 @@ const VotePage = () => {
               </div>
             ))}
           </div>
+
+          {submitError && (
+            <div className="mt-4 border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700">
+              {submitError}
+            </div>
+          )}
 
           <div className="mt-5 grid grid-cols-2 gap-3">
             <button
@@ -285,19 +324,16 @@ const VotePage = () => {
 
       {/* Submit / Review trigger */}
       {!reviewing && (
-        <div className="mt-8">
+        <div className="mt-8 font-sans">
           <button
             onClick={() => setReviewing(true)}
-            disabled={!allSelected}
-            className="w-full rounded-lg bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="w-full rounded-lg bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             Review & Submit Ballot
           </button>
-          {!allSelected && (
-            <p className="mt-2 text-center text-xs text-muted-gray">
-              Select a candidate for every position to continue.
-            </p>
-          )}
+          <p className="mt-2 text-center text-xs text-muted-gray">
+            Positions without a selection will be recorded as abstain.
+          </p>
         </div>
       )}
     </div>

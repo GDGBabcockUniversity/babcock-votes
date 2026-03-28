@@ -658,10 +658,16 @@ const ElectionDetailPage = () => {
               <Label>Manifesto</Label>
               <Textarea
                 value={candManifesto}
-                onChange={(e) => setCandManifesto(e.target.value)}
+                onChange={(e) => {
+                  if (e.target.value.length <= 3000) setCandManifesto(e.target.value);
+                }}
                 placeholder="Candidate's manifesto or bio..."
                 rows={3}
+                maxLength={3000}
               />
+              <p className={`text-right text-xs ${candManifesto.length > 2800 ? "text-red-500" : "text-muted-gray"}`}>
+                {candManifesto.length}/3000
+              </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

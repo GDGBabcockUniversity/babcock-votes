@@ -23,6 +23,7 @@ export interface Election {
   title: string;
   description: string;
   departmentId: string;
+  logoUrl?: string;
   startDate: Timestamp;
   endDate: Timestamp;
   status: "upcoming" | "active" | "closed";

@@ -99,6 +99,8 @@ const ElectionDetailPage = () => {
   const [editDeptId, setEditDeptId] = useState("");
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
+  const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
+  const [editLogoPreview, setEditLogoPreview] = useState("");
 
   const elRef = doc(db, "elections", id);
 
@@ -304,15 +306,36 @@ const ElectionDetailPage = () => {
     setEditDeptId(election.departmentId);
     setEditStartDate(toDatetimeLocal(election.startDate));
     setEditEndDate(toDatetimeLocal(election.endDate));
+    setEditLogoFile(null);
+    setEditLogoPreview(election.logoUrl || "");
     setEditDialogOpen(true);
+  };
+
+  const handleEditLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEditLogoFile(file);
+    setEditLogoPreview(URL.createObjectURL(file));
   };
 
   const handleSaveDetails = async () => {
     setSaving(true);
+
+    let logoUrl = editLogoPreview;
+    if (editLogoFile) {
+      const storageRef = ref(
+        storage,
+        `elections/logos/${Date.now()}_${editLogoFile.name}`,
+      );
+      await uploadBytes(storageRef, editLogoFile);
+      logoUrl = await getDownloadURL(storageRef);
+    }
+
     await updateDoc(elRef, {
       title: editTitle,
       description: editDesc,
       departmentId: editDeptId,
+      logoUrl,
       startDate: new Date(editStartDate),
       endDate: new Date(editEndDate),
     });
@@ -353,7 +376,7 @@ const ElectionDetailPage = () => {
           >
             <ArrowLeft className="size-3.5 md:size-4" /> Back to Elections
           </button>
-          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic my-4">
+          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold my-4">
             {election.title}
           </h1>
           <p className="mt-1 text-sm md:text-base text-muted-gray font-sans">
@@ -377,7 +400,7 @@ const ElectionDetailPage = () => {
             <Button
               size="sm"
               variant="outline"
-              className="font-sans rounded-none"
+              className="font-sans rounded-none px-3 py-2 h-auto"
               onClick={openEditDetails}
             >
               <Pencil className="mr-2 size-3.5" /> Edit
@@ -659,14 +682,17 @@ const ElectionDetailPage = () => {
               <Textarea
                 value={candManifesto}
                 onChange={(e) => {
-                  if (e.target.value.length <= 3000) setCandManifesto(e.target.value);
+                  if (e.target.value.length <= 3000)
+                    setCandManifesto(e.target.value);
                 }}
                 placeholder="Candidate's manifesto or bio..."
                 rows={3}
                 maxLength={3000}
               />
-              <p className={`text-right text-xs ${candManifesto.length > 2800 ? "text-red-500" : "text-muted-gray"}`}>
-                {candManifesto.length}/3000
+              <p
+                className={`text-right text-xs ${candManifesto.length > 2800 ? "text-red-500" : "text-muted-gray"}`}
+              >
+                {candManifesto.length} / 3000
               </p>
             </div>
 
@@ -678,7 +704,14 @@ const ElectionDetailPage = () => {
                   onValueChange={(v) => setCandDept(v ?? "")}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select" />
+                    <SelectValue
+                      placeholder="Select"
+                      render={
+                        <p>
+                          {DEPARTMENTS.find((d) => d.id === candDept)?.name}
+                        </p>
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent className="font-sans w-full">
                     {DEPARTMENTS.map((d) => (
@@ -754,6 +787,31 @@ const ElectionDetailPage = () => {
                 placeholder="Brief description of the election..."
                 rows={3}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Association Logo</Label>
+              <div className="flex items-center gap-4">
+                {editLogoPreview && (
+                  <div className="relative size-16 overflow-hidden bg-muted border border-border">
+                    <Image
+                      src={editLogoPreview}
+                      alt="Logo preview"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                )}
+                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-charcoal">
+                  <Upload className="size-4" />
+                  {editLogoPreview ? "Change logo" : "Upload logo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleEditLogoSelect}
+                  />
+                </label>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Department</Label>

@@ -112,8 +112,8 @@ const CandidatesPage = () => {
   return (
     <div className="-mx-4 -mt-6">
       {/* Dark header */}
-      <div className="bg-linear-to-b from-charcoal to-charcoal/90 px-4 pb-6 pt-4 text-white">
-        <div className="mx-auto max-w-2xl">
+      <div className="bg-linear-to-b from-charcoal to-charcoal/90 px-6 pb-6 pt-4 text-white">
+        <div className="mx-auto max-w-5xl">
           <button
             onClick={() => router.back()}
             className="flex items-center gap-1 text-xs text-white/70 hover:text-white"
@@ -125,7 +125,7 @@ const CandidatesPage = () => {
             <StatusBadge status={election.status} />
           </div>
 
-          <h1 className="mt-3 font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic">
+          <h1 className="mt-3 font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
             {election.title}
           </h1>
 
@@ -145,8 +145,8 @@ const CandidatesPage = () => {
 
       {/* Candidates by position */}
       <div className="px-4 py-6">
-        <div className="mx-auto max-w-2xl">
-          <h2 className="font-serif text-xl md:text-2xl lg:text-3xl font-semibold italic text-gold">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="font-serif text-xl md:text-2xl lg:text-3xl font-semibold text-gold">
             The Candidates
           </h2>
 
@@ -155,7 +155,7 @@ const CandidatesPage = () => {
               <h3 className="text-sm md:text-base lg:text-lg font-sans font-semibold uppercase tracking-wider text-charcoal">
                 {position.title}
               </h3>
-              <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {cands.map((c) => (
                   <CandidateCard key={c.id} candidate={c} />
                 ))}
@@ -168,7 +168,7 @@ const CandidatesPage = () => {
               {userProfile?.departmentId === election.departmentId ? (
                 <Link
                   href={PAGES.main.vote(id)}
-                  className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                  className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans transition-opacity hover:opacity-90"
                 >
                   Vote Now
                 </Link>

@@ -30,28 +30,22 @@ const ConfirmationPage = () => {
         <Check className="size-10 text-white" strokeWidth={3} />
       </div>
 
-      <h1 className="mt-6 font-serif text-3xl font-bold italic text-white">
+      <h1 className="mt-6 font-serif text-3xl font-bold text-white">
         Ballot Secured
       </h1>
 
-      <p className="mt-3 max-w-xs text-sm italic text-muted-gray">
+      <p className="mt-3 max-w-xs text-sm text-muted-gray font-sans">
         {election
           ? `Your vote for the ${election.title} has been encrypted and recorded.`
           : "Your vote has been encrypted and recorded."}
       </p>
 
-      <div className="mt-10 w-full max-w-xs space-y-3">
-        <Link
-          href={PAGES.main.electionDetail(id)}
-          className="block rounded-lg bg-white py-3.5 text-center text-sm font-semibold text-charcoal transition-opacity hover:opacity-90"
-        >
-          View Live Results
-        </Link>
+      <div className="mt-10 w-full max-w-xs space-y-3 font-sans">
         <Link
           href={PAGES.main.home}
-          className="block py-2 text-center text-xs text-muted-gray underline"
+          className="block rounded-lg bg-white py-3.5 text-center text-sm font-semibold text-charcoal transition-opacity hover:opacity-90"
         >
-          Return to Dashboard
+          Return Home
         </Link>
       </div>
     </div>

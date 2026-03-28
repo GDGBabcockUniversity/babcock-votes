@@ -20,8 +20,6 @@ export const DEPARTMENTS = [
   { id: "software_engineering", name: "Software Engineering" },
 ] as const;
 
-export type DepartmentId = (typeof DEPARTMENTS)[number]["id"];
-
 export const LEVELS = ["100", "200", "300", "400", "500", "600"] as const;
 
 export const CREDENTIALS = {

@@ -36,13 +36,23 @@ const formatDateRange = (
   start: { seconds: number },
   end: { seconds: number },
 ) => {
-  const fmt = (ts: { seconds: number }) =>
-    new Date(ts.seconds * 1000).toLocaleDateString("en-US", {
-      month: "short",
-      day: "2-digit",
-      year: "numeric",
-    });
-  return `${fmt(start)} – ${fmt(end)}`;
+  const startDate = new Date(start.seconds * 1000);
+  const endDate = new Date(end.seconds * 1000);
+
+  const options: Intl.DateTimeFormatOptions = {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  };
+
+  const startStr = startDate.toLocaleDateString("en-US", options);
+  const endStr = endDate.toLocaleDateString("en-US", options);
+
+  if (startStr === endStr) {
+    return startStr;
+  }
+
+  return `${startStr} - ${endStr}`;
 };
 
 const CandidatesPage = () => {

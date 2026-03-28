@@ -152,6 +152,12 @@ const CandidatesPage = () => {
               {election.candidateCount === 1 ? "idate" : "idates"}
             </span>
           </div>
+
+          {election.description && (
+            <p className="mt-3 whitespace-pre-wrap text-sm text-white/50 font-sans">
+              {election.description}
+            </p>
+          )}
         </div>
       </div>
 
@@ -186,12 +192,12 @@ const CandidatesPage = () => {
               {userProfile?.departmentId === election.departmentId ? (
                 <Link
                   href={PAGES.main.vote(id)}
-                  className="block w-full rounded-lg bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans transition-opacity hover:opacity-90"
+                  className="block w-full bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans transition-opacity hover:opacity-90"
                 >
                   Vote Now
                 </Link>
               ) : (
-                <div className="rounded-lg border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans">
+                <div className="border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans">
                   You can only vote in your own department&apos;s elections.
                 </div>
               )}
@@ -199,7 +205,7 @@ const CandidatesPage = () => {
           )}
 
           {election.status === "closed" && (
-            <div className="rounded-lg border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans mt-8">
+            <div className="border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans mt-8">
               This election has closed. You can no longer vote.
             </div>
           )}

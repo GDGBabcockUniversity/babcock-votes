@@ -24,7 +24,7 @@ export const ElectionCard = ({ election }: { election: Election }) => {
       >
         <StatusBadge status={election.status} />
 
-        <h3 className="my-4 font-serif text-lg md:text-xl lg:text-2xl font-bold italic">
+        <h3 className="my-4 font-serif text-lg md:text-xl lg:text-2xl font-bold">
           {election.title}
         </h3>
 

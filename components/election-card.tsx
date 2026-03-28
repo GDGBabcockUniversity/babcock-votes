@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "./status-badge";
@@ -22,7 +23,19 @@ export const ElectionCard = ({ election }: { election: Election }) => {
           isActive ? "border-gold/30 bg-gold-tint" : "border-border bg-white",
         )}
       >
-        <StatusBadge status={election.status} />
+        <div className="flex items-start justify-between gap-3">
+          <StatusBadge status={election.status} />
+          {election.logoUrl && (
+            <div className="relative size-10 shrink-0 overflow-hidden bg-muted border border-border">
+              <Image
+                src={election.logoUrl}
+                alt={`${election.title} logo`}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
+        </div>
 
         <h3 className="my-4 font-serif text-lg md:text-xl lg:text-2xl font-bold">
           {election.title}

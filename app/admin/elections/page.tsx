@@ -148,7 +148,10 @@ const AdminElectionsPage = () => {
                     {getDepartmentName(el.departmentId)}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant[el.status]}>
+                    <Badge
+                      variant={statusVariant[el.status]}
+                      className="capitalize"
+                    >
                       {el.status}
                     </Badge>
                   </TableCell>
@@ -169,7 +172,7 @@ const AdminElectionsPage = () => {
                           </Button>
                         }
                       />
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="font-sans">
                         <DropdownMenuItem
                           render={
                             <Link href={PAGES.admin.electionDetail(el.id)}>

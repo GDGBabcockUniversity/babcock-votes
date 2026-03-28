@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { DEPARTMENTS, PAGES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Upload } from "lucide-react";
+import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -38,6 +41,15 @@ const NewElectionPage = () => {
   const [status, setStatus] = useState<string>("upcoming");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState("");
+
+  const handleLogoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoFile(file);
+    setLogoPreview(URL.createObjectURL(file));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,11 +57,22 @@ const NewElectionPage = () => {
 
     setLoading(true);
     try {
+      let logoUrl = "";
+      if (logoFile) {
+        const storageRef = ref(
+          storage,
+          `elections/logos/${Date.now()}_${logoFile.name}`,
+        );
+        await uploadBytes(storageRef, logoFile);
+        logoUrl = await getDownloadURL(storageRef);
+      }
+
       const docRef = await addDoc(collection(db, "elections"), {
         title,
         description,
         departmentId,
         status,
+        logoUrl,
         startDate: new Date(startDate),
         endDate: new Date(endDate),
         candidateCount: 0,
@@ -108,6 +131,34 @@ const NewElectionPage = () => {
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="lg:text-base font-medium">
+                Association Logo
+              </Label>
+              <div className="flex items-center gap-4">
+                {logoPreview && (
+                  <div className="relative size-16 overflow-hidden bg-muted border border-border">
+                    <Image
+                      src={logoPreview}
+                      alt="Logo preview"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                )}
+                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-charcoal">
+                  <Upload className="size-4" />
+                  {logoPreview ? "Change logo" : "Upload logo"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoSelect}
+                  />
+                </label>
+              </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">

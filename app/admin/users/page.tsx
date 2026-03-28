@@ -42,7 +42,7 @@ const roleBadgeVariant: Record<string, "default" | "secondary" | "outline"> = {
 
 const roleLabel: Record<string, string> = {
   voter: "Voter",
-  dept_admin: "Dept Admin",
+  dept_admin: "Department Admin",
   super_admin: "Super Admin",
 };
 
@@ -168,7 +168,7 @@ const UsersPage = () => {
                           disabled={updating === u.uid}
                         >
                           <SelectTrigger className="h-8 w-28 text-xs">
-                            <SelectValue className="capitalize" />
+                            <SelectValue render={<p>{roleLabel[u.role]}</p>} />
                           </SelectTrigger>
                           <SelectContent className="font-sans">
                             {ROLES.map((r) => (

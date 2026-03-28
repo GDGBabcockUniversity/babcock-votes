@@ -170,7 +170,7 @@ const CandidatesPage = () => {
 
           {grouped.map(({ position, candidates: cands }) => (
             <section key={position.id} className="mt-6">
-              <h3 className="text-sm md:text-base lg:text-lg font-sans font-semibold uppercase tracking-wider text-charcoal">
+              <h3 className="text-sm md:text-base lg:text-lg font-serif font-semibold uppercase tracking-wider text-charcoal">
                 {position.title}
               </h3>
               <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

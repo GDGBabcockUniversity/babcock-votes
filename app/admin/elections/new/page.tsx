@@ -65,23 +65,29 @@ const NewElectionPage = () => {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">Create Election</h1>
+      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+        Create Election
+      </h1>
       <p className="mt-1 text-sm md:text-base lg:text-lg text-muted-gray font-sans">
         Set up a new election for a department or association.
       </p>
 
       <Card className="mt-6 rounded-none">
         <CardHeader className="font-sans">
-          <CardTitle className="md:text-lg lg:text-xl">Election Details</CardTitle>
-          <CardDescription >
+          <CardTitle className="md:text-lg lg:text-xl">
+            Election Details
+          </CardTitle>
+          <CardDescription>
             Fill in the information below. You can add positions and candidates
             after creating the election.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-5 mt-5">
+          <form onSubmit={handleSubmit} className="space-y-5 mt-5 font-sans">
             <div className="space-y-2">
-              <Label htmlFor="title" className="lg:text-lg font-medium">Title</Label>
+              <Label htmlFor="title" className="lg:text-base font-medium">
+                Title
+              </Label>
               <Input
                 id="title"
                 placeholder="e.g. BUCC 2026 Executive"
@@ -92,7 +98,9 @@ const NewElectionPage = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="lg:text-lg font-medium">Description</Label>
+              <Label htmlFor="description" className="lg:text-base font-medium">
+                Description
+              </Label>
               <Textarea
                 id="description"
                 placeholder="Brief description of the election..."
@@ -104,14 +112,21 @@ const NewElectionPage = () => {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="lg:text-lg font-medium">Department</Label>
+                <Label className="lg:text-base font-medium">Department</Label>
                 <Select
                   value={departmentId}
                   onValueChange={(v) => setDepartmentId(v ?? "")}
                   required
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
+                    <SelectValue
+                      placeholder="Select department"
+                      render={
+                        <p>
+                          {DEPARTMENTS.find((e) => e.id === departmentId)?.name}
+                        </p>
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent className="font-sans">
                     {DEPARTMENTS.map((d) => (
@@ -124,15 +139,15 @@ const NewElectionPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label className="lg:text-lg font-medium">Status</Label>
+                <Label className="lg:text-base font-medium">Status</Label>
                 <Select
                   value={status}
                   onValueChange={(v) => setStatus(v ?? "upcoming")}
                 >
                   <SelectTrigger>
-                    <SelectValue className='capitalize' />
+                    <SelectValue className="capitalize" />
                   </SelectTrigger>
-                  <SelectContent className='font-sans'>
+                  <SelectContent className="font-sans">
                     {STATUS_OPTIONS.map((s) => (
                       <SelectItem key={s} value={s} className="capitalize">
                         {s}
@@ -145,20 +160,24 @@ const NewElectionPage = () => {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="startDate" className="lg:text-lg font-medium">Start Date</Label>
+                <Label htmlFor="startDate" className="lg:text-base font-medium">
+                  Start Date
+                </Label>
                 <Input
                   id="startDate"
-                  type="date"
+                  type="datetime-local"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="endDate" className="lg:text-lg font-medium">End Date</Label>
+                <Label htmlFor="endDate" className="lg:text-base font-medium">
+                  End Date
+                </Label>
                 <Input
                   id="endDate"
-                  type="date"
+                  type="datetime-local"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   required
@@ -175,7 +194,11 @@ const NewElectionPage = () => {
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading} className="font-sans rounded-none">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="font-sans rounded-none"
+              >
                 {loading ? "Creating..." : "Create Election"}
               </Button>
             </div>

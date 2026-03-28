@@ -83,7 +83,7 @@ const ConfirmationPage = () => {
       <div className="mt-10 w-full max-w-xs space-y-3 font-sans">
         <Link
           href={PAGES.main.home}
-          className="block rounded-lg bg-white py-3.5 text-center text-sm font-semibold text-charcoal transition-opacity hover:opacity-90"
+          className="block bg-white py-3.5 text-center text-sm font-semibold text-charcoal transition-opacity hover:opacity-90"
         >
           Return Home
         </Link>

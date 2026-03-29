@@ -47,7 +47,6 @@ export interface Candidate {
   manifesto: string;
   departmentId: string;
   level: string;
-  voteCount: number;
 }
 
 export interface Vote {

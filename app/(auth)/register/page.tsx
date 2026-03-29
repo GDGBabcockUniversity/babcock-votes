@@ -194,7 +194,7 @@ const RegisterPage = () => {
 
           {error && <p className="text-center text-xs text-red-600">{error}</p>}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               onClick={handleReject}
               disabled={submitting}

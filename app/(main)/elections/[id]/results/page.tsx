@@ -25,7 +25,7 @@ const PublicResultsPage = () => {
 
   const [election, setElection] = useState<Election | null>(null);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [candidates, setCandidates] = useState<(Candidate & { voteCount: number })[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
   const [voterCount, setVoterCount] = useState(0);
   const [loading, setLoading] = useState(true);

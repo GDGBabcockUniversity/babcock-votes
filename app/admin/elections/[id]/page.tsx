@@ -195,13 +195,13 @@ const ElectionDetailPage = () => {
     await Promise.all(
       relatedCands.map((c) => deleteDoc(doc(elRef, "candidates", c.id))),
     );
-    
+
     if (relatedCands.length > 0) {
       await updateDoc(elRef, {
         candidateCount: increment(-relatedCands.length),
       });
     }
-    
+
     fetchData();
   };
 
@@ -373,30 +373,19 @@ const ElectionDetailPage = () => {
   return (
     <div>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
+      <div className="flex items-start gap-4 flex-col">
+        <div className="w-full flex flex-wrap gap-2">
           <button
             onClick={() => router.push(PAGES.admin.elections)}
-            className="mb-2 flex items-center gap-1 text-xs md:text-sm text-muted-gray hover:text-charcoal font-sans"
+            className="mb-2 mr-auto flex items-center gap-1 text-xs md:text-sm text-muted-gray hover:text-charcoal font-sans"
           >
             <ArrowLeft className="size-3.5 md:size-4" /> Back to Elections
           </button>
-          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold my-4">
-            {election.title}
-          </h1>
-          <p className="mt-1 text-sm md:text-base text-muted-gray font-sans">
-            {getDepartmentName(election.departmentId)}{" "}
-            <span className="text-muted-gray/40">&#8226;</span>{" "}
-            {candidates.length} cand
-            {candidates.length === 1 ? "idate" : "idates"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
           <Link
             href={PAGES.admin.electionResults(id)}
             className={cn(
               "font-sans rounded-none",
-              "flex w-full items-center justify-center border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+              "flex w-full lg:w-fit items-center justify-center border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
             <BarChart3 className="mr-2 size-3.5" /> Results
@@ -405,7 +394,7 @@ const ElectionDetailPage = () => {
             <Button
               size="sm"
               variant="outline"
-              className="font-sans rounded-none px-3 py-2 h-auto"
+              className="font-sans rounded-none px-3 py-2 h-auto w-full lg:w-fit"
               onClick={openEditDetails}
             >
               <Pencil className="mr-2 size-3.5" /> Edit
@@ -416,7 +405,7 @@ const ElectionDetailPage = () => {
               value={statusValue}
               onValueChange={(v) => v && handleStatusChange(v)}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-full lg:w-fit">
                 <SelectValue className="capitalize" />
               </SelectTrigger>
               <SelectContent className="font-sans">
@@ -433,6 +422,18 @@ const ElectionDetailPage = () => {
               {statusValue}
             </Badge>
           )}
+        </div>
+
+        <div className="flex items-start gap-2 flex-col">
+          <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+            {election.title}
+          </h1>
+          <p className="mt-1 text-sm md:text-base text-muted-gray font-sans">
+            {getDepartmentName(election.departmentId)}{" "}
+            <span className="text-muted-gray/40">&#8226;</span>{" "}
+            {candidates.length} cand
+            {candidates.length === 1 ? "idate" : "idates"}
+          </p>
         </div>
       </div>
 

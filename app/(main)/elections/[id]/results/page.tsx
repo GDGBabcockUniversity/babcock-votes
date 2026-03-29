@@ -12,12 +12,7 @@ import {
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, Users, Vote } from "lucide-react";
@@ -37,6 +32,11 @@ const PublicResultsPage = () => {
 
   useEffect(() => {
     const fetch = async () => {
+      router.replace(PAGES.main.electionDetail(id));
+      return;
+
+      // TODO: remove the block above when public results should be a thing
+
       const elRef = doc(db, "elections", id);
       const elSnap = await getDoc(elRef);
       if (!elSnap.exists()) {
@@ -45,7 +45,7 @@ const PublicResultsPage = () => {
       }
 
       const elData = { id: elSnap.id, ...elSnap.data() } as Election;
-      
+
       if (elData.status !== "closed") {
         router.replace(PAGES.main.electionDetail(id));
         return;
@@ -123,7 +123,9 @@ const PublicResultsPage = () => {
         <ArrowLeft className="size-3.5" /> Back to Election
       </button>
 
-      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">Public Results</h1>
+      <h1 className="font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+        Public Results
+      </h1>
       <p className="mt-1 text-sm font-sans text-muted-gray">{election.title}</p>
 
       {/* Overview cards */}
@@ -170,7 +172,9 @@ const PublicResultsPage = () => {
         {grouped.map(({ position, candidates: cands, totalForPos }) => (
           <Card key={position.id}>
             <CardHeader>
-              <CardTitle className="text-lg font-serif md:text-2xl font-semibold">{position.title}</CardTitle>
+              <CardTitle className="text-lg font-serif md:text-2xl font-semibold">
+                {position.title}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {cands.map((c, idx) => {
@@ -203,7 +207,9 @@ const PublicResultsPage = () => {
                 );
               })}
               {cands.length === 0 && (
-                <p className="text-sm font-sans text-muted-gray">No candidates.</p>
+                <p className="text-sm font-sans text-muted-gray">
+                  No candidates.
+                </p>
               )}
             </CardContent>
           </Card>

@@ -47,7 +47,8 @@ const roleLabel: Record<string, string> = {
 };
 
 const UsersPage = () => {
-  const { firebaseUser } = useAuth();
+  const { firebaseUser, userProfile } = useAuth();
+  const isSuperAdmin = userProfile?.role === "super_admin";
   const [users, setUsers] = useState<(User & { uid: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -155,7 +156,7 @@ const UsersPage = () => {
                     </TableCell>
                     <TableCell className="text-muted-gray">{u.level}</TableCell>
                     <TableCell>
-                      {isSelf ? (
+                      {isSelf || !isSuperAdmin ? (
                         <Badge variant={roleBadgeVariant[u.role]}>
                           {roleLabel[u.role]}
                         </Badge>

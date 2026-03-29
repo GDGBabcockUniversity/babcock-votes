@@ -8,7 +8,9 @@ service cloud.firestore {
     }
 
     function isEmailVerified() {
-      return isSignedIn() && request.auth.token.email_verified;
+      return isSignedIn() 
+        && request.auth.token.email_verified
+        && request.auth.token.email.matches('.*@student\\.babcock\\.edu\\.ng');
     }
 
     function getUserData() {
@@ -27,45 +29,56 @@ service cloud.firestore {
       return isSuperAdmin() || isDeptAdmin();
     }
 
-    // Eligible Voters: anyone can read, super_admin can create/delete,
-    // signed-in users can claim unclaimed docs (add claimedByUid + claimedEmail)
+    function isDeptAdminFor(deptId) {
+      return isDeptAdmin() && getUserData().departmentId == deptId;
+    }
+
+    // Eligible Voters: users can get (lookup by matric), admins can list all.
+    // Super admin can create/delete. Signed-in users can claim unclaimed docs if they don't have a user profile yet.
     match /eligible_voters/{docId} {
-      allow read: if true;
+      allow get: if isSignedIn();
+      allow list: if isAnyAdmin();
       allow create, delete: if isSuperAdmin();
       allow update: if isSuperAdmin() ||
         (isSignedIn()
+         && !exists(/databases/$(database)/documents/users/$(request.auth.uid))
          && !("claimedByUid" in resource.data)
          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["claimedByUid", "claimedEmail"])
          && request.resource.data.claimedByUid == request.auth.uid
          && request.resource.data.claimedEmail == request.auth.token.email);
     }
 
-    // Users: owners can read their own doc, any admin can read all, only super_admin can update roles
+    // Users: owners can read own doc, any admin can read all.
+    // Creation strictly capped to "voter" role. Only super_admin can update roles.
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == "voter";
       allow update: if isSuperAdmin();
     }
 
-    // Elections: anyone signed in can read, only super_admin can write
+    // Elections: anyone signed in can read. Super Admin can write any, Dept Admin can write their own department.
     match /elections/{electionId} {
       allow read: if isSignedIn();
-      allow create, update, delete: if isSuperAdmin();
+      allow create: if isSuperAdmin() || isDeptAdminFor(request.resource.data.departmentId);
+      allow update, delete: if isSuperAdmin() || isDeptAdminFor(resource.data.departmentId);
 
       // Positions subcollection
       match /positions/{positionId} {
         allow read: if isSignedIn();
-        allow create, update, delete: if isSuperAdmin();
+        allow create: if isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId);
+        allow update, delete: if isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId);
       }
 
       // Candidates subcollection
       match /candidates/{candidateId} {
         allow read: if isSignedIn();
-        allow create, update, delete: if isSuperAdmin();
+        allow create: if isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId);
+        allow update, delete: if isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId);
       }
     }
 
-    // Votes: verified users can create their own vote, admins can read for results
+    // Votes: verified users can create their own vote, admins can read for results.
+    // Must belong to the same department as the election, and vote must be cast for a valid candidate or "abstain".
     match /votes/{voteId} {
       allow read: if isSignedIn()
         && (resource.data.voterId == request.auth.uid || isAnyAdmin());
@@ -73,7 +86,9 @@ service cloud.firestore {
         && request.resource.data.voterId == request.auth.uid
         && voteId == request.auth.uid + "_" + request.resource.data.positionId
         && !exists(/databases/$(database)/documents/votes/$(voteId))
-        && get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.status == "active";
+        && get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.status == "active"
+        && getUserData().departmentId == get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.departmentId
+        && (request.resource.data.candidateId == "abstain" || exists(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)));
       allow update, delete: if false;
     }
   }

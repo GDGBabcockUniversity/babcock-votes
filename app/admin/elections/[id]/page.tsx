@@ -13,6 +13,7 @@ import {
   collection,
   query,
   orderBy,
+  increment,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
@@ -194,6 +195,13 @@ const ElectionDetailPage = () => {
     await Promise.all(
       relatedCands.map((c) => deleteDoc(doc(elRef, "candidates", c.id))),
     );
+    
+    if (relatedCands.length > 0) {
+      await updateDoc(elRef, {
+        candidateCount: increment(-relatedCands.length),
+      });
+    }
+    
     fetchData();
   };
 
@@ -252,12 +260,9 @@ const ElectionDetailPage = () => {
     if (editingCandId) {
       await updateDoc(doc(elRef, "candidates", editingCandId), data);
     } else {
-      await addDoc(collection(elRef, "candidates"), {
-        ...data,
-        voteCount: 0,
-      });
+      await addDoc(collection(elRef, "candidates"), data);
       await updateDoc(elRef, {
-        candidateCount: (election?.candidateCount ?? 0) + 1,
+        candidateCount: increment(1),
       });
     }
 
@@ -271,7 +276,7 @@ const ElectionDetailPage = () => {
     if (!confirm("Delete this candidate?")) return;
     await deleteDoc(doc(elRef, "candidates", candId));
     await updateDoc(elRef, {
-      candidateCount: Math.max((election?.candidateCount ?? 1) - 1, 0),
+      candidateCount: increment(-1),
     });
     fetchData();
   };

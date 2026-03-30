@@ -1,4 +1,3 @@
-export const SCHOOL_EMAIL_DOMAIN = "@student.babcock.edu.ng";
 
 export const DEPARTMENTS = [
   { id: "accounting", name: "Accounting" },

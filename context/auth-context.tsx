@@ -16,7 +16,6 @@ import {
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
-import { SCHOOL_EMAIL_DOMAIN } from "@/lib/constants";
 import type { User } from "@/lib/types";
 
 interface AuthState {
@@ -62,12 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signInWithGoogle = async () => {
-    const result = await signInWithPopup(auth, googleProvider);
-
-    if (!result.user.email?.endsWith(SCHOOL_EMAIL_DOMAIN)) {
-      await firebaseSignOut(auth);
-      throw new Error(`Please use your student email (${SCHOOL_EMAIL_DOMAIN})`);
-    }
+    await signInWithPopup(auth, googleProvider);
   };
 
   const refreshProfile = useCallback(async () => {

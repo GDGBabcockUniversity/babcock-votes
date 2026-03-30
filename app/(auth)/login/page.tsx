@@ -78,9 +78,6 @@ const LoginPage = () => {
 
         {error && <p className="text-center text-xs text-red-600">{error}</p>}
 
-        <p className="text-center text-xs text-muted-gray font-sans">
-          Use your <strong>@student.babcock.edu.ng</strong> email to continue.
-        </p>
       </div>
     </div>
   );

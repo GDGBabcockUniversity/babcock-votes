@@ -9,8 +9,7 @@ service cloud.firestore {
 
     function isEmailVerified() {
       return isSignedIn() 
-        && request.auth.token.email_verified
-        && request.auth.token.email.matches('.*@student\\.babcock\\.edu\\.ng');
+        && request.auth.token.email_verified;
     }
 
     function getUserData() {

@@ -37,6 +37,7 @@ export interface Position {
   title: string;
   description: string;
   order: number;
+  allowedLevels?: string[];
 }
 
 export interface Candidate {

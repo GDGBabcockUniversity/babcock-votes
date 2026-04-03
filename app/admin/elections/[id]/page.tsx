@@ -75,6 +75,7 @@ const ElectionDetailPage = () => {
   const [posTitle, setPosTitle] = useState("");
   const [posDesc, setPosDesc] = useState("");
   const [posOrder, setPosOrder] = useState(0);
+  const [posLevels, setPosLevels] = useState<string[]>([]);
   const [editingPosId, setEditingPosId] = useState<string | null>(null);
   const [posDialogOpen, setPosDialogOpen] = useState(false);
 
@@ -161,6 +162,7 @@ const ElectionDetailPage = () => {
     setPosTitle("");
     setPosDesc("");
     setPosOrder(positions.length);
+    setPosLevels([]);
     setEditingPosId(null);
   };
 
@@ -168,13 +170,19 @@ const ElectionDetailPage = () => {
     setPosTitle(pos.title);
     setPosDesc(pos.description);
     setPosOrder(pos.order);
+    setPosLevels(pos.allowedLevels || []);
     setEditingPosId(pos.id);
     setPosDialogOpen(true);
   };
 
   const handleSavePosition = async () => {
     setSaving(true);
-    const data = { title: posTitle, description: posDesc, order: posOrder };
+    const data = {
+      title: posTitle,
+      description: posDesc,
+      order: posOrder,
+      allowedLevels: posLevels,
+    };
 
     if (editingPosId) {
       await updateDoc(doc(elRef, "positions", editingPosId), data);
@@ -186,6 +194,12 @@ const ElectionDetailPage = () => {
     setPosDialogOpen(false);
     setSaving(false);
     fetchData();
+  };
+
+  const togglePosLevel = (level: string) => {
+    setPosLevels((prev) =>
+      prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level],
+    );
   };
 
   const handleDeletePosition = async (posId: string) => {
@@ -480,6 +494,31 @@ const ElectionDetailPage = () => {
                     value={posTitle}
                     onChange={(e) => setPosTitle(e.target.value)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="font-medium">
+                    Eligible Levels (Optional)
+                  </Label>
+                  <p className="text-[11px] text-muted-gray">
+                    Leave empty to allow all levels to vote for this position.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {["100", "200", "300", "400", "500", "600"].map((lvl) => (
+                      <label
+                        key={lvl}
+                        className="flex items-center gap-1.5 border border-border px-3 py-1.5 text-sm cursor-pointer hover:bg-secondary"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={posLevels.includes(lvl)}
+                          onChange={() => togglePosLevel(lvl)}
+                          className="accent-gold"
+                        />
+                        {lvl}L
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Description</Label>

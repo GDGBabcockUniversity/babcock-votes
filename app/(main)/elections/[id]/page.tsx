@@ -126,7 +126,12 @@ const CandidatesPage = () => {
     );
   }
 
-  const grouped = positions.map((pos) => ({
+  const visiblePositions = positions.filter((pos) => {
+    if (!pos.allowedLevels || pos.allowedLevels.length === 0) return true;
+    return pos.allowedLevels.includes(userProfile?.level || "");
+  });
+
+  const grouped = visiblePositions.map((pos) => ({
     position: pos,
     candidates: candidates.filter((c) => c.positionId === pos.id),
   }));

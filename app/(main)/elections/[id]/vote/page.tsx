@@ -118,7 +118,12 @@ const VotePage = () => {
 
       const batch = writeBatch(db);
 
-      positions.forEach((pos) => {
+      const eligiblePositions = positions.filter((pos) => {
+        if (!pos.allowedLevels || pos.allowedLevels.length === 0) return true;
+        return pos.allowedLevels.includes(userProfile?.level || "");
+      });
+
+      eligiblePositions.forEach((pos) => {
         const voteDocId = `${firebaseUser.uid}_${pos.id}`;
         const voteRef = doc(db, "votes", voteDocId);
         batch.set(voteRef, {
@@ -165,7 +170,12 @@ const VotePage = () => {
     );
   }
 
-  const grouped = positions.map((pos) => ({
+  const eligiblePositions = positions.filter((pos) => {
+    if (!pos.allowedLevels || pos.allowedLevels.length === 0) return true;
+    return pos.allowedLevels.includes(userProfile?.level || "");
+  });
+
+  const grouped = eligiblePositions.map((pos) => ({
     position: pos,
     candidates: candidates.filter((c) => c.positionId === pos.id),
   }));
@@ -275,7 +285,7 @@ const VotePage = () => {
           </div>
 
           <div className="mt-5 space-y-3">
-            {positions.map((pos) => (
+            {eligiblePositions.map((pos) => (
               <div
                 key={pos.id}
                 className="flex items-center justify-between border-b border-border pb-2 last:border-0"

@@ -75,6 +75,9 @@ const BATCH_SIZE = 500;
 let written = 0;
 let skippedNoMatric = 0;
 let skippedExists = 0;
+let skippedDuplicateInCsv = 0;
+
+const seenMatrics = new Set();
 
 for (let i = 0; i < rows.length; i += BATCH_SIZE) {
   const chunk = rows.slice(i, i + BATCH_SIZE);
@@ -90,6 +93,14 @@ for (let i = 0; i < rows.length; i += BATCH_SIZE) {
 
     // Replace / with - for Firestore doc ID
     const docId = matric.replace(/\//g, "-");
+
+    if (seenMatrics.has(docId)) {
+      console.log(`  ⚠ Skipping ${docId} (duplicate in CSV): ${row.fullName}`);
+      skippedDuplicateInCsv++;
+      continue;
+    }
+    seenMatrics.add(docId);
+
     const ref = db.collection("eligible_voters").doc(docId);
 
     // Check if doc already exists
@@ -121,6 +132,6 @@ for (let i = 0; i < rows.length; i += BATCH_SIZE) {
 }
 
 console.log(
-  `\nDone! ${written} written, ${skippedExists} skipped (already exist), ${skippedNoMatric} skipped (no matric).`,
+  `\nDone! ${written} written, ${skippedExists} skipped (already exist in DB), ${skippedDuplicateInCsv} skipped (duplicate in CSV), ${skippedNoMatric} skipped (no matric).`,
 );
 process.exit(0);

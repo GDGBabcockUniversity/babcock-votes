@@ -8,7 +8,7 @@ service cloud.firestore {
     }
 
     function isEmailVerified() {
-      return isSignedIn() 
+      return isSignedIn()
         && request.auth.token.email_verified;
     }
 
@@ -48,10 +48,13 @@ service cloud.firestore {
     }
 
     // Users: owners can read own doc, any admin can read all.
-    // Creation strictly capped to "voter" role. Only super_admin can update roles.
+    // Creation strictly capped to "voter" role with validated fields. Only super_admin can update roles.
     match /users/{userId} {
       allow read: if isSignedIn() && (request.auth.uid == userId || isAnyAdmin());
-      allow create: if isSignedIn() && request.auth.uid == userId && request.resource.data.role == "voter";
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == "voter"
+        && request.resource.data.level in ["100", "200", "300", "400", "500", "600"];
       allow update: if isSuperAdmin();
     }
 
@@ -64,8 +67,19 @@ service cloud.firestore {
       // Positions subcollection
       match /positions/{positionId} {
         allow read: if isSignedIn();
-        allow create: if isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId);
-        allow update, delete: if isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId);
+        allow create: if (isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId))
+          && (
+            !("allowedLevels" in request.resource.data)
+            || request.resource.data.allowedLevels.size() == 0
+            || request.resource.data.allowedLevels.hasOnly(["100", "200", "300", "400", "500", "600"])
+          );
+        allow update: if (isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId))
+          && (
+            !("allowedLevels" in request.resource.data)
+            || request.resource.data.allowedLevels.size() == 0
+            || request.resource.data.allowedLevels.hasOnly(["100", "200", "300", "400", "500", "600"])
+          );
+        allow delete: if isSuperAdmin() || isDeptAdminFor(get(/databases/$(database)/documents/elections/$(electionId)).data.departmentId);
       }
 
       // Candidates subcollection
@@ -86,6 +100,11 @@ service cloud.firestore {
         && voteId == request.auth.uid + "_" + request.resource.data.positionId
         && !exists(/databases/$(database)/documents/votes/$(voteId))
         && get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.status == "active"
+        && (
+          !("allowedLevels" in get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/positions/$(request.resource.data.positionId)).data) ||
+          get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/positions/$(request.resource.data.positionId)).data.allowedLevels.size() == 0 ||
+          getUserData().level in get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/positions/$(request.resource.data.positionId)).data.allowedLevels
+        )
         && getUserData().departmentId == get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.departmentId
         && (request.resource.data.candidateId == "abstain" || exists(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)));
       allow update, delete: if false;

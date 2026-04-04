@@ -627,7 +627,8 @@ const ElectionDetailPage = () => {
                         {c.fullName}
                       </p>
                       <p className="truncate text-xs text-muted-gray">
-                        {getDepartmentName(c.departmentId)} &middot; {c.level}L
+                        {getDepartmentName(c.departmentId)}{" "}
+                        {c.level && `&middot; ${c.level}L`}
                       </p>
                     </div>
                     {isSuperAdmin && (

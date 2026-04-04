@@ -183,24 +183,39 @@ const CandidatesPage = () => {
             The Candidates
           </h2>
 
-          {grouped.map(({ position, candidates: cands }) => (
-            <section key={position.id} className="mt-6">
-              <h3 className="text-sm md:text-base lg:text-lg font-serif font-semibold uppercase tracking-wider text-charcoal">
-                {position.title}
-              </h3>
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {cands.map((c) => (
-                  <div
-                    key={c.id}
-                    onClick={() => c.manifesto && setViewingCandidate(c)}
-                    className={c.manifesto ? "cursor-pointer" : ""}
-                  >
-                    <CandidateCard candidate={c} />
+          <div className="mt-6 space-y-8 pb-6">
+            {grouped.map(({ position, candidates: cands }) => (
+              <section
+                key={position.id}
+                className="font-sans relative border border-border bg-white shadow-sm"
+              >
+                <div className="sticky top-0 z-10 border-b border-border/50 bg-white/95 px-4 py-3 backdrop-blur-md">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-serif text-lg md:text-xl font-bold text-charcoal">
+                      {position.title}
+                    </h3>
+                    {position.allowedLevels &&
+                      position.allowedLevels.length > 0 && (
+                        <span className="shrink-0 rounded bg-charcoal/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-charcoal">
+                          {position.allowedLevels.join(", ")}L Only
+                        </span>
+                      )}
                   </div>
-                ))}
-              </div>
-            </section>
-          ))}
+                </div>
+                <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {cands.map((c) => (
+                    <div
+                      key={c.id}
+                      onClick={() => c.manifesto && setViewingCandidate(c)}
+                      className={c.manifesto ? "cursor-pointer" : ""}
+                    >
+                      <CandidateCard candidate={c} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ))}
+          </div>
 
           {election.status === "active" && (
             <div className="mt-8">

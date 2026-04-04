@@ -14,7 +14,12 @@ type Step = "matric" | "confirm";
 
 const RegisterPage = () => {
   const router = useRouter();
-  const { firebaseUser, loading: authLoading, refreshProfile } = useAuth();
+  const {
+    firebaseUser,
+    loading: authLoading,
+    refreshProfile,
+    signOut,
+  } = useAuth();
 
   const [step, setStep] = useState<Step>("matric");
   const [matricNumber, setMatricNumber] = useState("");
@@ -212,6 +217,20 @@ const RegisterPage = () => {
           </div>
         </div>
       )}
+
+      <div className="mt-8 text-center">
+        <button
+          onClick={signOut}
+          type="button"
+          className="text-xs text-muted-gray underline hover:text-charcoal transition-colors font-sans"
+        >
+          Signed in as{" "}
+          <span className="font-semibold text-charcoal">
+            {firebaseUser.email}
+          </span>
+          . Not you? Sign out.
+        </button>
+      </div>
     </div>
   );
 };

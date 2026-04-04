@@ -213,13 +213,29 @@ const VotePage = () => {
       )}
 
       {/* Positions + candidates */}
-      <div className="mt-6 space-y-6">
+      <div className="mt-6 space-y-8 pb-6">
         {grouped.map(({ position, candidates: cands }) => (
-          <section key={position.id} className="font-sans">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-gray">
-              {position.title}
-            </h3>
-            <div className="mt-2 space-y-2">
+          <section
+            key={position.id}
+            className="font-sans relative border border-border bg-white shadow-sm"
+          >
+            <div className="sticky top-0 z-10 border-b border-border/50 bg-white/95 px-4 py-3 backdrop-blur-md">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-serif text-lg font-bold text-charcoal">
+                  {position.title}
+                </h3>
+                {position.allowedLevels &&
+                  position.allowedLevels.length > 0 && (
+                    <span className="shrink-0 rounded bg-charcoal/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-charcoal">
+                      {position.allowedLevels.join(", ")}L Only
+                    </span>
+                  )}
+              </div>
+              <p className="mt-0.5 text-[11px] uppercase tracking-widest text-muted-gray">
+                Select 1 candidate
+              </p>
+            </div>
+            <div className="space-y-3 p-4">
               {cands.map((c) => {
                 const selected = selections[position.id] === c.id;
                 return (

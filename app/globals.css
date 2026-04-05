@@ -106,7 +106,7 @@
   --muted-foreground: #6b6b6b;
   --accent: #f5edd0;
   --accent-foreground: #1f1f1f;
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #ef4444;
   --border: #e5e0d0;
   --input: #e5e0d0;
   --ring: #b8962e;
@@ -142,4 +142,13 @@
   transition-property: color, background-color, border-color, opacity, box-shadow;
   transition-duration: 0.2s;
   transition-timing-function: ease-in-out;
+}
+
+@media print {
+  @page {
+    margin: 1cm 0cm 1.5cm 0cm;
+  }
+  @page :first {
+    margin-top: 0;
+  }
 }

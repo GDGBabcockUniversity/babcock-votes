@@ -72,7 +72,7 @@ const ElectionsPage = () => {
             key={f.value}
             onClick={() => setFilter(f.value)}
             className={cn(
-              "rounded-full font-sans px-4 py-1.5 text-xs font-medium transition-colors",
+              "font-sans px-4 py-1.5 text-xs font-medium transition-colors",
               filter === f.value
                 ? "bg-charcoal text-white"
                 : "border border-border text-charcoal hover:bg-secondary",
@@ -93,7 +93,7 @@ const ElectionsPage = () => {
             <ElectionCardSkeleton />
           </>
         ) : filtered.length === 0 ? (
-          <p className="py-16 text-center text-sm text-muted-gray font-sans">
+          <p className="py-16 text-center text-sm text-muted-gray font-sans w-full">
             No elections match your criteria.
           </p>
         ) : (

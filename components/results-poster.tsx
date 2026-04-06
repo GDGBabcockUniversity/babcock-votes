@@ -1,5 +1,4 @@
 import { forwardRef } from "react";
-import Image from "next/image";
 import type { Election, Position, Candidate } from "@/lib/types";
 
 type TallyCandidate = Candidate & { voteCount: number };
@@ -207,24 +206,13 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                   <div className="flex items-center gap-5 mb-3">
                     <div className="relative size-16 shrink-0 overflow-hidden bg-[#f0f0f0] rounded-full border-2 border-gold flex items-center justify-center">
                       {winner.photoUrl ? (
-                        <>
-                          <div className="print:hidden absolute inset-0">
-                            <Image
-                              src={winner.photoUrl}
-                              alt={winner.fullName}
-                              fill
-                              className="object-cover"
-                              unoptimized
-                            />
-                          </div>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={winner.photoUrl}
-                            alt={winner.fullName}
-                            className="hidden print:block absolute inset-0 size-full object-cover"
-                            loading="lazy"
-                          />
-                        </>
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={winner.photoUrl}
+                          alt={winner.fullName}
+                          className="absolute inset-0 size-full object-cover"
+                          loading="eager"
+                        />
                       ) : (
                         <span className="font-sans text-2xl font-bold text-muted-gray">
                           {getInitials(winner.fullName)}

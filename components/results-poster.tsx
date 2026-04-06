@@ -102,6 +102,9 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
       const eYear = end!.getFullYear();
 
       if (sMonth === eMonth && sYear === eYear) {
+        if (sDay === eDay) {
+          return `${sDay} ${sMonth} ${sYear} \u00B7 ${sTime}\u2013${eTime} WAT`;
+        }
         return `${sDay}\u2013${eDay} ${sMonth} ${sYear} \u00B7 ${sTime}\u2013${eTime} WAT`;
       }
       return `${sDay} ${sMonth}\u2013${eDay} ${eMonth} ${eYear} \u00B7 ${sTime}\u2013${eTime} WAT`;
@@ -176,7 +179,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                       {formatDuration(election.startDate, election.endDate)}
                     </span>
                     <span className="text-[10px] uppercase tracking-widest text-gold mt-1">
-                      Duration
+                      Election Window
                     </span>
                   </div>
                 </>

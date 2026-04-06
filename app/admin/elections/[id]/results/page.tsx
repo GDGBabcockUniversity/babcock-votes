@@ -233,7 +233,7 @@ const ResultsPage = () => {
         {/* Per-position results */}
         <h2 className="font-serif text-xl font-bold">Vote Breakdown</h2>
         <div className="mt-4 space-y-6">
-          {grouped.map(({ position, candidates: cands }) => (
+          {grouped.map(({ position, candidates: cands, totalForPos }) => (
             <Card key={position.id}>
               <CardHeader>
                 <CardTitle className="font-serif text-lg font-semibold md:text-2xl">
@@ -242,9 +242,11 @@ const ResultsPage = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {cands.map((c, idx) => {
+                  const denominator =
+                    cands.length > 1 ? totalForPos : voterCount;
                   const pct =
-                    voterCount > 0
-                      ? Math.round((c.voteCount / voterCount) * 100)
+                    denominator > 0
+                      ? ((c.voteCount / denominator) * 100).toFixed(2)
                       : 0;
                   return (
                     <div key={c.id}>

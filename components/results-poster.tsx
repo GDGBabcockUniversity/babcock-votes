@@ -167,7 +167,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                   {voterCount}
                 </span>
                 <span className="text-[10px] uppercase tracking-widest text-gold mt-1">
-                  Unique Voters
+                  Voters
                 </span>
               </div>
 

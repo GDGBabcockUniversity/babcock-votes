@@ -70,7 +70,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
 
         {/* Content Block */}
         <div className="w-full bg-white p-8 flex flex-col gap-6 print:pb-24">
-          {grouped.map(({ position, candidates: cands }) => {
+          {grouped.map(({ position, candidates: cands, totalForPos }) => {
             if (cands.length === 0) return null;
 
             // We only prominently showcase the winner and maybe runner up if space allows
@@ -78,9 +78,10 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
             const winner = cands[0];
             const others = cands.slice(1);
 
+            const denominator = cands.length > 1 ? totalForPos : voterCount;
             const winnerPct =
-              voterCount > 0
-                ? Math.round((winner.voteCount / voterCount) * 100)
+              denominator > 0
+                ? ((winner.voteCount / denominator) * 100).toFixed(2)
                 : 0;
 
             return (
@@ -139,8 +140,8 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                     <div className="flex flex-wrap gap-x-6 gap-y-2">
                       {others.map((c) => {
                         const pct =
-                          voterCount > 0
-                            ? Math.round((c.voteCount / voterCount) * 100)
+                          denominator > 0
+                            ? ((c.voteCount / denominator) * 100).toFixed(2)
                             : 0;
                         return (
                           <div

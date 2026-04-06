@@ -46,7 +46,7 @@ const ElectionsPage = () => {
 
   return (
     <div>
-      <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold italic">
+      <h1 className="font-serif text-3xl md:text-4xl lg:text-5xl font-bold">
         Elections
       </h1>
       <p className="mt-1 text-sm md:text-base lg:text-lg text-muted-gray font-sans">

@@ -9,10 +9,11 @@ interface ResultsPosterProps {
   positions: Position[];
   candidates: TallyCandidate[];
   voterCount: number;
+  positionVoterCounts: Record<string, number>;
 }
 
 export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
-  ({ election, positions, candidates, voterCount }, ref) => {
+  ({ election, positions, candidates, voterCount, positionVoterCounts }, ref) => {
     const grouped = positions.map((pos) => {
       const cands = candidates
         .filter((c) => c.positionId === pos.id)
@@ -78,7 +79,8 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
             const winner = cands[0];
             const others = cands.slice(1);
 
-            const denominator = cands.length > 1 ? totalForPos : voterCount;
+            const eligibleVoters = positionVoterCounts[position.id] || 0;
+            const denominator = cands.length > 1 ? totalForPos : eligibleVoters;
             const winnerPct =
               denominator > 0
                 ? ((winner.voteCount / denominator) * 100).toFixed(2)

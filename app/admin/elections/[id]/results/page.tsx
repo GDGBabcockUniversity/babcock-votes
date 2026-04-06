@@ -50,6 +50,7 @@ const ResultsPage = () => {
   >([]);
   const [totalVotes, setTotalVotes] = useState(0);
   const [voterCount, setVoterCount] = useState(0);
+  const [positionVoterCounts, setPositionVoterCounts] = useState<Record<string, number>>({});
   const [voters, setVoters] = useState<
     { name: string; matric: string; votedAt: string }[]
   >([]);
@@ -94,6 +95,14 @@ const ResultsPage = () => {
         voteCount: votesData.filter((v) => v.candidateId === c.id).length,
       }));
       setCandidates(talliedCands);
+
+      const posCounts: Record<string, number> = {};
+      votesData.forEach(v => {
+        if (v.positionId) {
+          posCounts[v.positionId] = (posCounts[v.positionId] || 0) + 1;
+        }
+      });
+      setPositionVoterCounts(posCounts);
 
       const voterIds = [
         ...new Set(votesSnap.docs.map((d) => d.data().voterId as string)),
@@ -242,8 +251,9 @@ const ResultsPage = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {cands.map((c, idx) => {
+                  const eligibleVoters = positionVoterCounts[position.id] || 0;
                   const denominator =
-                    cands.length > 1 ? totalForPos : voterCount;
+                    cands.length > 1 ? totalForPos : eligibleVoters;
                   const pct =
                     denominator > 0
                       ? ((c.voteCount / denominator) * 100).toFixed(2)
@@ -369,6 +379,7 @@ const ResultsPage = () => {
           positions={positions}
           candidates={candidates}
           voterCount={voterCount}
+          positionVoterCounts={positionVoterCounts}
         />
       </div>
     </>

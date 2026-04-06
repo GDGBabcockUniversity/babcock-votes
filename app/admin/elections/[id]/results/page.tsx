@@ -165,7 +165,25 @@ const ResultsPage = () => {
     voterPage * VOTER_PAGE_SIZE,
   );
 
-  const handleExportPdf = () => {
+  const handleExportPdf = async () => {
+    if (!posterRef.current) return;
+
+    // Wait for all images inside the poster to finish loading
+    const images = posterRef.current.querySelectorAll("img");
+    await Promise.all(
+      Array.from(images).map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete && img.naturalHeight > 0) {
+              resolve();
+            } else {
+              img.onload = () => resolve();
+              img.onerror = () => resolve(); // Don't block on broken images
+            }
+          }),
+      ),
+    );
+
     window.print();
   };
 
@@ -371,8 +389,8 @@ const ResultsPage = () => {
         )}
       </div>
 
-      {/* Hidden Render for PDF Export - Shown ONLY in Print mode */}
-      <div className="hidden print:block print:absolute print:inset-0 print:bg-white print:z-50 print:m-0 print:p-0">
+      {/* Poster for PDF Export — visually hidden but in DOM so images preload */}
+      <div className="overflow-hidden h-0 opacity-0 pointer-events-none print:h-auto print:opacity-100 print:overflow-visible print:pointer-events-auto print:absolute print:inset-0 print:bg-white print:z-50 print:m-0 print:p-0">
         <ResultsPoster
           ref={posterRef}
           election={election}

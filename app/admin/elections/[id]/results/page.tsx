@@ -168,23 +168,67 @@ const ResultsPage = () => {
   const handleExportPdf = async () => {
     if (!posterRef.current) return;
 
-    // Wait for all images inside the poster to finish loading
     const images = posterRef.current.querySelectorAll("img");
+    const originalSrcs: string[] = [];
+
+    // Compress each image to a small JPEG before printing
     await Promise.all(
-      Array.from(images).map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            if (img.complete && img.naturalHeight > 0) {
+      Array.from(images).map(async (img, i) => {
+        originalSrcs[i] = img.src;
+
+        try {
+          // Load the image into a temporary Image to get pixel data
+          const tempImg = new window.Image();
+          tempImg.crossOrigin = "anonymous";
+          tempImg.src = img.src;
+
+          await new Promise<void>((resolve) => {
+            if (tempImg.complete && tempImg.naturalHeight > 0) {
               resolve();
             } else {
-              img.onload = () => resolve();
-              img.onerror = () => resolve(); // Don't block on broken images
+              tempImg.onload = () => resolve();
+              tempImg.onerror = () => resolve();
             }
-          }),
-      ),
+          });
+
+          if (tempImg.naturalHeight === 0) return; // Skip broken images
+
+          // Downscale to 128x128 and compress as JPEG
+          const canvas = document.createElement("canvas");
+          const size = 128;
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return;
+
+          // Draw cropped & centered (cover behavior)
+          const scale = Math.max(size / tempImg.naturalWidth, size / tempImg.naturalHeight);
+          const sw = size / scale;
+          const sh = size / scale;
+          const sx = (tempImg.naturalWidth - sw) / 2;
+          const sy = (tempImg.naturalHeight - sh) / 2;
+          ctx.drawImage(tempImg, sx, sy, sw, sh, 0, 0, size, size);
+
+          img.src = canvas.toDataURL("image/jpeg", 0.7);
+        } catch {
+          // If compression fails, keep the original
+        }
+      }),
     );
 
+    // Set a structured filename for the PDF
+    const originalTitle = document.title;
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const electionName = election?.title?.replace(/[^\w\s-]/g, "").trim() || "Election";
+    document.title = `BabcockVotes - ${electionName} - Results - ${dateStr}`;
+
     window.print();
+
+    // Restore original page title and image sources after print dialog closes
+    document.title = originalTitle;
+    Array.from(images).forEach((img, i) => {
+      if (originalSrcs[i]) img.src = originalSrcs[i];
+    });
   };
 
   return (

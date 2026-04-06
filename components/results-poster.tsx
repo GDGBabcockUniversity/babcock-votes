@@ -214,6 +214,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                               alt={winner.fullName}
                               fill
                               className="object-cover"
+                              unoptimized
                             />
                           </div>
                           {/* eslint-disable-next-line @next/next/no-img-element */}

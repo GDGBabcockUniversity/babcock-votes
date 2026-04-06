@@ -260,6 +260,7 @@ const CandidatesPage = () => {
                       alt={viewingCandidate.fullName}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   ) : (
                     <span className="flex size-full items-center justify-center text-xl font-bold text-muted-gray">

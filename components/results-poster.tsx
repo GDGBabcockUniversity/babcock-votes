@@ -24,14 +24,14 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
       return { position: pos, candidates: cands, totalForPos };
     });
 
-    const getInitials = (name: string) => {
-      return name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .substring(0, 2)
-        .toUpperCase();
-    };
+    // const getInitials = (name: string) => {
+    //   return name
+    //     .split(" ")
+    //     .map((n) => n[0])
+    //     .join("")
+    //     .substring(0, 2)
+    //     .toUpperCase();
+    // };
 
     const parseDate = (
       dateValue:

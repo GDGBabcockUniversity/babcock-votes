@@ -10,6 +10,7 @@ export const CandidateCard = ({ candidate }: { candidate: Candidate }) => (
           alt={candidate.fullName}
           fill
           className="object-cover"
+          unoptimized
         />
       ) : (
         <div className="flex h-full items-center justify-center text-2xl font-bold text-muted-gray">

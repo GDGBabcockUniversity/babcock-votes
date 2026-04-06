@@ -67,37 +67,44 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
       const end = parseDate(endVal);
       if (!start && !end) return "TBD";
 
-      const dateOpts: Intl.DateTimeFormatOptions = {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      };
-      const timeOpts: Intl.DateTimeFormatOptions = {
-        hour: "numeric",
-        minute: "2-digit",
-      };
+      const monthNames = [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ];
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      const fmtTime = (d: Date) =>
+        `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
       if (!start && end) {
-        return `Until ${end.toLocaleDateString("en-US", dateOpts)}, ${end.toLocaleTimeString("en-US", timeOpts).toLowerCase()}`;
+        return `${pad(end.getDate())} ${monthNames[end.getMonth()]} ${end.getFullYear()} · ${fmtTime(end)} WAT`;
       }
       if (start && !end) {
-        return `From ${start.toLocaleDateString("en-US", dateOpts)}, ${start.toLocaleTimeString("en-US", timeOpts).toLowerCase()}`;
+        return `${pad(start.getDate())} ${monthNames[start.getMonth()]} ${start.getFullYear()} · ${fmtTime(start)} WAT`;
       }
 
-      // Both start and end exist
-      const startDateStr = start!.toLocaleDateString("en-US", dateOpts);
-      const endDateStr = end!.toLocaleDateString("en-US", dateOpts);
-      const startTimeStr = start!
-        .toLocaleTimeString("en-US", timeOpts)
-        .toLowerCase();
-      const endTimeStr = end!
-        .toLocaleTimeString("en-US", timeOpts)
-        .toLowerCase();
+      const sDay = pad(start!.getDate());
+      const eDay = pad(end!.getDate());
+      const sTime = fmtTime(start!);
+      const eTime = fmtTime(end!);
+      const sMonth = monthNames[start!.getMonth()];
+      const eMonth = monthNames[end!.getMonth()];
+      const sYear = start!.getFullYear();
+      const eYear = end!.getFullYear();
 
-      if (startDateStr === endDateStr) {
-        return `${startDateStr}, ${startTimeStr} - ${endTimeStr}`;
+      if (sMonth === eMonth && sYear === eYear) {
+        return `${sDay}\u2013${eDay} ${sMonth} ${sYear} \u00B7 ${sTime}\u2013${eTime} WAT`;
       }
-      return `${startDateStr}, ${startTimeStr} \u2014 ${endDateStr}, ${endTimeStr}`;
+      return `${sDay} ${sMonth}\u2013${eDay} ${eMonth} ${eYear} \u00B7 ${sTime}\u2013${eTime} WAT`;
     };
 
     return (
@@ -124,6 +131,9 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
           )}
 
           <div className="relative z-10 flex flex-col items-center w-full">
+            <span className="absolute top-0 right-0 font-sans text-sm text-[#666666] lowercase tracking-wide">
+              babcockvotes.com
+            </span>
             {election.logoUrl && (
               <div className="relative flex items-center justify-center mb-5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -204,21 +214,11 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                 {/* Winner Card */}
                 {winner && (
                   <div className="flex items-center gap-5 mb-3">
-                    <div className="relative size-16 shrink-0 overflow-hidden bg-[#f0f0f0] rounded-full border-2 border-gold flex items-center justify-center">
-                      {winner.photoUrl ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={winner.photoUrl}
-                          alt={winner.fullName}
-                          className="absolute inset-0 size-full object-cover"
-                          loading="eager"
-                        />
-                      ) : (
-                        <span className="font-sans text-2xl font-bold text-muted-gray">
-                          {getInitials(winner.fullName)}
-                        </span>
-                      )}
-                    </div>
+                    {/* <div className="relative size-16 shrink-0 overflow-hidden bg-[#f0f0f0] rounded-full border-2 border-gold flex items-center justify-center">
+                      <span className="font-sans text-2xl font-bold text-muted-gray">
+                        {getInitials(winner.fullName)}
+                      </span>
+                    </div> */}
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
                         <span className="bg-gold text-white font-sans text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider rounded-sm">
@@ -285,7 +285,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
             submitted by eligible voters for that position.
           </p>
           <div className="flex justify-between items-center text-[10px] uppercase tracking-widest font-medium border-t border-border/50 pt-3">
-            <p>Generated by Babcock Votes</p>
+            <p>Conducted on Babcock Votes &middot; babcockvotes.com</p>
             <p>
               {new Date().toLocaleDateString("en-US", {
                 month: "long",

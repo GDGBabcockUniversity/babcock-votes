@@ -100,11 +100,6 @@ service cloud.firestore {
         && voteId == request.auth.uid + "_" + request.resource.data.positionId
         && !exists(/databases/$(database)/documents/votes/$(voteId))
         && get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.status == "active"
-        && (
-          !("allowedLevels" in get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/positions/$(request.resource.data.positionId)).data) ||
-          get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/positions/$(request.resource.data.positionId)).data.allowedLevels.size() == 0 ||
-          getUserData().level in get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/positions/$(request.resource.data.positionId)).data.allowedLevels
-        )
         && getUserData().departmentId == get(/databases/$(database)/documents/elections/$(request.resource.data.electionId)).data.departmentId
         && (request.resource.data.candidateId == "abstain" || exists(/databases/$(database)/documents/elections/$(request.resource.data.electionId)/candidates/$(request.resource.data.candidateId)));
       allow update, delete: if false;

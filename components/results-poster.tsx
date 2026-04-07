@@ -163,7 +163,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
 
             <div className="mt-6 flex flex-wrap justify-center gap-8 items-center text-sm font-medium text-[#aaaaaa]">
               <div className="flex flex-col items-center">
-                <span className="text-white text-2xl font-bold font-serif">
+                <span className="text-white text-2xl font-bold font-sans">
                   {voterCount}
                 </span>
                 <span className="text-[10px] uppercase tracking-widest text-gold mt-1">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, getCountFromServer, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,26 +40,19 @@ const AdminDashboard = () => {
         (e) => (e as { status?: string }).status === "active",
       ).length;
 
-      const votesSnap = await getDocs(collection(db, "votes"));
-
-      let usersCount = 0;
-      if (isSuperAdmin) {
-        const usersSnap = await getDocs(collection(db, "users"));
-        usersCount = usersSnap.size;
-      } else {
-        const usersSnap = await getDocs(
-          query(
-            collection(db, "users"),
-            where("departmentId", "==", userProfile?.departmentId),
-          ),
-        );
-        usersCount = usersSnap.size;
-      }
+      const [votesCount, usersCount] = await Promise.all([
+        getCountFromServer(collection(db, "votes")).then((s) => s.data().count),
+        isSuperAdmin
+          ? getCountFromServer(collection(db, "users")).then((s) => s.data().count)
+          : getCountFromServer(
+              query(collection(db, "users"), where("departmentId", "==", userProfile?.departmentId)),
+            ).then((s) => s.data().count),
+      ]);
 
       setStats({
         totalElections: scoped.length,
         activeElections: activeCount,
-        totalVotes: votesSnap.size,
+        totalVotes: votesCount,
         totalUsers: usersCount,
       });
       setLoading(false);

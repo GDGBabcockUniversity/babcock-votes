@@ -12,5 +12,5 @@ export const getDepartmentId = (name: string) => {
   return DEPARTMENTS.find((d) => d.name === name)?.id || name;
 };
 
-/** Replace `/` with `-` for Firestore doc IDs */
+/** Replace `/` with `-` for Firestore doc ID */
 export const matricToDocId = (matric: string) => matric.replace(/\//g, "-");

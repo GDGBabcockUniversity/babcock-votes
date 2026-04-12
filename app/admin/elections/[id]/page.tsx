@@ -866,7 +866,11 @@ const ElectionDetailPage = () => {
                 onValueChange={(v) => setEditDeptId(v ?? "")}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select department" />
+                  <SelectValue placeholder="Select department" render={
+                    <p>
+                      {DEPARTMENTS.find((e) => e.id === editDeptId)?.name}
+                    </p>
+                  } />
                 </SelectTrigger>
                 <SelectContent className="font-sans">
                   {DEPARTMENTS.map((d) => (

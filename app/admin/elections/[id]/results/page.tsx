@@ -6,6 +6,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  getCountFromServer,
   collection,
   query,
   orderBy,
@@ -19,25 +20,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   ArrowLeft,
   Users,
   Vote,
-  ChevronLeft,
-  ChevronRight,
   FileDown,
 } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
-
-const VOTER_PAGE_SIZE = 25;
 
 const ResultsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -51,16 +40,12 @@ const ResultsPage = () => {
   const [totalVotes, setTotalVotes] = useState(0);
   const [voterCount, setVoterCount] = useState(0);
   const [positionVoterCounts, setPositionVoterCounts] = useState<Record<string, number>>({});
-  const [voters, setVoters] = useState<
-    { name: string; matric: string; votedAt: string }[]
-  >([]);
   const [loading, setLoading] = useState(true);
-  const [voterPage, setVoterPage] = useState(1);
 
   const posterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchResults = async () => {
       const elRef = doc(db, "elections", id);
       const elSnap = await getDoc(elRef);
       if (!elSnap.exists()) {
@@ -71,10 +56,15 @@ const ResultsPage = () => {
       const elData = { id: elSnap.id, ...elSnap.data() } as Election;
       setElection(elData);
 
-      const [posSnap, candSnap] = await Promise.all([
+      const [posSnap, candSnap, totalVotesSnap] = await Promise.all([
         getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
         getDocs(collection(elRef, "candidates")),
+        getCountFromServer(
+          query(collection(db, "votes"), where("electionId", "==", id)),
+        ),
       ]);
+
+      setTotalVotes(totalVotesSnap.data().count);
 
       const posItems = posSnap.docs.map(
         (d) => ({ id: d.id, ...d.data() }) as Position,
@@ -84,52 +74,45 @@ const ResultsPage = () => {
         (d) => ({ id: d.id, ...d.data() }) as Candidate,
       );
 
-      const votesSnap = await getDocs(
-        query(collection(db, "votes"), where("electionId", "==", id)),
+      // Tally votes per candidate using count queries (no doc downloads)
+      const candCounts = await Promise.all(
+        candItems.map((c) =>
+          getCountFromServer(
+            query(collection(db, "votes"), where("candidateId", "==", c.id)),
+          ).then((s) => ({ id: c.id, count: s.data().count })),
+        ),
       );
-      setTotalVotes(votesSnap.size);
-
-      const votesData = votesSnap.docs.map((d) => d.data());
-      const talliedCands = candItems.map((c) => ({
-        ...c,
-        voteCount: votesData.filter((v) => v.candidateId === c.id).length,
-      }));
-      setCandidates(talliedCands);
-
-      const posCounts: Record<string, number> = {};
-      votesData.forEach(v => {
-        if (v.positionId) {
-          posCounts[v.positionId] = (posCounts[v.positionId] || 0) + 1;
-        }
-      });
-      setPositionVoterCounts(posCounts);
-
-      const voterIds = [
-        ...new Set(votesSnap.docs.map((d) => d.data().voterId as string)),
-      ];
-      setVoterCount(voterIds.length);
-
-      const voterDetails = await Promise.all(
-        voterIds.map(async (uid) => {
-          const userSnap = await getDoc(doc(db, "users", uid));
-          const data = userSnap.data();
-          const vote = votesSnap.docs.find((d) => d.data().voterId === uid);
-          const votedAt = vote?.data().votedAt;
-          return {
-            name: data?.fullName ?? "Unknown",
-            matric: data?.matricNumber ?? "—",
-            votedAt: votedAt?.seconds
-              ? new Date(votedAt.seconds * 1000).toLocaleString()
-              : votedAt instanceof Date
-                ? votedAt.toLocaleString()
-                : "—",
-          };
-        }),
+      const countMap = new Map(candCounts.map((c) => [c.id, c.count]));
+      setCandidates(
+        candItems.map((c) => ({ ...c, voteCount: countMap.get(c.id) ?? 0 })),
       );
-      setVoters(voterDetails);
+
+      // Count votes per position using count queries
+      const posCounts = await Promise.all(
+        posItems.map((p) =>
+          getCountFromServer(
+            query(
+              collection(db, "votes"),
+              where("electionId", "==", id),
+              where("positionId", "==", p.id),
+            ),
+          ).then((s) => ({ id: p.id, count: s.data().count })),
+        ),
+      );
+      setPositionVoterCounts(
+        Object.fromEntries(posCounts.map((p) => [p.id, p.count])),
+      );
+
+      // Derive unique voter count: total votes / number of positions
+      // (each voter casts one vote per position)
+      if (posItems.length > 0) {
+        const avgVotesPerPos = posCounts.reduce((s, p) => s + p.count, 0) / posItems.length;
+        setVoterCount(Math.round(avgVotesPerPos));
+      }
+
       setLoading(false);
     };
-    fetch();
+    fetchResults();
   }, [id]);
 
   if (loading) {
@@ -155,15 +138,6 @@ const ResultsPage = () => {
     const totalForPos = cands.reduce((sum, c) => sum + c.voteCount, 0);
     return { position: pos, candidates: cands, totalForPos };
   });
-
-  const voterTotalPages = Math.max(
-    1,
-    Math.ceil(voters.length / VOTER_PAGE_SIZE),
-  );
-  const pagedVoters = voters.slice(
-    (voterPage - 1) * VOTER_PAGE_SIZE,
-    voterPage * VOTER_PAGE_SIZE,
-  );
 
   const handleExportPdf = async () => {
     if (!posterRef.current) return;
@@ -357,80 +331,6 @@ const ResultsPage = () => {
           ))}
         </div>
 
-        <Separator className="my-6" />
-
-        {/* Voter log */}
-        <h2 className="font-serif text-xl font-bold">Voter Log</h2>
-        <p className="mt-1 font-sans text-xs text-muted-gray">
-          Who has voted (ballot choices are secret). {voters.length} total voter
-          {voters.length !== 1 ? "s" : ""}.
-        </p>
-        <div className="mt-4 border border-border">
-          <Table className="rounded-none font-sans">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="pl-4">Name</TableHead>
-                <TableHead>Matric No.</TableHead>
-                <TableHead>Voted At</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pagedVoters.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={3}
-                    className="py-8 text-center font-sans text-sm text-muted-gray"
-                  >
-                    No votes yet.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                pagedVoters.map((v, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="pl-4 font-medium">{v.name}</TableCell>
-                    <TableCell className="text-muted-gray">
-                      {v.matric}
-                    </TableCell>
-                    <TableCell className="text-muted-gray">
-                      {v.votedAt}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Voter Log Pagination */}
-        {voterTotalPages > 1 && (
-          <div className="mt-4 flex items-center justify-between font-sans text-sm">
-            <span className="text-muted-gray">
-              Page {voterPage} of {voterTotalPages}
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={voterPage <= 1}
-                onClick={() => setVoterPage((p) => p - 1)}
-                className="rounded-none"
-              >
-                <ChevronLeft className="mr-1 size-4" />
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={voterPage >= voterTotalPages}
-                onClick={() => setVoterPage((p) => p + 1)}
-                className="rounded-none"
-              >
-                Next
-                <ChevronRight className="ml-1 size-4" />
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Poster for PDF Export — visually hidden but in DOM so images preload */}

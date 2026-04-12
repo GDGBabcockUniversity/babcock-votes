@@ -39,8 +39,8 @@ const HomePage = () => {
 
   const filtered = search
     ? activeUpcoming.filter((e) =>
-        e.title.toLowerCase().includes(search.toLowerCase()),
-      )
+      e.title.toLowerCase().includes(search.toLowerCase()),
+    )
     : activeUpcoming;
 
   return (

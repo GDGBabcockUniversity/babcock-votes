@@ -21,6 +21,8 @@ export const DEPARTMENTS = [
 
 export const LEVELS = ["100", "200", "300", "400", "500", "600"] as const;
 
+export const SCHOOL_DOMAIN = "student.babcock.edu.ng";
+
 export const CREDENTIALS = {
   firebase: {
     apiKey: "AIzaSyDIJKNJWVySg7DOSAphkj5Fe_hdfIzLyho",

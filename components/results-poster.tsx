@@ -51,10 +51,10 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
           typeof val.toDate === "function"
             ? val.toDate()
             : new Date(
-                val.seconds
-                  ? val.seconds * 1000
-                  : (dateValue as string | number | Date),
-              );
+              val.seconds
+                ? val.seconds * 1000
+                : (dateValue as string | number | Date),
+            );
         return date;
       } catch (_) {
         return null;
@@ -203,7 +203,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
 
         {/* Content Block */}
         <div className="w-full bg-white p-8 flex flex-col gap-6 print:pb-24">
-          {grouped.map(({ position, candidates: cands, totalForPos }) => {
+          {grouped.map(({ position, candidates: cands }) => {
             if (cands.length === 0) return null;
 
             // We only prominently showcase the winner and maybe runner up if space allows

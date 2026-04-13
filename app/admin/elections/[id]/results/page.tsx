@@ -253,7 +253,7 @@ const ResultsPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
-                Unique Voters
+                Voter Count
               </CardTitle>
               <Users className="size-4 text-gold" />
             </CardHeader>

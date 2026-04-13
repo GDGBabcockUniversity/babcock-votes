@@ -16,6 +16,7 @@ import {
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
+import { SCHOOL_DOMAIN } from "@/lib/constants";
 import type { User } from "@/lib/types";
 
 interface AuthState {
@@ -63,8 +64,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithGoogle = async () => {
     googleProvider.setCustomParameters({
       prompt: "select_account",
+      hd: SCHOOL_DOMAIN,
     });
-    await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
+    const email = result.user.email ?? "";
+
+    if (!email.endsWith(`@${SCHOOL_DOMAIN}`)) {
+      await firebaseSignOut(auth);
+      setFirebaseUser(null);
+      setUserProfile(null);
+      throw new Error(
+        `Only @${SCHOOL_DOMAIN} email addresses are allowed. Please sign in with your school email.`,
+      );
+    }
   };
 
   const refreshProfile = useCallback(async () => {

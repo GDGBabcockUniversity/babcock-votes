@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
   Users,
-  Vote,
+  UserCheck,
   FileDown,
 } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
@@ -37,9 +37,10 @@ const ResultsPage = () => {
   const [candidates, setCandidates] = useState<
     (Candidate & { voteCount: number })[]
   >([]);
-  const [totalVotes, setTotalVotes] = useState(0);
+  const [eligibleVoterCount, setEligibleVoterCount] = useState(0);
   const [voterCount, setVoterCount] = useState(0);
   const [positionVoterCounts, setPositionVoterCounts] = useState<Record<string, number>>({});
+  const [positionAbstainCounts, setPositionAbstainCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   const posterRef = useRef<HTMLDivElement>(null);
@@ -56,15 +57,18 @@ const ResultsPage = () => {
       const elData = { id: elSnap.id, ...elSnap.data() } as Election;
       setElection(elData);
 
-      const [posSnap, candSnap, totalVotesSnap] = await Promise.all([
+      const [posSnap, candSnap, eligibleSnap] = await Promise.all([
         getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
         getDocs(collection(elRef, "candidates")),
         getCountFromServer(
-          query(collection(db, "votes"), where("electionId", "==", id)),
+          query(
+            collection(db, "eligible_voters"),
+            where("departmentId", "==", elData.departmentId),
+          ),
         ),
       ]);
 
-      setTotalVotes(totalVotesSnap.data().count);
+      setEligibleVoterCount(eligibleSnap.data().count);
 
       const posItems = posSnap.docs.map(
         (d) => ({ id: d.id, ...d.data() }) as Position,
@@ -87,20 +91,37 @@ const ResultsPage = () => {
         candItems.map((c) => ({ ...c, voteCount: countMap.get(c.id) ?? 0 })),
       );
 
-      // Count votes per position using count queries
-      const posCounts = await Promise.all(
-        posItems.map((p) =>
-          getCountFromServer(
-            query(
-              collection(db, "votes"),
-              where("electionId", "==", id),
-              where("positionId", "==", p.id),
-            ),
-          ).then((s) => ({ id: p.id, count: s.data().count })),
+      // Count votes per position and abstains per position in parallel
+      const [posCounts, abstainCounts] = await Promise.all([
+        Promise.all(
+          posItems.map((p) =>
+            getCountFromServer(
+              query(
+                collection(db, "votes"),
+                where("electionId", "==", id),
+                where("positionId", "==", p.id),
+              ),
+            ).then((s) => ({ id: p.id, count: s.data().count })),
+          ),
         ),
-      );
+        Promise.all(
+          posItems.map((p) =>
+            getCountFromServer(
+              query(
+                collection(db, "votes"),
+                where("electionId", "==", id),
+                where("positionId", "==", p.id),
+                where("candidateId", "==", "abstain"),
+              ),
+            ).then((s) => ({ id: p.id, count: s.data().count })),
+          ),
+        ),
+      ]);
       setPositionVoterCounts(
         Object.fromEntries(posCounts.map((p) => [p.id, p.count])),
+      );
+      setPositionAbstainCounts(
+        Object.fromEntries(abstainCounts.map((p) => [p.id, p.count])),
       );
 
       // Derive unique voter count: total votes / number of positions
@@ -242,23 +263,26 @@ const ResultsPage = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
-                Total Ballots
+                Eligible Voters
               </CardTitle>
-              <Vote className="size-4 text-gold" />
+              <UserCheck className="size-4 text-gold" />
             </CardHeader>
             <CardContent>
-              <p className="font-sans text-2xl font-bold">{totalVotes}</p>
+              <p className="font-sans text-2xl font-bold">{eligibleVoterCount}</p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
-                Voter Count
+                Voter Count (Turnout)
               </CardTitle>
               <Users className="size-4 text-gold" />
             </CardHeader>
             <CardContent>
-              <p className="font-sans text-2xl font-bold">{voterCount}</p>
+              <p className="font-sans text-2xl font-bold">{voterCount} <span className="text-base text-muted-gray font-medium">({((voterCount / eligibleVoterCount) * 100).toFixed(2)}%)</span></p>
+              {/* <p className="font-sans text-xs text-muted-gray">
+                {voterCount} votes / {eligibleVoterCount} eligible voters
+              </p> */}
             </CardContent>
           </Card>
           <Card>
@@ -287,12 +311,10 @@ const ResultsPage = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 {cands.map((c, idx) => {
-                  const eligibleVoters = positionVoterCounts[position.id] || 0;
-                  const denominator =
-                    cands.length > 1 ? totalForPos : eligibleVoters;
+                  const posTotal = positionVoterCounts[position.id] || 0;
                   const pct =
-                    denominator > 0
-                      ? ((c.voteCount / denominator) * 100).toFixed(2)
+                    posTotal > 0
+                      ? ((c.voteCount / posTotal) * 100).toFixed(2)
                       : 0;
                   return (
                     <div key={c.id}>
@@ -321,6 +343,33 @@ const ResultsPage = () => {
                     </div>
                   );
                 })}
+                {/* Abstain row */}
+                {(() => {
+                  const abstainCount = positionAbstainCounts[position.id] || 0;
+                  const posTotal = positionVoterCounts[position.id] || 0;
+                  const abstainPct =
+                    posTotal > 0
+                      ? ((abstainCount / posTotal) * 100).toFixed(2)
+                      : 0;
+                  return (
+                    <div className="border-t border-border pt-3">
+                      <div className="flex items-center justify-between font-sans text-sm">
+                        <span className="font-medium italic text-muted-gray">
+                          Abstain
+                        </span>
+                        <span className="text-muted-gray">
+                          {abstainCount} ({abstainPct}%)
+                        </span>
+                      </div>
+                      <div className="mt-1 h-2 w-full bg-secondary">
+                        <div
+                          className="h-full bg-muted-gray/40 transition-all"
+                          style={{ width: `${abstainPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
                 {cands.length === 0 && (
                   <p className="font-sans text-sm text-muted-gray">
                     No candidates.
@@ -341,7 +390,9 @@ const ResultsPage = () => {
           positions={positions}
           candidates={candidates}
           voterCount={voterCount}
+          eligibleVoterCount={eligibleVoterCount}
           positionVoterCounts={positionVoterCounts}
+          positionAbstainCounts={positionAbstainCounts}
         />
       </div>
     </>

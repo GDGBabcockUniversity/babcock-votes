@@ -8,12 +8,14 @@ interface ResultsPosterProps {
   positions: Position[];
   candidates: TallyCandidate[];
   voterCount: number;
+  eligibleVoterCount: number;
   positionVoterCounts: Record<string, number>;
+  positionAbstainCounts: Record<string, number>;
 }
 
 export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
   (
-    { election, positions, candidates, voterCount, positionVoterCounts },
+    { election, positions, candidates, voterCount, eligibleVoterCount, positionVoterCounts, positionAbstainCounts },
     ref,
   ) => {
     const grouped = positions.map((pos) => {
@@ -164,10 +166,21 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
             <div className="mt-6 flex flex-wrap justify-center gap-8 items-center text-sm font-medium text-[#aaaaaa]">
               <div className="flex flex-col items-center">
                 <span className="text-white text-2xl font-bold font-sans">
+                  {eligibleVoterCount}
+                </span>
+                <span className="text-[10px] uppercase tracking-widest text-gold mt-1">
+                  Eligible Voters
+                </span>
+              </div>
+
+              <div className="w-px h-10 bg-white/20" />
+
+              <div className="flex flex-col items-center">
+                <span className="text-white text-2xl font-bold font-sans">
                   {voterCount}
                 </span>
                 <span className="text-[10px] uppercase tracking-widest text-gold mt-1">
-                  Voters
+                  Voted
                 </span>
               </div>
 
@@ -198,11 +211,10 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
             const winner = cands[0];
             const others = cands.slice(1);
 
-            const eligibleVoters = positionVoterCounts?.[position.id] || 0;
-            const denominator = cands.length > 1 ? totalForPos : eligibleVoters;
+            const posTotal = positionVoterCounts?.[position.id] || 0;
             const winnerPct =
-              denominator > 0
-                ? ((winner.voteCount / denominator) * 100).toFixed(2)
+              posTotal > 0
+                ? ((winner.voteCount / posTotal) * 100).toFixed(2)
                 : 0;
 
             return (
@@ -252,8 +264,8 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                     <div className="flex flex-wrap gap-x-6 gap-y-2">
                       {others.map((c) => {
                         const pct =
-                          denominator > 0
-                            ? ((c.voteCount / denominator) * 100).toFixed(2)
+                          posTotal > 0
+                            ? ((c.voteCount / posTotal) * 100).toFixed(2)
                             : 0;
                         return (
                           <div
@@ -272,6 +284,24 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
                     </div>
                   </div>
                 )}
+
+                {/* Abstain row */}
+                {(() => {
+                  const abstainCount = positionAbstainCounts?.[position.id] || 0;
+                  const posTotal = positionVoterCounts?.[position.id] || 0;
+                  const abstainPct =
+                    posTotal > 0
+                      ? ((abstainCount / posTotal) * 100).toFixed(2)
+                      : 0;
+                  return (
+                    <div className="mt-3 pt-3 border-t border-border">
+                      <div className="flex items-center gap-2 font-sans text-xs text-muted-gray italic">
+                        <span className="font-semibold text-sm">Abstain</span>
+                        <span>&mdash; {abstainCount} ({abstainPct}%)</span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}
@@ -280,12 +310,9 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
         {/* Footer */}
         <div className="w-full bg-white p-6 border-t border-border flex flex-col gap-3 font-sans text-muted-gray print:break-inside-avoid print:border-t-0 print:pt-4">
           <p className="text-[9px] leading-relaxed">
-            * <strong>Percentage Calculation Methodology:</strong> For contested
-            positions (multiple candidates), percentages are calculated based on
-            the total valid votes cast specifically for that position. For
-            unopposed positions (single candidate), percentages reflect the
-            number of votes received relative to the total number of ballots
-            submitted by eligible voters for that position.
+            * <strong>Percentage Calculation Methodology:</strong> All
+            percentages are calculated based on the total number of ballots
+            cast for each position, including abstentions.
           </p>
           <div className="flex justify-between items-center text-[10px] uppercase tracking-widest font-medium border-t border-border/50 pt-3">
             <p>Conducted on Babcock Votes &middot; babcockvotes.com</p>

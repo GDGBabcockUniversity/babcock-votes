@@ -302,7 +302,7 @@ const ResultsPage = () => {
         {/* Per-position results */}
         <h2 className="font-serif text-xl font-bold">Vote Breakdown</h2>
         <div className="mt-4 space-y-6">
-          {grouped.map(({ position, candidates: cands, totalForPos }) => (
+          {grouped.map(({ position, candidates: cands }) => (
             <Card key={position.id}>
               <CardHeader>
                 <CardTitle className="font-serif text-lg font-semibold md:text-2xl">

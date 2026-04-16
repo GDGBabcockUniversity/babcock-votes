@@ -1,4 +1,3 @@
-
 export const DEPARTMENTS = [
   { id: "accounting", name: "Accounting" },
   { id: "agriculture", name: "Agriculture" },
@@ -21,7 +20,7 @@ export const DEPARTMENTS = [
 
 export const LEVELS = ["100", "200", "300", "400", "500", "600"] as const;
 
-export const SCHOOL_DOMAIN = "student.babcock.edu.ng";
+export const SCHOOL_DOMAIN = "babcock.edu.ng";
 
 export const CREDENTIALS = {
   firebase: {

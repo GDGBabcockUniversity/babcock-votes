@@ -132,7 +132,7 @@ const RegisterPage = () => {
 
   return (
     <div className="border border-border bg-white p-8 shadow-sm">
-      <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold italic">
+      <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
         Complete Registration
       </h1>
       <p className="mt-1 text-center text-xs uppercase tracking-widest text-muted-gray">

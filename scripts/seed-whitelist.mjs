@@ -92,7 +92,7 @@ for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     }
 
     // Replace / with - for Firestore doc ID
-    const docId = matric.replace(/\//g, "-");
+    const docId = matric.replace(/\//g, "-").toLowerCase();
 
     if (seenMatrics.has(docId)) {
       console.log(`  ⚠ Skipping ${docId} (duplicate in CSV): ${row.fullName}`);

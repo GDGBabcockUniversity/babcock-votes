@@ -18,7 +18,16 @@ export const DEPARTMENTS = [
   { id: "software_engineering", name: "Software Engineering" },
 ] as const;
 
-export const LEVELS = ["100", "200", "300", "400", "500", "600"] as const;
+export const LEVELS = [
+  "100",
+  "200",
+  "300",
+  "400",
+  "500",
+  "600",
+  "Part-Time",
+  "Post-Graduate",
+] as const;
 
 export const SCHOOL_DOMAIN = "babcock.edu.ng";
 

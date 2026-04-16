@@ -504,7 +504,16 @@ const ElectionDetailPage = () => {
                     Leave empty to allow all levels to vote for this position.
                   </p>
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {["100", "200", "300", "400", "500", "600"].map((lvl) => (
+                    {[
+                      "100",
+                      "200",
+                      "300",
+                      "400",
+                      "500",
+                      "600",
+                      "Part-Time",
+                      "Post-Graduate",
+                    ].map((lvl) => (
                       <label
                         key={lvl}
                         className="flex items-center gap-1.5 border border-border px-3 py-1.5 text-sm cursor-pointer hover:bg-secondary"
@@ -513,9 +522,9 @@ const ElectionDetailPage = () => {
                           type="checkbox"
                           checked={posLevels.includes(lvl)}
                           onChange={() => togglePosLevel(lvl)}
-                          className="accent-gold"
+                          className="size-4 rounded border-border"
                         />
-                        {lvl}L
+                        {lvl.includes("00") ? `${lvl}L` : lvl}
                       </label>
                     ))}
                   </div>
@@ -866,11 +875,14 @@ const ElectionDetailPage = () => {
                 onValueChange={(v) => setEditDeptId(v ?? "")}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select department" render={
-                    <p>
-                      {DEPARTMENTS.find((e) => e.id === editDeptId)?.name}
-                    </p>
-                  } />
+                  <SelectValue
+                    placeholder="Select department"
+                    render={
+                      <p>
+                        {DEPARTMENTS.find((e) => e.id === editDeptId)?.name}
+                      </p>
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent className="font-sans">
                   {DEPARTMENTS.map((d) => (

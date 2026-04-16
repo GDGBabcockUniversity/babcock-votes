@@ -86,7 +86,7 @@ const EligibleVotersPage = () => {
     const snap = await getDocs(q);
     const rows: VoterRow[] = snap.docs.map((d) => ({
       docId: d.id,
-      matricNumber: d.id.replace(/-/g, "/"),
+      matricNumber: d.id.replace(/-/g, "/").toUpperCase(),
       ...(d.data() as EligibleVoter),
     }));
     rows.sort((a, b) => a.fullName.localeCompare(b.fullName));
@@ -133,8 +133,10 @@ const EligibleVotersPage = () => {
   const handleAdd = async () => {
     setFormError("");
     const safeMatric = formMatric.trim();
-    if (!/^\d{2}\/\d{4}$/.test(safeMatric)) {
-      setFormError("Matric must be in format XX/XXXX (e.g., 21/0456).");
+    if (!/^([a-zA-Z]{2}\/)?\d{2}\/\d{4}$/.test(safeMatric)) {
+      setFormError(
+        "Matric must be in format XX/XXXX or AA/XX/XXXX (e.g., 21/0456 or PT/22/2222).",
+      );
       return;
     }
     if (!formName.trim()) {

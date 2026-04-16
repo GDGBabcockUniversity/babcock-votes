@@ -32,10 +32,12 @@ const RegisterPage = () => {
     setError("");
 
     const safeMatric = matricNumber.trim();
-    const matricRegex = /^\d{2}\/\d{4}$/;
+    const matricRegex = /^([a-zA-Z]{2}\/)?\d{2}\/\d{4}$/;
 
     if (!matricRegex.test(safeMatric)) {
-      setError("Matric number must be in format XX/XXXX (e.g., 21/0456).");
+      setError(
+        "Matric number must be in format XX/XXXX or AA/XX/XXXX (e.g., 21/0456 or PT/22/2222).",
+      );
       return;
     }
 

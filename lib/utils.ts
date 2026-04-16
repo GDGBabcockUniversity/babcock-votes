@@ -13,4 +13,5 @@ export const getDepartmentId = (name: string) => {
 };
 
 /** Replace `/` with `-` for Firestore doc IDs */
-export const matricToDocId = (matric: string) => matric.replace(/\//g, "-");
+export const matricToDocId = (matric: string) =>
+  matric.replace(/\//g, "-").toLowerCase();

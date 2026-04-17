@@ -232,12 +232,82 @@ const VotePage = () => {
                   )}
               </div>
               <p className="mt-0.5 text-[11px] uppercase tracking-widest text-muted-gray">
-                Select 1 candidate
+                {cands.length === 1
+                  ? "Vote of confidence"
+                  : "Select 1 candidate"}
               </p>
             </div>
             <div className="space-y-3 p-4">
               {cands.map((c) => {
                 const selected = selections[position.id] === c.id;
+                const disapproved = selections[position.id] === "abstain";
+
+                if (cands.length === 1) {
+                  return (
+                    <div
+                      key={c.id}
+                      className="border border-border bg-white p-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="relative size-10 shrink-0 overflow-hidden rounded-full bg-muted">
+                          {c.photoUrl ? (
+                            <Image
+                              src={c.photoUrl}
+                              alt={c.fullName}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <span className="flex size-full items-center justify-center text-xs font-bold text-muted-gray">
+                              {c.fullName.charAt(0)}
+                            </span>
+                          )}
+                        </div>
+                        <span className="flex-1 text-sm font-medium">
+                          {c.fullName}
+                        </span>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          disabled={reviewing}
+                          onClick={() =>
+                            setSelections((prev) => ({
+                              ...prev,
+                              [position.id]: c.id,
+                            }))
+                          }
+                          className={`py-2 text-sm font-medium border transition-colors ${
+                            selected
+                              ? "bg-gold text-white border-gold"
+                              : "border-border text-charcoal hover:border-gold/40"
+                          } disabled:opacity-50`}
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={reviewing}
+                          onClick={() =>
+                            setSelections((prev) => ({
+                              ...prev,
+                              [position.id]: "abstain",
+                            }))
+                          }
+                          className={`py-2 text-sm font-medium border transition-colors ${
+                            disapproved
+                              ? "bg-charcoal text-white border-charcoal"
+                              : "border-border text-charcoal hover:border-charcoal/40"
+                          } disabled:opacity-50`}
+                        >
+                          Disapprove
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <button
                     key={c.id}
@@ -312,7 +382,7 @@ const VotePage = () => {
                     {pos.title}
                   </p>
                   <p
-                    className={`text-sm font-semibold ${!selections[pos.id] ? "italic text-muted-gray" : ""}`}
+                    className={`text-sm font-semibold ${!selections[pos.id] || selections[pos.id] === "abstain" ? "italic text-muted-gray" : ""}`}
                   >
                     {getCandidateName(selections[pos.id])}
                   </p>

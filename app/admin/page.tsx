@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { collection, getDocs, getCountFromServer, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  getCountFromServer,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,11 +47,20 @@ const AdminDashboard = () => {
       ).length;
 
       const [votesCount, usersCount] = await Promise.all([
-        getCountFromServer(collection(db, "votes")).then((s) => s.data().count),
         isSuperAdmin
-          ? getCountFromServer(collection(db, "users")).then((s) => s.data().count)
+          ? getCountFromServer(collection(db, "votes")).then(
+              (s) => s.data().count,
+            )
+          : Promise.resolve(0),
+        isSuperAdmin
+          ? getCountFromServer(collection(db, "users")).then(
+              (s) => s.data().count,
+            )
           : getCountFromServer(
-              query(collection(db, "users"), where("departmentId", "==", userProfile?.departmentId)),
+              query(
+                collection(db, "users"),
+                where("departmentId", "==", userProfile?.departmentId),
+              ),
             ).then((s) => s.data().count),
       ]);
 
@@ -67,7 +82,9 @@ const AdminDashboard = () => {
       icon: CalendarCheck,
     },
     { title: "Active Now", value: stats.activeElections, icon: BarChart3 },
-    { title: "Votes Cast", value: stats.totalVotes, icon: Vote },
+    ...(isSuperAdmin
+      ? [{ title: "Votes Cast", value: stats.totalVotes, icon: Vote }]
+      : []),
     { title: "Registered Voters", value: stats.totalUsers, icon: Users },
   ];
 
@@ -84,7 +101,11 @@ const AdminDashboard = () => {
         </p>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        className={`mt-6 grid gap-4 sm:grid-cols-2 ${
+          isSuperAdmin ? "lg:grid-cols-4" : "lg:grid-cols-3"
+        }`}
+      >
         {cards.map((card) => (
           <Card key={card.title} className="rounded-none">
             <CardHeader className="flex flex-row items-center justify-between pb-2">

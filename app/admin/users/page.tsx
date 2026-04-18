@@ -28,11 +28,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { User } from "@/lib/types";
 import { getDepartmentName } from "@/lib/utils";
 
 const ROLES = ["voter", "dept_admin", "super_admin"] as const;
+const PAGE_SIZE = 20;
 
 const roleBadgeVariant: Record<string, "default" | "secondary" | "outline"> = {
   super_admin: "default",
@@ -53,6 +54,7 @@ const UsersPage = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     const fetch = async () => {
@@ -80,6 +82,11 @@ const UsersPage = () => {
     setUpdating(null);
   };
 
+  const handleSearch = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
   const filtered = search
     ? users.filter(
         (u) =>
@@ -91,6 +98,11 @@ const UsersPage = () => {
             .includes(search.toLowerCase()),
       )
     : users;
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePagePage = Math.min(page, totalPages);
+  const startIndex = (safePagePage - 1) * PAGE_SIZE;
+  const paginated = filtered.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <div>
@@ -106,7 +118,7 @@ const UsersPage = () => {
         <Input
           placeholder="Search by name, email, matric..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
           className="pl-10"
         />
       </div>
@@ -140,7 +152,7 @@ const UsersPage = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((u) => {
+              paginated.map((u) => {
                 const isSelf = u.uid === firebaseUser?.uid;
                 return (
                   <TableRow key={u.uid}>
@@ -188,6 +200,43 @@ const UsersPage = () => {
           </TableBody>
         </Table>
       </div>
+
+      {/* Pagination */}
+      {!loading && filtered.length > PAGE_SIZE && (
+        <div className="mt-4 flex items-center justify-between font-sans text-sm">
+          <p className="text-muted-gray">
+            Showing{" "}
+            <span className="font-medium text-charcoal">
+              {startIndex + 1}&ndash;
+              {Math.min(startIndex + PAGE_SIZE, filtered.length)}
+            </span>{" "}
+            of{" "}
+            <span className="font-medium text-charcoal">{filtered.length}</span>{" "}
+            users
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={safePagePage <= 1}
+              className="flex items-center gap-1 border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:border-gold/50 disabled:opacity-40 disabled:hover:border-border"
+            >
+              <ChevronLeft className="size-3.5" />
+              Previous
+            </button>
+            <span className="min-w-[4rem] text-center text-xs text-muted-gray">
+              Page {safePagePage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={safePagePage >= totalPages}
+              className="flex items-center gap-1 border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:border-gold/50 disabled:opacity-40 disabled:hover:border-border"
+            >
+              Next
+              <ChevronRight className="size-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

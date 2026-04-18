@@ -24,6 +24,7 @@ interface AuthState {
   userProfile: User | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -33,6 +34,7 @@ const AuthContext = createContext<AuthState>({
   userProfile: null,
   loading: true,
   signInWithGoogle: async () => {},
+  signInWithEmail: async () => {},
   refreshProfile: async () => {},
   signOut: async () => {},
 });
@@ -79,6 +81,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const signInWithEmail = async (email: string, password: string) => {
+    const { signInWithEmailAndPassword } = await import("firebase/auth");
+    await signInWithEmailAndPassword(auth, email, password);
+  };
+
   const refreshProfile = useCallback(async () => {
     if (!firebaseUser) return;
     const snap = await getDoc(doc(db, "users", firebaseUser.uid));
@@ -98,6 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         userProfile,
         loading,
         signInWithGoogle,
+        signInWithEmail,
         refreshProfile,
         signOut,
       }}

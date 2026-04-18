@@ -223,7 +223,7 @@ const UsersPage = () => {
               <ChevronLeft className="size-3.5" />
               Previous
             </button>
-            <span className="min-w-[4rem] text-center text-xs text-muted-gray">
+            <span className="min-w-16 text-center text-xs text-muted-gray">
               Page {safePagePage} of {totalPages}
             </span>
             <button

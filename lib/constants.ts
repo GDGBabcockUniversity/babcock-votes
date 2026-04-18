@@ -29,7 +29,7 @@ export const LEVELS = [
   "Post-Graduate",
 ] as const;
 
-export const SCHOOL_DOMAIN = "babcock.edu.ng";
+export const SCHOOL_DOMAIN = "student.babcock.edu.ng";
 
 export const CREDENTIALS = {
   firebase: {

@@ -4,6 +4,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
   type ReactNode,
@@ -46,44 +47,82 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Ref (not state) so the flag is visible immediately inside the
+  // onAuthStateChanged callback — no stale-closure issues.
+  const signingInRef = useRef(false);
+
+  const loadProfile = useCallback(async (user: FirebaseUser) => {
+    try {
+      const snap = await getDoc(doc(db, "users", user.uid));
+      setUserProfile(snap.exists() ? (snap.data() as User) : null);
+    } catch (err) {
+      console.error("[auth-context] Failed to read user profile:", err);
+      setUserProfile(null);
+    }
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
 
-      if (user) {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        setUserProfile(snap.exists() ? (snap.data() as User) : null);
-      } else {
+      if (user && !signingInRef.current) {
+        // Only load profile here for cached sessions (page reload).
+        // Fresh sign-ins are handled by signInWithGoogle / signInWithEmail.
+        setLoading(true);
+        await loadProfile(user);
+        setLoading(false);
+      } else if (!user) {
         setUserProfile(null);
+        setLoading(false);
       }
-
-      setLoading(false);
+      // When signingInRef.current is true, DON'T set loading = false here.
+      // The sign-in function will set it after loading the profile.
     });
 
     return unsubscribe;
-  }, []);
+  }, [loadProfile]);
 
   const signInWithGoogle = async () => {
-    googleProvider.setCustomParameters({
-      prompt: "select_account",
-      hd: SCHOOL_DOMAIN,
-    });
-    const result = await signInWithPopup(auth, googleProvider);
-    const email = result.user.email ?? "";
+    signingInRef.current = true;
+    try {
+      googleProvider.setCustomParameters({
+        prompt: "select_account",
+        hd: SCHOOL_DOMAIN,
+      });
+      const result = await signInWithPopup(auth, googleProvider);
+      const email = result.user.email ?? "";
 
-    if (!email.endsWith(`@${SCHOOL_DOMAIN}`)) {
-      await firebaseSignOut(auth);
-      setFirebaseUser(null);
-      setUserProfile(null);
-      throw new Error(
-        `Only @${SCHOOL_DOMAIN} email addresses are allowed. Please sign in with your school email.`,
-      );
+      if (!email.endsWith(`@${SCHOOL_DOMAIN}`)) {
+        await firebaseSignOut(auth);
+        setFirebaseUser(null);
+        setUserProfile(null);
+        throw new Error(
+          `Only @${SCHOOL_DOMAIN} email addresses are allowed. Please sign in with your school email.`,
+        );
+      }
+
+      // Token is fully established after signInWithPopup resolves.
+      // Safe to read Firestore now.
+      setFirebaseUser(result.user);
+      await loadProfile(result.user);
+    } finally {
+      signingInRef.current = false;
+      setLoading(false);
     }
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    const { signInWithEmailAndPassword } = await import("firebase/auth");
-    await signInWithEmailAndPassword(auth, email, password);
+    signingInRef.current = true;
+    try {
+      const { signInWithEmailAndPassword } = await import("firebase/auth");
+      const result = await signInWithEmailAndPassword(auth, email, password);
+
+      setFirebaseUser(result.user);
+      await loadProfile(result.user);
+    } finally {
+      signingInRef.current = false;
+      setLoading(false);
+    }
   };
 
   const refreshProfile = useCallback(async () => {

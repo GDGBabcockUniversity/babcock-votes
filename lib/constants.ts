@@ -1,5 +1,6 @@
 export const DEPARTMENTS = [
   { id: "accounting", name: "Accounting" },
+  { id: "anatomy", name: "Anatomy" },
   { id: "agriculture", name: "Agriculture" },
   { id: "biochemistry", name: "Biochemistry" },
   { id: "business_admin", name: "Business Administration" },

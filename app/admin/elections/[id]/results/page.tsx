@@ -19,12 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  ArrowLeft,
-  Users,
-  UserCheck,
-  FileDown,
-} from "lucide-react";
+import { ArrowLeft, Users, UserCheck, FileDown } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
 
@@ -39,8 +34,12 @@ const ResultsPage = () => {
   >([]);
   const [eligibleVoterCount, setEligibleVoterCount] = useState(0);
   const [voterCount, setVoterCount] = useState(0);
-  const [positionVoterCounts, setPositionVoterCounts] = useState<Record<string, number>>({});
-  const [positionAbstainCounts, setPositionAbstainCounts] = useState<Record<string, number>>({});
+  const [positionVoterCounts, setPositionVoterCounts] = useState<
+    Record<string, number>
+  >({});
+  const [positionAbstainCounts, setPositionAbstainCounts] = useState<
+    Record<string, number>
+  >({});
   const [loading, setLoading] = useState(true);
 
   const posterRef = useRef<HTMLDivElement>(null);
@@ -124,11 +123,11 @@ const ResultsPage = () => {
         Object.fromEntries(abstainCounts.map((p) => [p.id, p.count])),
       );
 
-      // Derive unique voter count: total votes / number of positions
-      // (each voter casts one vote per position)
+      // Derive unique voter count: maximum votes across any single position
+      // (ensures turnout is accurate even if some positions are level-restricted)
       if (posItems.length > 0) {
-        const avgVotesPerPos = posCounts.reduce((s, p) => s + p.count, 0) / posItems.length;
-        setVoterCount(Math.round(avgVotesPerPos));
+        const maxVotesForAnyPos = Math.max(...posCounts.map((p) => p.count));
+        setVoterCount(maxVotesForAnyPos);
       }
 
       setLoading(false);
@@ -197,7 +196,10 @@ const ResultsPage = () => {
           if (!ctx) return;
 
           // Draw cropped & centered (cover behavior)
-          const scale = Math.max(size / tempImg.naturalWidth, size / tempImg.naturalHeight);
+          const scale = Math.max(
+            size / tempImg.naturalWidth,
+            size / tempImg.naturalHeight,
+          );
           const sw = size / scale;
           const sh = size / scale;
           const sx = (tempImg.naturalWidth - sw) / 2;
@@ -214,7 +216,8 @@ const ResultsPage = () => {
     // Set a structured filename for the PDF
     const originalTitle = document.title;
     const dateStr = new Date().toISOString().slice(0, 10);
-    const electionName = election?.title?.replace(/[^\w\s-]/g, "").trim() || "Election";
+    const electionName =
+      election?.title?.replace(/[^\w\s-]/g, "").trim() || "Election";
     document.title = `BabcockVotes - ${electionName} - Results - ${dateStr}`;
 
     window.print();
@@ -268,7 +271,9 @@ const ResultsPage = () => {
               <UserCheck className="size-4 text-gold" />
             </CardHeader>
             <CardContent>
-              <p className="font-sans text-2xl font-bold">{eligibleVoterCount}</p>
+              <p className="font-sans text-2xl font-bold">
+                {eligibleVoterCount}
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -279,7 +284,12 @@ const ResultsPage = () => {
               <Users className="size-4 text-gold" />
             </CardHeader>
             <CardContent>
-              <p className="font-sans text-2xl font-bold">{voterCount} <span className="text-base text-muted-gray font-medium">({((voterCount / eligibleVoterCount) * 100).toFixed(2)}%)</span></p>
+              <p className="font-sans text-2xl font-bold">
+                {voterCount}{" "}
+                <span className="text-base text-muted-gray font-medium">
+                  ({((voterCount / eligibleVoterCount) * 100).toFixed(2)}%)
+                </span>
+              </p>
               {/* <p className="font-sans text-xs text-muted-gray">
                 {voterCount} votes / {eligibleVoterCount} eligible voters
               </p> */}
@@ -379,7 +389,6 @@ const ResultsPage = () => {
             </Card>
           ))}
         </div>
-
       </div>
 
       {/* Poster for PDF Export — visually hidden but in DOM so images preload */}

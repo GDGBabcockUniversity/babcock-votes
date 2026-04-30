@@ -6,6 +6,7 @@ export const DEPARTMENTS = [
   { id: "business_admin", name: "Business Administration" },
   { id: "computer_science", name: "Computer Science" },
   { id: "economics", name: "Economics" },
+  { id: "education", name: "Education" },
   { id: "english", name: "English" },
   { id: "history", name: "History" },
   { id: "international_relations", name: "International Relations" },

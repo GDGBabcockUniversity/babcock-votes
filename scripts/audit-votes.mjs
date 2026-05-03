@@ -19,8 +19,7 @@ import { getFirestore } from "firebase-admin/firestore";
 
 // --- Args ---
 const electionId = process.argv[2];
-const keyPath =
-  process.argv[3] || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+const keyPath = process.argv[3] || process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
 if (!electionId) {
   console.error(
@@ -43,6 +42,14 @@ const db = getFirestore(app);
 
 console.log(`Auditing votes for election: ${electionId}\n`);
 
+const escCsv = (val) => {
+  const s = String(val ?? "");
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+};
+
 // --- Fetch election ---
 const elSnap = await db.collection("elections").doc(electionId).get();
 if (!elSnap.exists) {
@@ -60,11 +67,7 @@ const [posSnap, candSnap] = await Promise.all([
     .collection("positions")
     .orderBy("order", "asc")
     .get(),
-  db
-    .collection("elections")
-    .doc(electionId)
-    .collection("candidates")
-    .get(),
+  db.collection("elections").doc(electionId).collection("candidates").get(),
 ]);
 
 const positionMap = new Map();
@@ -90,32 +93,41 @@ if (votesSnap.size === 0) {
   process.exit(0);
 }
 
+const votes = votesSnap.docs.map((d) => d.data());
+
 // --- Collect unique voter IDs and batch-fetch user profiles ---
-const voterIds = [...new Set(votesSnap.docs.map((d) => d.data().voterId))];
+const voterIds = [...new Set(votes.map((v) => v.voterId).filter(Boolean))];
 console.log(`Fetching profiles for ${voterIds.length} unique voters...`);
 
 const userMap = new Map();
 const BATCH = 30; // Firestore "in" queries support up to 30 IDs
+const MAX_CONCURRENT_BATCHES = 8;
+const voterChunks = [];
 for (let i = 0; i < voterIds.length; i += BATCH) {
   const chunk = voterIds.slice(i, i + BATCH);
-  const snap = await db
-    .collection("users")
-    .where("__name__", "in", chunk)
-    .get();
-  snap.docs.forEach((d) => userMap.set(d.id, d.data()));
+  if (chunk.length > 0) voterChunks.push(chunk);
+}
+
+for (
+  let i = 0;
+  i < voterChunks.length;
+  i += MAX_CONCURRENT_BATCHES
+) {
+  const group = voterChunks.slice(i, i + MAX_CONCURRENT_BATCHES);
+  const snaps = await Promise.all(
+    group.map((chunk) =>
+      db.collection("users").where("__name__", "in", chunk).get(),
+    ),
+  );
+
+  for (const snap of snaps) {
+    snap.docs.forEach((d) => userMap.set(d.id, d.data()));
+  }
 }
 
 console.log(`Resolved ${userMap.size} user profiles.\n`);
 
 // --- Build rows ---
-const escCsv = (val) => {
-  const s = String(val ?? "");
-  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
-};
-
 const header = [
   "voter_name",
   "voter_email",
@@ -125,18 +137,18 @@ const header = [
   "voted_at",
 ];
 
-const rows = votesSnap.docs.map((d) => {
-  const v = d.data();
+const rows = new Array(votes.length);
+for (let i = 0; i < votes.length; i += 1) {
+  const v = votes[i];
   const user = userMap.get(v.voterId);
   const position = positionMap.get(v.positionId);
   const candidate =
     v.candidateId === "abstain" ? null : candidateMap.get(v.candidateId);
 
-  const votedAt = v.votedAt?.toDate?.()
-    ? v.votedAt.toDate().toISOString()
-    : "";
+  const votedAtDate = v.votedAt?.toDate?.();
+  const votedAt = votedAtDate ? votedAtDate.toISOString() : "";
 
-  return [
+  rows[i] = [
     escCsv(user?.fullName ?? "UNKNOWN"),
     escCsv(user?.email ?? "UNKNOWN"),
     escCsv(user?.matricNumber ?? ""),
@@ -144,7 +156,7 @@ const rows = votesSnap.docs.map((d) => {
     escCsv(candidate ? candidate.fullName : "ABSTAIN"),
     escCsv(votedAt),
   ].join(",");
-});
+}
 
 // Sort by voter email then position for easy scanning
 rows.sort();
@@ -165,9 +177,7 @@ for (const [uid, user] of userMap) {
 }
 
 if (nonSchool.length > 0) {
-  console.log(
-    `\n⚠ ${nonSchool.length} voter(s) used non-school emails:\n`,
-  );
+  console.log(`\n⚠ ${nonSchool.length} voter(s) used non-school emails:\n`);
   nonSchool.forEach((u) =>
     console.log(`  ${u.fullName} — ${u.email} (uid: ${u.uid})`),
   );

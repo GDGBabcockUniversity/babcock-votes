@@ -56,6 +56,7 @@ import {
   Trash2,
   Upload,
   BarChart3,
+  ChartColumn,
 } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import Image from "next/image";
@@ -403,6 +404,15 @@ const ElectionDetailPage = () => {
             )}
           >
             <BarChart3 className="mr-2 size-3.5" /> Results
+          </Link>
+          <Link
+            href={PAGES.admin.electionAnalytics(id)}
+            className={cn(
+              "font-sans rounded-none",
+              "flex w-full lg:w-fit items-center justify-center border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+            )}
+          >
+            <ChartColumn className="mr-2 size-3.5" /> Analytics
           </Link>
           {isSuperAdmin && (
             <Button

@@ -62,6 +62,7 @@ export const PAGES = {
     newElection: "/admin/elections/new",
     electionDetail: (id: string) => `/admin/elections/${id}`,
     electionResults: (id: string) => `/admin/elections/${id}/results`,
+    electionAnalytics: (id: string) => `/admin/elections/${id}/analytics`,
     users: "/admin/users",
     eligibleVoters: "/admin/eligible-voters",
   },

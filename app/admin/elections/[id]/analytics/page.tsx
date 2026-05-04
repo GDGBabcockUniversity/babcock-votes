@@ -199,7 +199,7 @@ const ElectionAnalyticsPage = () => {
 
           <Card className="rounded-none">
             <CardHeader>
-              <CardTitle className="font-serif text-lg font-semibold text-charcoal">
+              <CardTitle className="font-sans text-lg font-semibold text-charcoal">
                 Winners Board
               </CardTitle>
             </CardHeader>
@@ -223,7 +223,7 @@ const ElectionAnalyticsPage = () => {
           <div className="grid gap-4 lg:grid-cols-2">
             <Card className="rounded-none">
               <CardHeader>
-                <CardTitle className="font-serif text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
                   Closest Race
                 </CardTitle>
               </CardHeader>
@@ -241,7 +241,7 @@ const ElectionAnalyticsPage = () => {
             </Card>
             <Card className="rounded-none">
               <CardHeader>
-                <CardTitle className="font-serif text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
                   Most Decisive Race
                 </CardTitle>
               </CardHeader>
@@ -294,7 +294,7 @@ const ElectionAnalyticsPage = () => {
 
           <Card className="rounded-none">
             <CardHeader>
-              <CardTitle className="font-serif text-lg font-semibold text-charcoal">
+              <CardTitle className="font-sans text-lg font-semibold text-charcoal">
                 Integrity
               </CardTitle>
             </CardHeader>

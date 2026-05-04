@@ -153,7 +153,7 @@ const ElectionAnalyticsPage = () => {
           <div className="grid gap-6 lg:grid-cols-2">
             <Card className="rounded-none">
               <CardHeader>
-                <CardTitle className="font-serif text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
                   Participation by level
                 </CardTitle>
               </CardHeader>
@@ -172,7 +172,7 @@ const ElectionAnalyticsPage = () => {
 
             <Card className="rounded-none">
               <CardHeader>
-                <CardTitle className="font-serif text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
                   Voting timeline
                 </CardTitle>
               </CardHeader>
@@ -263,11 +263,11 @@ const ElectionAnalyticsPage = () => {
           </div>
 
           <div className="space-y-4">
-            <h2 className="font-serif text-xl font-bold">Per-position distribution</h2>
+            <h2 className="font-sans text-xl font-bold">Per-position distribution</h2>
             {sortedPositions.map((position) => (
               <Card key={position.positionId} className="rounded-none">
                 <CardHeader>
-                  <CardTitle className="font-serif text-lg font-semibold text-charcoal">
+                  <CardTitle className="font-sans text-lg font-semibold text-charcoal">
                     {position.title}
                   </CardTitle>
                 </CardHeader>

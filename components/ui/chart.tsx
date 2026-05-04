@@ -44,7 +44,7 @@ export const ChartContainer = React.forwardRef<
         ref={ref}
         data-chart={chartId}
         className={cn(
-          "flex aspect-video justify-center text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-layer]:outline-none [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
+          "flex aspect-video justify-center font-sans text-xs [&_.recharts-cartesian-axis-tick_text]:fill-muted-foreground [&_.recharts-cartesian-grid_line[stroke='#ccc']]:stroke-border/50 [&_.recharts-layer]:outline-none [&_.recharts-sector]:outline-none [&_.recharts-surface]:outline-none",
           className,
         )}
         {...props}
@@ -118,7 +118,7 @@ export const ChartTooltipContent = React.forwardRef<
     <div
       ref={ref}
       className={cn(
-        "grid min-w-32 items-start gap-1.5 border border-border bg-background px-2.5 py-1.5 text-xs shadow-xl",
+        "grid min-w-32 items-start gap-1.5 border border-border bg-background px-2.5 py-1.5 font-sans text-xs shadow-xl",
         className,
       )}
     >

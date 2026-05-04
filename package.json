@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "ts-lint": "tsc --noEmit --incremental",
-    "stress-test": "node scripts/stress-test.mjs"
+    "stress-test": "node scripts/stress-test.mjs",
+    "generate-analytics": "node scripts/generate-election-analytics.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

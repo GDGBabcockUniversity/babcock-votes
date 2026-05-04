@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   doc,
   getDoc,
@@ -19,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Users, UserCheck, FileDown } from "lucide-react";
+import { ArrowLeft, Users, UserCheck, FileDown, ChartColumn } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
 
@@ -40,6 +41,7 @@ const ResultsPage = () => {
   const [positionAbstainCounts, setPositionAbstainCounts] = useState<
     Record<string, number>
   >({});
+  const [analyticsReady, setAnalyticsReady] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const posterRef = useRef<HTMLDivElement>(null);
@@ -56,7 +58,7 @@ const ResultsPage = () => {
       const elData = { id: elSnap.id, ...elSnap.data() } as Election;
       setElection(elData);
 
-      const [posSnap, candSnap, eligibleSnap] = await Promise.all([
+      const [posSnap, candSnap, eligibleSnap, analyticsSnap] = await Promise.all([
         getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
         getDocs(collection(elRef, "candidates")),
         getCountFromServer(
@@ -65,9 +67,11 @@ const ResultsPage = () => {
             where("departmentId", "==", elData.departmentId),
           ),
         ),
+        getDoc(doc(db, "election_analytics", id)),
       ]);
 
       setEligibleVoterCount(eligibleSnap.data().count);
+      setAnalyticsReady(analyticsSnap.exists());
 
       const posItems = posSnap.docs.map(
         (d) => ({ id: d.id, ...d.data() }) as Position,
@@ -249,17 +253,34 @@ const ResultsPage = () => {
             </p>
           </div>
 
-          {election.status === "closed" && (
-            <Button
-              onClick={handleExportPdf}
-              disabled={candidates.length === 0}
-              className="font-sans rounded-none"
-            >
-              <FileDown className="mr-2 size-4" />
-              Export as PDF
-            </Button>
-          )}
+          <div className="flex flex-wrap gap-2">
+            <Link href={PAGES.admin.electionAnalytics(id)}>
+              <Button variant="outline" className="font-sans rounded-none">
+                <ChartColumn className="mr-2 size-4" />
+                Analytics
+              </Button>
+            </Link>
+            {election.status === "closed" && (
+              <Button
+                onClick={handleExportPdf}
+                disabled={candidates.length === 0}
+                className="font-sans rounded-none"
+              >
+                <FileDown className="mr-2 size-4" />
+                Export as PDF
+              </Button>
+            )}
+          </div>
         </div>
+
+        {!analyticsReady && (
+          <Card className="mt-4 rounded-none border-dashed bg-gold-tint/20">
+            <CardContent className="pt-6 font-sans text-sm text-muted-gray">
+              Analytics summary is not available yet. It will appear on the
+              analytics page once generation completes.
+            </CardContent>
+          </Card>
+        )}
 
         {/* Overview cards */}
         <div className="mt-6 grid gap-4 sm:grid-cols-3">

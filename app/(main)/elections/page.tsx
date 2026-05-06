@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import type { Election } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/context/auth-context";
+import { filterVisibleElections } from "@/lib/election-visibility";
 
 type FilterStatus = "all" | Election["status"];
 
@@ -20,6 +22,7 @@ const FILTERS: { label: string; value: FilterStatus }[] = [
 ];
 
 const ElectionsPage = () => {
+  const { userProfile } = useAuth();
   const [elections, setElections] = useState<Election[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -38,7 +41,9 @@ const ElectionsPage = () => {
     fetch();
   }, []);
 
-  const filtered = elections.filter((e) => {
+  const visibleElections = filterVisibleElections(elections, userProfile);
+
+  const filtered = visibleElections.filter((e) => {
     const matchesFilter = filter === "all" || e.status === filter;
     const matchesSearch = e.title.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;

@@ -30,6 +30,10 @@ export interface Election {
   candidateCount: number;
   createdBy: string;
   createdAt: Timestamp;
+  isDuplicate?: boolean;
+  duplicatedFromElectionId?: string;
+  duplicatedAt?: Timestamp;
+  duplicatedBy?: string;
 }
 
 export interface Position {

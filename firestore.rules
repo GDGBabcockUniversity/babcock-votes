@@ -63,7 +63,8 @@ service cloud.firestore {
     match /elections/{electionId} {
       allow read: if isSignedIn();
       allow create: if isSuperAdmin() || isDeptAdminFor(request.resource.data.departmentId);
-      allow update, delete: if isSuperAdmin() || isDeptAdminFor(resource.data.departmentId);
+      allow update: if isSuperAdmin() || isDeptAdminFor(resource.data.departmentId);
+      allow delete: if false;
 
       // Positions subcollection
       match /positions/{positionId} {

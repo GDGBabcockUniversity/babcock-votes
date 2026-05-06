@@ -10,8 +10,11 @@ import { Input } from "@/components/ui/input";
 import { Search, ArrowRight } from "lucide-react";
 import type { Election } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
+import { useAuth } from "@/context/auth-context";
+import { filterVisibleElections } from "@/lib/election-visibility";
 
 const HomePage = () => {
+  const { userProfile } = useAuth();
   const [elections, setElections] = useState<Election[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -33,7 +36,9 @@ const HomePage = () => {
     fetchElections();
   }, []);
 
-  const activeUpcoming = elections.filter(
+  const visibleElections = filterVisibleElections(elections, userProfile);
+
+  const activeUpcoming = visibleElections.filter(
     (e) => e.status === "active" || e.status === "upcoming",
   );
 

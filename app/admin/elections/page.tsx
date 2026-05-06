@@ -7,10 +7,12 @@ import {
   getDocs,
   query,
   orderBy,
-  deleteDoc,
+  onSnapshot,
   doc,
-  where,
-  writeBatch,
+  getDoc,
+  addDoc,
+  setDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -30,7 +32,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Pencil, Trash2, BarChart3 } from "lucide-react";
+import {
+  Plus,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  BarChart3,
+  Copy,
+} from "lucide-react";
 import type { Election } from "@/lib/types";
 import { cn, getDepartmentName } from "@/lib/utils";
 import { PAGES } from "@/lib/constants";
@@ -52,62 +61,114 @@ const formatDate = (ts: { seconds: number }) =>
   });
 
 const AdminElectionsPage = () => {
-  const { userProfile } = useAuth();
+  const { firebaseUser, userProfile } = useAuth();
   const isSuperAdmin = userProfile?.role === "super_admin";
 
   const [elections, setElections] = useState<Election[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
-      const snap = await getDocs(
-        query(collection(db, "elections"), orderBy("createdAt", "desc")),
-      );
+    const electionsQuery = query(
+      collection(db, "elections"),
+      orderBy("createdAt", "desc"),
+    );
+    const unsubscribe = onSnapshot(electionsQuery, (snap) => {
       let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Election);
 
       if (!isSuperAdmin && userProfile?.departmentId) {
-        items = items.filter(
-          (e) => e.departmentId === userProfile.departmentId,
-        );
+        items = items.filter((e) => e.departmentId === userProfile.departmentId);
       }
 
       setElections(items);
       setLoading(false);
-    };
-    fetch();
+    });
+
+    return unsubscribe;
   }, [isSuperAdmin, userProfile?.departmentId]);
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this election? This will also remove all positions, candidates, and votes. This cannot be undone.")) return;
-
-    const elRef = doc(db, "elections", id);
-
-    // Delete positions subcollection
-    const posSnap = await getDocs(collection(elRef, "positions"));
-    const batch1 = writeBatch(db);
-    posSnap.docs.forEach((d) => batch1.delete(d.ref));
-    if (!posSnap.empty) await batch1.commit();
-
-    // Delete candidates subcollection
-    const candSnap = await getDocs(collection(elRef, "candidates"));
-    const batch2 = writeBatch(db);
-    candSnap.docs.forEach((d) => batch2.delete(d.ref));
-    if (!candSnap.empty) await batch2.commit();
-
-    // Delete votes for this election
-    const votesSnap = await getDocs(
-      query(collection(db, "votes"), where("electionId", "==", id)),
+  const copySubcollection = async (
+    sourceElectionId: string,
+    targetElectionId: string,
+    subcollectionName: "positions" | "candidates",
+  ) => {
+    const sourceSnap = await getDocs(
+      collection(db, "elections", sourceElectionId, subcollectionName),
     );
-    // Batch delete in chunks of 500 (Firestore limit)
-    for (let i = 0; i < votesSnap.docs.length; i += 500) {
-      const chunk = votesSnap.docs.slice(i, i + 500);
-      const batch = writeBatch(db);
-      chunk.forEach((d) => batch.delete(d.ref));
-      await batch.commit();
+
+    for (const snapshotDoc of sourceSnap.docs) {
+      await setDoc(
+        doc(
+          db,
+          "elections",
+          targetElectionId,
+          subcollectionName,
+          snapshotDoc.id,
+        ),
+        snapshotDoc.data(),
+      );
     }
 
-    // Delete the election document itself
-    await deleteDoc(elRef);
+    return sourceSnap.size;
+  };
+
+  const handleDuplicate = async (id: string) => {
+    if (!firebaseUser || !isSuperAdmin) return;
+
+    const sourceRef = doc(db, "elections", id);
+    const sourceSnap = await getDoc(sourceRef);
+
+    if (!sourceSnap.exists()) {
+      alert("Election not found.");
+      return;
+    }
+
+    const sourceElection = sourceSnap.data() as Omit<Election, "id">;
+
+    const newElectionRef = await addDoc(collection(db, "elections"), {
+      title: `${sourceElection.title} (Copy)`,
+      description: sourceElection.description,
+      departmentId: sourceElection.departmentId,
+      logoUrl: sourceElection.logoUrl ?? "",
+      startDate: sourceElection.startDate,
+      endDate: sourceElection.endDate,
+      status: "upcoming",
+      candidateCount: 0,
+      createdBy: firebaseUser.uid,
+      createdAt: serverTimestamp(),
+      isDuplicate: true,
+      duplicatedFromElectionId: id,
+      duplicatedBy: firebaseUser.uid,
+      duplicatedAt: serverTimestamp(),
+    });
+
+    const candidateCount = await copySubcollection(id, newElectionRef.id, "candidates");
+    await copySubcollection(id, newElectionRef.id, "positions");
+
+    await setDoc(
+      doc(db, "elections", newElectionRef.id),
+      { candidateCount },
+      { merge: true },
+    );
+
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!firebaseUser) return;
+    if (!confirm("Delete this election? This will also remove all nested data. This cannot be undone.")) return;
+
+    const token = await firebaseUser.getIdToken();
+    const response = await fetch(`/api/admin/elections/${id}/delete`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      alert("Failed to delete election.");
+      return;
+    }
+
     setElections((prev) => prev.filter((e) => e.id !== id));
   };
 
@@ -219,6 +280,12 @@ const AdminElectionsPage = () => {
                             </Link>
                           }
                         />
+                        {isSuperAdmin && (
+                          <DropdownMenuItem onClick={() => handleDuplicate(el.id)}>
+                            <Copy className="mr-2 size-3.5" />
+                            Duplicate
+                          </DropdownMenuItem>
+                        )}
                         {isSuperAdmin && (
                           <DropdownMenuItem
                             onClick={() => handleDelete(el.id)}

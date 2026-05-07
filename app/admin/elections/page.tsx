@@ -11,8 +11,9 @@ import {
   doc,
   getDoc,
   addDoc,
-  setDoc,
   serverTimestamp,
+  writeBatch,
+  type DocumentData,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
@@ -86,29 +87,17 @@ const AdminElectionsPage = () => {
     return unsubscribe;
   }, [isSuperAdmin, userProfile?.departmentId]);
 
-  const copySubcollection = async (
-    sourceElectionId: string,
-    targetElectionId: string,
+  const readSubcollectionDocs = async (
+    electionId: string,
     subcollectionName: "positions" | "candidates",
   ) => {
-    const sourceSnap = await getDocs(
-      collection(db, "elections", sourceElectionId, subcollectionName),
+    const snap = await getDocs(
+      collection(db, "elections", electionId, subcollectionName),
     );
-
-    for (const snapshotDoc of sourceSnap.docs) {
-      await setDoc(
-        doc(
-          db,
-          "elections",
-          targetElectionId,
-          subcollectionName,
-          snapshotDoc.id,
-        ),
-        snapshotDoc.data(),
-      );
-    }
-
-    return sourceSnap.size;
+    return snap.docs.map((snapshotDoc) => ({
+      id: snapshotDoc.id,
+      data: snapshotDoc.data(),
+    }));
   };
 
   const handleDuplicate = async (id: string) => {
@@ -122,33 +111,85 @@ const AdminElectionsPage = () => {
       return;
     }
 
-    const sourceElection = sourceSnap.data() as Omit<Election, "id">;
+    try {
+      const sourceElection = sourceSnap.data() as Omit<Election, "id">;
+      const [sourcePositions, sourceCandidates] = await Promise.all([
+        readSubcollectionDocs(id, "positions"),
+        readSubcollectionDocs(id, "candidates"),
+      ]);
 
-    const newElectionRef = await addDoc(collection(db, "elections"), {
-      title: `${sourceElection.title} (Copy)`,
-      description: sourceElection.description,
-      departmentId: sourceElection.departmentId,
-      logoUrl: sourceElection.logoUrl ?? "",
-      startDate: sourceElection.startDate,
-      endDate: sourceElection.endDate,
-      status: "upcoming",
-      candidateCount: 0,
-      createdBy: firebaseUser.uid,
-      createdAt: serverTimestamp(),
-      isDuplicate: true,
-      duplicatedFromElectionId: id,
-      duplicatedBy: firebaseUser.uid,
-      duplicatedAt: serverTimestamp(),
-    });
+      const newElectionRef = await addDoc(collection(db, "elections"), {
+        title: `${sourceElection.title} (Copy)`,
+        description: sourceElection.description,
+        departmentId: sourceElection.departmentId,
+        logoUrl: sourceElection.logoUrl ?? "",
+        startDate: sourceElection.startDate,
+        endDate: sourceElection.endDate,
+        status: "upcoming",
+        candidateCount: 0,
+        createdBy: firebaseUser.uid,
+        createdAt: serverTimestamp(),
+        isDuplicate: true,
+        duplicatedFromElectionId: id,
+        duplicatedBy: firebaseUser.uid,
+        duplicatedAt: serverTimestamp(),
+      });
 
-    const candidateCount = await copySubcollection(id, newElectionRef.id, "candidates");
-    await copySubcollection(id, newElectionRef.id, "positions");
+      const newPositionIdByOldId = new Map<string, string>();
+      let batch = writeBatch(db);
+      let writesInBatch = 0;
 
-    await setDoc(
-      doc(db, "elections", newElectionRef.id),
-      { candidateCount },
-      { merge: true },
-    );
+      for (const sourcePosition of sourcePositions) {
+        const newPositionRef = doc(
+          collection(db, "elections", newElectionRef.id, "positions"),
+        );
+        newPositionIdByOldId.set(sourcePosition.id, newPositionRef.id);
+        batch.set(newPositionRef, sourcePosition.data);
+        writesInBatch++;
+
+        if (writesInBatch === 450) {
+          await batch.commit();
+          batch = writeBatch(db);
+          writesInBatch = 0;
+        }
+      }
+
+      for (const sourceCandidate of sourceCandidates) {
+        const candidateData = sourceCandidate.data as DocumentData & {
+          positionId?: string;
+        };
+
+        const oldPositionId = candidateData.positionId;
+        const mappedPositionId = oldPositionId
+          ? (newPositionIdByOldId.get(oldPositionId) ?? oldPositionId)
+          : oldPositionId;
+
+        const newCandidateRef = doc(
+          collection(db, "elections", newElectionRef.id, "candidates"),
+        );
+        batch.set(newCandidateRef, {
+          ...candidateData,
+          positionId: mappedPositionId,
+        });
+        writesInBatch++;
+
+        if (writesInBatch === 450) {
+          await batch.commit();
+          batch = writeBatch(db);
+          writesInBatch = 0;
+        }
+      }
+
+      batch.set(
+        doc(db, "elections", newElectionRef.id),
+        { candidateCount: sourceCandidates.length },
+        { merge: true },
+      );
+      await batch.commit();
+    } catch (error) {
+      console.error("[handleDuplicate] Failed to duplicate election:", error);
+      alert("Failed to duplicate election. Check console for details.");
+    }
 
   };
 

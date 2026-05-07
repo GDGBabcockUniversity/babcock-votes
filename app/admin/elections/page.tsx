@@ -11,11 +11,14 @@ import {
   doc,
   getDoc,
   addDoc,
+  deleteDoc,
   serverTimestamp,
   writeBatch,
   type DocumentData,
+  where,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { deleteObject, ref } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/context/auth-context";
 import {
   Table,
@@ -201,20 +204,52 @@ const AdminElectionsPage = () => {
     if (!firebaseUser) return;
     if (!confirm("Delete this election? This will also remove all nested data. This cannot be undone.")) return;
 
-    const token = await firebaseUser.getIdToken();
-    const response = await fetch(`/api/admin/elections/${id}/delete`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      const electionRef = doc(db, "elections", id);
 
-    if (!response.ok) {
-      alert("Failed to delete election.");
-      return;
+      const [positionsSnap, candidatesSnap, votesSnap] = await Promise.all([
+        getDocs(collection(electionRef, "positions")),
+        getDocs(collection(electionRef, "candidates")),
+        getDocs(query(collection(db, "votes"), where("electionId", "==", id))),
+      ]);
+
+      const candidatePhotoDeletes = candidatesSnap.docs
+        .map((candidateDoc) => candidateDoc.data().photoUrl as string | undefined)
+        .filter((photoUrl): photoUrl is string => Boolean(photoUrl))
+        .map((photoUrl) => deleteObject(ref(storage, photoUrl)));
+      await Promise.allSettled(candidatePhotoDeletes);
+
+      for (let i = 0; i < positionsSnap.docs.length; i += 450) {
+        const chunk = positionsSnap.docs.slice(i, i + 450);
+        const batch = writeBatch(db);
+        chunk.forEach((positionDoc) => batch.delete(positionDoc.ref));
+        await batch.commit();
+      }
+
+      for (let i = 0; i < candidatesSnap.docs.length; i += 450) {
+        const chunk = candidatesSnap.docs.slice(i, i + 450);
+        const batch = writeBatch(db);
+        chunk.forEach((candidateDoc) => batch.delete(candidateDoc.ref));
+        await batch.commit();
+      }
+
+      for (let i = 0; i < votesSnap.docs.length; i += 450) {
+        const chunk = votesSnap.docs.slice(i, i + 450);
+        const batch = writeBatch(db);
+        chunk.forEach((voteDoc) => batch.delete(voteDoc.ref));
+        await batch.commit();
+      }
+
+      await Promise.all([
+        deleteDoc(doc(db, "election_analytics", id)).catch(() => undefined),
+        deleteDoc(electionRef),
+      ]);
+
+      setElections((prev) => prev.filter((e) => e.id !== id));
+    } catch (error) {
+      console.error("[handleDelete] Failed to delete election:", error);
+      alert("Failed to delete election. Check console for details.");
     }
-
-    setElections((prev) => prev.filter((e) => e.id !== id));
   };
 
   return (

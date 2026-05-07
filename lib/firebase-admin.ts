@@ -17,11 +17,16 @@ const getServiceAccount = () => {
 };
 
 const serviceAccount = getServiceAccount();
+const projectId =
+  process.env.FIREBASE_PROJECT_ID ??
+  process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ??
+  "babcock-votes";
 
 const adminApp =
   getApps()[0] ??
   initializeApp({
     credential: serviceAccount ? cert(serviceAccount) : applicationDefault(),
+    projectId,
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET ?? DEFAULT_STORAGE_BUCKET,
   });
 

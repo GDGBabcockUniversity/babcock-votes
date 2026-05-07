@@ -186,6 +186,10 @@ const AdminElectionsPage = () => {
         { merge: true },
       );
       await batch.commit();
+
+      alert(
+        `Election duplicated successfully. Copied ${sourcePositions.length} positions and ${sourceCandidates.length} candidates.`,
+      );
     } catch (error) {
       console.error("[handleDuplicate] Failed to duplicate election:", error);
       alert("Failed to duplicate election. Check console for details.");

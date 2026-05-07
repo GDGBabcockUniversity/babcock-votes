@@ -123,12 +123,13 @@ const AdminElectionsPage = () => {
 
       const newElectionRef = await addDoc(collection(db, "elections"), {
         title: `${sourceElection.title} (Demo)`,
-        description: sourceElection.description,
+        description:
+          "This is a demo election for testing. It is currently active, results from this demo will not count, and it will be deleted after testing.",
         departmentId: sourceElection.departmentId,
         logoUrl: sourceElection.logoUrl ?? "",
         startDate: sourceElection.startDate,
         endDate: sourceElection.endDate,
-        status: "upcoming",
+        status: "active",
         candidateCount: 0,
         createdBy: firebaseUser.uid,
         createdAt: serverTimestamp(),

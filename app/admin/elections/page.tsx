@@ -119,7 +119,7 @@ const AdminElectionsPage = () => {
       ]);
 
       const newElectionRef = await addDoc(collection(db, "elections"), {
-        title: `${sourceElection.title} (Copy)`,
+        title: `${sourceElection.title} (Duplicate)`,
         description: sourceElection.description,
         departmentId: sourceElection.departmentId,
         logoUrl: sourceElection.logoUrl ?? "",

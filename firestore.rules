@@ -64,7 +64,7 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if isSuperAdmin() || isDeptAdminFor(request.resource.data.departmentId);
       allow update: if isSuperAdmin() || isDeptAdminFor(resource.data.departmentId);
-      allow delete: if false;
+      allow delete: if isSuperAdmin();
 
       // Positions subcollection
       match /positions/{positionId} {
@@ -114,7 +114,8 @@ service cloud.firestore {
     match /election_analytics/{electionId} {
       allow get, list: if isSuperAdmin()
         || (isDeptAdmin() && resource.data.election.departmentId == getUserData().departmentId);
-      allow create, update, delete: if false;
+      allow create, update: if false;
+      allow delete: if isSuperAdmin();
     }
   }
 }

@@ -1,4 +1,9 @@
-import { getApps, initializeApp, cert, applicationDefault } from "firebase-admin/app";
+import {
+  getApps,
+  initializeApp,
+  cert,
+  applicationDefault,
+} from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
@@ -27,7 +32,8 @@ const adminApp =
   initializeApp({
     credential: serviceAccount ? cert(serviceAccount) : applicationDefault(),
     projectId,
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET ?? DEFAULT_STORAGE_BUCKET,
+    storageBucket:
+      process.env.FIREBASE_STORAGE_BUCKET ?? DEFAULT_STORAGE_BUCKET,
   });
 
 export const adminAuth = getAuth(adminApp);

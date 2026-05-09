@@ -20,7 +20,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Users, UserCheck, FileDown, ChartColumn } from "lucide-react";
+import {
+  ArrowLeft,
+  Users,
+  UserCheck,
+  FileDown,
+  ChartColumn,
+} from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
 
@@ -58,17 +64,20 @@ const ResultsPage = () => {
       const elData = { id: elSnap.id, ...elSnap.data() } as Election;
       setElection(elData);
 
-      const [posSnap, candSnap, eligibleSnap, analyticsSnap] = await Promise.all([
-        getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
-        getDocs(collection(elRef, "candidates")),
-        getCountFromServer(
-          query(
-            collection(db, "eligible_voters"),
-            where("departmentId", "==", elData.departmentId),
+      const [posSnap, candSnap, eligibleSnap, analyticsSnap] =
+        await Promise.all([
+          getDocs(
+            query(collection(elRef, "positions"), orderBy("order", "asc")),
           ),
-        ),
-        getDoc(doc(db, "election_analytics", id)),
-      ]);
+          getDocs(collection(elRef, "candidates")),
+          getCountFromServer(
+            query(
+              collection(db, "eligible_voters"),
+              where("departmentId", "==", elData.departmentId),
+            ),
+          ),
+          getDoc(doc(db, "election_analytics", id)),
+        ]);
 
       setEligibleVoterCount(eligibleSnap.data().count);
       setAnalyticsReady(analyticsSnap.exists());
@@ -275,7 +284,7 @@ const ResultsPage = () => {
 
         {!analyticsReady && (
           <Card className="mt-4 rounded-none border-dashed bg-gold-tint/20">
-            <CardContent className="pt-6 font-sans text-sm text-muted-gray">
+            <CardContent className="font-sans text-sm text-muted-gray">
               Analytics summary is not available yet. It will appear on the
               analytics page once generation completes.
             </CardContent>

@@ -23,9 +23,12 @@ import {
   ClipboardList,
   ArrowLeft,
   LogOut,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { PAGES } from "@/lib/constants";
 import { getDepartmentName } from "@/lib/utils";
+import { toggleTheme } from "@/components/theme-toggle";
 
 const navItems = [
   {
@@ -88,7 +91,7 @@ export const AdminSidebar = () => {
                       tooltip={item.label}
                       render={<Link href={item.href} />}
                       size="lg"
-                      className="rounded-none px-3 font-sans"
+                      className="rounded-sm px-3 font-sans"
                     >
                       <item.icon className="size-4" />
                       <span>{item.label}</span>
@@ -108,7 +111,7 @@ export const AdminSidebar = () => {
           <SidebarMenuItem>
             <SidebarMenuButton
               render={<Link href={PAGES.main.home} />}
-              className="rounded-none px-3 font-sans"
+              className="rounded-sm px-3 font-sans"
             >
               <ArrowLeft className="size-4" />
               <span>Back to Voting</span>
@@ -116,8 +119,19 @@ export const AdminSidebar = () => {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
+              onClick={toggleTheme}
+              className="rounded-sm px-3 font-sans"
+            >
+              <Sun className="hidden size-4 dark:block" />
+              <Moon className="size-4 dark:hidden" />
+              <span className="dark:hidden">Dark mode</span>
+              <span className="hidden dark:inline">Light mode</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
               onClick={signOut}
-              className="rounded-none px-3 font-sans text-red-600 hover:text-red-600"
+              className="rounded-sm px-3 font-sans text-red-600 dark:text-red-400 hover:text-red-600 dark:hover:text-red-400"
             >
               <LogOut className="size-4" />
               <span>Sign Out</span>

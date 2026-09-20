@@ -1,36 +1,17 @@
 /**
  * Seed admin users for the voting platform.
  *
- * With Google Sign-In, admins sign in normally via Google, then this script
- * upgrades their role. Run this AFTER the admin has signed in at least once
- * (so their users/{uid} doc exists).
+ * Admins sign in with Google and complete registration like anyone else, then
+ * this script upgrades their role. Run it AFTER the admin has signed in and
+ * registered at least once (so their profile exists).
  *
  * Usage:
  *   node scripts/seed-users.mjs
  *
- * Environment:
- *   GOOGLE_APPLICATION_CREDENTIALS=path/to/service-account-key.json
+ * Environment (.env.local): NEXT_PUBLIC_CONVEX_URL, OPS_SECRET
  */
 
-import { readFileSync } from "fs";
-import { resolve } from "path";
-import { initializeApp, cert } from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
-
-const keyPath = process.argv[2] || process.env.GOOGLE_APPLICATION_CREDENTIALS;
-
-if (!keyPath) {
-  console.error(
-    "Provide a service account key via GOOGLE_APPLICATION_CREDENTIALS or as the first argument.",
-  );
-  process.exit(1);
-}
-
-const serviceAccount = JSON.parse(readFileSync(resolve(keyPath), "utf-8"));
-const app = initializeApp({ credential: cert(serviceAccount) });
-const adminAuth = getAuth(app);
-const db = getFirestore(app);
+import { ops } from "./lib/convex.mjs";
 
 // --- Define admins by their school email ---
 const admins = [
@@ -44,31 +25,21 @@ const admins = [
 
 for (const admin of admins) {
   try {
-    // Look up the Firebase Auth user by email
-    const userRecord = await adminAuth.getUserByEmail(admin.email);
-    const uid = userRecord.uid;
+    const { status } = await ops.mutation("setRoleByEmail", admin);
 
-    // Update their role in Firestore
-    const userRef = db.collection("users").doc(uid);
-    const snap = await userRef.get();
-
-    if (!snap.exists) {
+    if (status === "updated") {
+      console.log(`✓ Updated ${admin.email} → ${admin.role}`);
+    } else if (status === "not-registered") {
       console.warn(
-        `⚠ No user doc found for ${admin.email} (uid: ${uid}). Has this user signed in yet?`,
+        `⚠ ${admin.email} signed in but hasn't completed registration yet.`,
       );
-      continue;
-    }
-
-    await userRef.update({ role: admin.role });
-    console.log(`✓ Updated ${admin.email} → ${admin.role}`);
-  } catch (err) {
-    if (err.code === "auth/user-not-found") {
+    } else {
       console.warn(
         `⚠ ${admin.email} has not signed in yet. They need to sign in with Google first.`,
       );
-    } else {
-      console.error(`✗ Failed for ${admin.email}:`, err.message);
     }
+  } catch (err) {
+    console.error(`✗ Failed for ${admin.email}:`, err.message);
   }
 }
 

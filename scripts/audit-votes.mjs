@@ -1,186 +1,76 @@
 /**
  * Audit every vote for a given election.
  *
- * For each vote, outputs: voter name, voter email, position title,
- * candidate name (or "ABSTAIN"), and the timestamp.
+ * For each vote, outputs: voter name, voter email, matric number, position
+ * title, candidate name (or "ABSTAIN"), and the timestamp.
  *
  * Usage:
- *   node scripts/audit-votes.mjs <electionId> [service-account-key-path]
+ *   node scripts/audit-votes.mjs <electionId>
  *
  * Output:
  *   Writes a CSV to ./audit-<electionId>.csv
  */
 
 import { writeFileSync } from "fs";
-import { readFileSync } from "fs";
 import { resolve } from "path";
-import { initializeApp, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { ops } from "./lib/convex.mjs";
 
-// --- Args ---
 const electionId = process.argv[2];
-const keyPath = process.argv[3] || process.env.GOOGLE_APPLICATION_CREDENTIALS;
-
 if (!electionId) {
-  console.error(
-    "Usage: node scripts/audit-votes.mjs <electionId> [service-account-key-path]",
-  );
+  console.error("Usage: node scripts/audit-votes.mjs <electionId>");
   process.exit(1);
 }
-
-if (!keyPath) {
-  console.error(
-    "Provide a service account key via GOOGLE_APPLICATION_CREDENTIALS or as the second argument.",
-  );
-  process.exit(1);
-}
-
-// --- Init Firebase Admin ---
-const serviceAccount = JSON.parse(readFileSync(resolve(keyPath), "utf-8"));
-const app = initializeApp({ credential: cert(serviceAccount) });
-const db = getFirestore(app);
 
 console.log(`Auditing votes for election: ${electionId}\n`);
 
 const escCsv = (val) => {
   const s = String(val ?? "");
-  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
+  return s.includes(",") || s.includes('"') || s.includes("\n")
+    ? `"${s.replace(/"/g, '""')}"`
+    : s;
 };
 
-// --- Fetch election ---
-const elSnap = await db.collection("elections").doc(electionId).get();
-if (!elSnap.exists) {
-  console.error("Election not found.");
-  process.exit(1);
+const rows = [];
+let cursor = null;
+while (true) {
+  const page = await ops.query("auditPage", { electionId, cursor });
+  rows.push(...page.rows);
+  process.stdout.write(`\r  ${rows.length} votes...`);
+  if (page.isDone) break;
+  cursor = page.continueCursor;
 }
-const election = elSnap.data();
-console.log(`Election: ${election.title}`);
+console.log(`\rFound ${rows.length} vote records.\n`);
 
-// --- Fetch positions & candidates (subcollections) ---
-const [posSnap, candSnap] = await Promise.all([
-  db
-    .collection("elections")
-    .doc(electionId)
-    .collection("positions")
-    .orderBy("order", "asc")
-    .get(),
-  db.collection("elections").doc(electionId).collection("candidates").get(),
-]);
-
-const positionMap = new Map();
-posSnap.docs.forEach((d) => positionMap.set(d.id, d.data()));
-
-const candidateMap = new Map();
-candSnap.docs.forEach((d) => candidateMap.set(d.id, d.data()));
-
-console.log(
-  `Loaded ${positionMap.size} positions, ${candidateMap.size} candidates.`,
-);
-
-// --- Fetch all votes for this election ---
-const votesSnap = await db
-  .collection("votes")
-  .where("electionId", "==", electionId)
-  .get();
-
-console.log(`Found ${votesSnap.size} vote records.\n`);
-
-if (votesSnap.size === 0) {
+if (rows.length === 0) {
   console.log("No votes to audit.");
   process.exit(0);
 }
 
-const votes = votesSnap.docs.map((d) => d.data());
+const header = ["voter_name", "voter_email", "voter_matric", "position", "candidate_voted_for", "voted_at"];
+const lines = rows
+  .map((r) =>
+    [r.voterName, r.voterEmail, r.voterMatric, r.position, r.candidate, r.votedAt]
+      .map(escCsv)
+      .join(","),
+  )
+  .sort(); // by voter name, then position: easy scanning
 
-// --- Collect unique voter IDs and batch-fetch user profiles ---
-const voterIds = [...new Set(votes.map((v) => v.voterId).filter(Boolean))];
-console.log(`Fetching profiles for ${voterIds.length} unique voters...`);
-
-const userMap = new Map();
-const BATCH = 30; // Firestore "in" queries support up to 30 IDs
-const MAX_CONCURRENT_BATCHES = 8;
-const voterChunks = [];
-for (let i = 0; i < voterIds.length; i += BATCH) {
-  const chunk = voterIds.slice(i, i + BATCH);
-  if (chunk.length > 0) voterChunks.push(chunk);
-}
-
-for (
-  let i = 0;
-  i < voterChunks.length;
-  i += MAX_CONCURRENT_BATCHES
-) {
-  const group = voterChunks.slice(i, i + MAX_CONCURRENT_BATCHES);
-  const snaps = await Promise.all(
-    group.map((chunk) =>
-      db.collection("users").where("__name__", "in", chunk).get(),
-    ),
-  );
-
-  for (const snap of snaps) {
-    snap.docs.forEach((d) => userMap.set(d.id, d.data()));
-  }
-}
-
-console.log(`Resolved ${userMap.size} user profiles.\n`);
-
-// --- Build rows ---
-const header = [
-  "voter_name",
-  "voter_email",
-  "voter_matric",
-  "position",
-  "candidate_voted_for",
-  "voted_at",
-];
-
-const rows = new Array(votes.length);
-for (let i = 0; i < votes.length; i += 1) {
-  const v = votes[i];
-  const user = userMap.get(v.voterId);
-  const position = positionMap.get(v.positionId);
-  const candidate =
-    v.candidateId === "abstain" ? null : candidateMap.get(v.candidateId);
-
-  const votedAtDate = v.votedAt?.toDate?.();
-  const votedAt = votedAtDate ? votedAtDate.toISOString() : "";
-
-  rows[i] = [
-    escCsv(user?.fullName ?? "UNKNOWN"),
-    escCsv(user?.email ?? "UNKNOWN"),
-    escCsv(user?.matricNumber ?? ""),
-    escCsv(position?.title ?? v.positionId),
-    escCsv(candidate ? candidate.fullName : "ABSTAIN"),
-    escCsv(votedAt),
-  ].join(",");
-}
-
-// Sort by voter email then position for easy scanning
-rows.sort();
-
-const csv = [header.join(","), ...rows].join("\n");
 const outPath = resolve(`audit-${electionId}.csv`);
-writeFileSync(outPath, csv, "utf-8");
-
-console.log(`Written ${rows.length} rows to ${outPath}`);
+writeFileSync(outPath, [header.join(","), ...lines].join("\n"), "utf-8");
+console.log(`Written ${lines.length} rows to ${outPath}`);
 
 // --- Quick summary: flag non-school emails ---
 const schoolDomain = "babcock.edu.ng";
-const nonSchool = [];
-for (const [uid, user] of userMap) {
-  if (user.email && !user.email.endsWith(`@${schoolDomain}`)) {
-    nonSchool.push({ uid, email: user.email, fullName: user.fullName });
+const nonSchool = new Map();
+for (const r of rows) {
+  if (r.voterEmail && !r.voterEmail.endsWith(`@${schoolDomain}`) && !nonSchool.has(r.voterEmail)) {
+    nonSchool.set(r.voterEmail, r.voterName);
   }
 }
 
-if (nonSchool.length > 0) {
-  console.log(`\n⚠ ${nonSchool.length} voter(s) used non-school emails:\n`);
-  nonSchool.forEach((u) =>
-    console.log(`  ${u.fullName} — ${u.email} (uid: ${u.uid})`),
-  );
+if (nonSchool.size > 0) {
+  console.log(`\n⚠ ${nonSchool.size} voter(s) used non-school emails:\n`);
+  for (const [email, name] of nonSchool) console.log(`  ${name} — ${email}`);
 } else {
   console.log("\n✓ All voters used school emails.");
 }

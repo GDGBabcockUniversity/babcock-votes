@@ -33,16 +33,11 @@ export const LEVELS = [
 
 export const SCHOOL_DOMAIN = "student.babcock.edu.ng";
 
-export const CREDENTIALS = {
-  firebase: {
-    apiKey: "AIzaSyDIJKNJWVySg7DOSAphkj5Fe_hdfIzLyho",
-    authDomain: "babcock-votes.firebaseapp.com",
-    projectId: "babcock-votes",
-    storageBucket: "babcock-votes.firebasestorage.app",
-    messagingSenderId: "386049332302",
-    appId: "1:386049332302:web:d037d90c8303a58daa1f1f",
-  },
-};
+/** XX/XXXX, or AA/XX/XXXX for part-time (e.g. 21/0456, PT/22/2222). */
+export const MATRIC_REGEX = /^([a-zA-Z]{2}\/)?\d{2}\/\d{4}$/;
+
+/** Domain used for fabricated part-time student accounts (email/password login). */
+export const PART_TIME_EMAIL_DOMAIN = "parttime.babcockvotes.com";
 
 export const PAGES = {
   auth: {

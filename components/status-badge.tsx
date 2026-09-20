@@ -1,19 +1,29 @@
 import { cn } from "@/lib/utils";
 import type { Election } from "@/lib/types";
 
+// Every variant carries a border so the three states are identical in size and
+// shape; only the colour changes. `active` is the loudest because an open
+// ballot is the thing a voter is looking for.
 const variants: Record<Election["status"], string> = {
-  active: "bg-charcoal text-white",
-  upcoming: "border border-gold text-gold bg-transparent",
-  closed: "border border-muted-gray text-muted-gray bg-transparent",
+  active: "border-transparent bg-foreground text-background",
+  upcoming: "border-gold/50 bg-transparent text-gold-ink",
+  closed: "border-border bg-transparent text-muted-gray",
 };
 
 export const StatusBadge = ({ status }: { status: Election["status"] }) => (
   <span
     className={cn(
-      "inline-block rounded-full px-3 py-0.5 text-[10px] font-sans font-semibold uppercase tracking-wider",
+      "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-sans text-[10px] font-semibold uppercase tracking-wider",
       variants[status],
     )}
   >
+    {/* Live elections also pulse, so the state reads without relying on colour. */}
+    {status === "active" && (
+      <span className="relative flex size-1.5" aria-hidden="true">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-75" />
+        <span className="relative inline-flex size-1.5 rounded-full bg-current" />
+      </span>
+    )}
     {status}
   </span>
 );

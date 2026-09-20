@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  doc,
-  getDoc,
-  collection,
-  getDocs,
-  query,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { StatusBadge } from "@/components/status-badge";
 import { CandidateCard } from "@/components/candidate-card";
@@ -31,22 +24,11 @@ import Image from "next/image";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
 import { getDepartmentName } from "@/lib/utils";
+import { formatShortDate } from "@/lib/date";
 
-const formatDateRange = (
-  start: { seconds: number },
-  end: { seconds: number },
-) => {
-  const startDate = new Date(start.seconds * 1000);
-  const endDate = new Date(end.seconds * 1000);
-
-  const options: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  };
-
-  const startStr = startDate.toLocaleDateString("en-US", options);
-  const endStr = endDate.toLocaleDateString("en-US", options);
+const formatDateRange = (start: number, end: number) => {
+  const startStr = formatShortDate(start);
+  const endStr = formatShortDate(end);
 
   if (startStr === endStr) {
     return startStr;
@@ -59,37 +41,14 @@ const CandidatesPage = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { userProfile } = useAuth();
-  const [election, setElection] = useState<Election | null>(null);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const data = useQuery(api.elections.detail, { id });
+  const loading = data === undefined;
+  const election: Election | null = data?.election ?? null;
+  const positions: Position[] = data?.positions ?? [];
+  const candidates: Candidate[] = data?.candidates ?? [];
   const [viewingCandidate, setViewingCandidate] = useState<Candidate | null>(
     null,
   );
-
-  useEffect(() => {
-    const fetch = async () => {
-      const elRef = doc(db, "elections", id);
-      const elSnap = await getDoc(elRef);
-      if (!elSnap.exists()) return;
-
-      setElection({ id: elSnap.id, ...elSnap.data() } as Election);
-
-      const [posSnap, candSnap] = await Promise.all([
-        getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
-        getDocs(collection(elRef, "candidates")),
-      ]);
-
-      setPositions(
-        posSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Position),
-      );
-      setCandidates(
-        candSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Candidate),
-      );
-      setLoading(false);
-    };
-    fetch();
-  }, [id]);
 
   if (loading) {
     return (
@@ -174,7 +133,7 @@ const CandidatesPage = () => {
       {/* Candidates by position */}
       <div className="px-4 py-6">
         <div className="mx-auto max-w-5xl">
-          <h2 className="font-serif text-xl md:text-2xl lg:text-3xl font-semibold text-gold">
+          <h2 className="font-serif text-xl md:text-2xl lg:text-3xl font-semibold text-gold-ink">
             The Candidates
           </h2>
 
@@ -182,16 +141,16 @@ const CandidatesPage = () => {
             {grouped.map(({ position, candidates: cands }) => (
               <section
                 key={position.id}
-                className="font-sans relative border border-border bg-white shadow-sm"
+                className="font-sans relative rounded-sm border border-border bg-card shadow-sm"
               >
-                <div className="sticky top-0 z-10 border-b border-border/50 bg-white/95 px-4 py-3 backdrop-blur-md">
+                <div className="sticky top-0 z-10 rounded-t-sm border-b border-border/50 bg-card/95 px-4 py-3 backdrop-blur-md">
                   <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-serif text-lg md:text-xl font-bold text-charcoal">
+                    <h3 className="font-serif text-lg md:text-xl font-bold text-foreground">
                       {position.title}
                     </h3>
                     {position.allowedLevels &&
                       position.allowedLevels.length > 0 && (
-                        <span className="shrink-0 rounded bg-charcoal/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-charcoal">
+                        <span className="shrink-0 rounded-sm bg-foreground/5 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-foreground">
                           {position.allowedLevels.join(", ")}L Only
                         </span>
                       )}
@@ -217,12 +176,12 @@ const CandidatesPage = () => {
               {userProfile?.departmentId === election.departmentId ? (
                 <Link
                   href={PAGES.main.vote(id)}
-                  className="block w-full bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans transition-opacity hover:opacity-90"
+                  className="block w-full rounded-sm bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans transition-opacity hover:opacity-90"
                 >
                   Vote Now
                 </Link>
               ) : (
-                <div className="border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans">
+                <div className="rounded-sm border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans">
                   You can only vote in your own department&apos;s elections.
                 </div>
               )}
@@ -230,7 +189,7 @@ const CandidatesPage = () => {
           )}
 
           {election.status === "closed" && (
-            <div className="border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans mt-8">
+            <div className="rounded-sm border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans mt-8">
               This election has closed. You can no longer vote.
             </div>
           )}
@@ -277,10 +236,10 @@ const CandidatesPage = () => {
               </div>
 
               <div>
-                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gold">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-gold-ink">
                   Manifesto
                 </p>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed text-charcoal">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                   {viewingCandidate.manifesto}
                 </p>
               </div>
@@ -289,7 +248,7 @@ const CandidatesPage = () => {
             <div className="flex justify-end pt-2">
               <DialogClose
                 render={
-                  <button className="border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
+                  <button className="rounded-sm border border-border px-4 py-2 text-sm font-medium hover:bg-secondary">
                     Close
                   </button>
                 }

@@ -1,22 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  doc,
-  getDoc,
-  getDocs,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  collection,
-  query,
-  orderBy,
-  increment,
-} from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { errorMessage } from "@/lib/errors";
+import { toDate } from "@/lib/date";
+import { useUploadImage } from "@/lib/upload";
 import { useAuth } from "@/context/auth-context";
 import { DEPARTMENTS, LEVELS, PAGES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
@@ -67,10 +59,22 @@ const ElectionDetailPage = () => {
   const { userProfile } = useAuth();
   const isSuperAdmin = userProfile?.role === "super_admin";
 
-  const [election, setElection] = useState<Election | null>(null);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Live: edits (including other admins') appear without any manual refetch.
+  const detail = useQuery(api.elections.detail, { id });
+  const loading = detail === undefined;
+  const election: Election | null = detail?.election ?? null;
+  const positions: Position[] = detail?.positions ?? [];
+  const candidates: Candidate[] = detail?.candidates ?? [];
+
+  const electionId = id as Id<"elections">;
+  const updateElection = useMutation(api.elections.update);
+  const createPosition = useMutation(api.positions.create);
+  const updatePosition = useMutation(api.positions.update);
+  const removePosition = useMutation(api.positions.remove);
+  const createCandidate = useMutation(api.candidates.create);
+  const updateCandidate = useMutation(api.candidates.update);
+  const removeCandidate = useMutation(api.candidates.remove);
+  const uploadImage = useUploadImage();
 
   // Position form state
   const [posTitle, setPosTitle] = useState("");
@@ -93,7 +97,7 @@ const ElectionDetailPage = () => {
   const [saving, setSaving] = useState(false);
 
   // Status editing
-  const [statusValue, setStatusValue] = useState<string>("");
+  const statusValue = election?.status ?? "";
 
   // Edit election details
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -105,58 +109,15 @@ const ElectionDetailPage = () => {
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editLogoPreview, setEditLogoPreview] = useState("");
 
-  const elRef = doc(db, "elections", id);
-
-  const fetchData = async () => {
-    const elSnap = await getDoc(elRef);
-    if (!elSnap.exists()) return;
-
-    const elData = { id: elSnap.id, ...elSnap.data() } as Election;
-    setElection(elData);
-    setStatusValue(elData.status);
-
-    const [posSnap, candSnap] = await Promise.all([
-      getDocs(query(collection(elRef, "positions"), orderBy("order", "asc"))),
-      getDocs(collection(elRef, "candidates")),
-    ]);
-
-    setPositions(
-      posSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Position),
-    );
-    setCandidates(
-      candSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Candidate),
-    );
-    setLoading(false);
+  /** Surface server-side validation/permission errors instead of failing silently. */
+  const runAction = async (action: () => Promise<void>) => {
+    try {
+      await action();
+    } catch (err) {
+      console.error(err);
+      alert(errorMessage(err));
+    }
   };
-
-  useEffect(() => {
-    const load = async () => {
-      const ref = doc(db, "elections", id);
-      const elSnap = await getDoc(ref);
-      if (!elSnap.exists()) {
-        setLoading(false);
-        return;
-      }
-
-      const elData = { id: elSnap.id, ...elSnap.data() } as Election;
-      setElection(elData);
-      setStatusValue(elData.status);
-
-      const [posSnap, candSnap] = await Promise.all([
-        getDocs(query(collection(ref, "positions"), orderBy("order", "asc"))),
-        getDocs(collection(ref, "candidates")),
-      ]);
-
-      setPositions(
-        posSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Position),
-      );
-      setCandidates(
-        candSnap.docs.map((d) => ({ id: d.id, ...d.data() }) as Candidate),
-      );
-      setLoading(false);
-    };
-    load();
-  }, [id]);
 
   // --- Position CRUD ---
   const resetPosForm = () => {
@@ -185,16 +146,17 @@ const ElectionDetailPage = () => {
       allowedLevels: posLevels,
     };
 
-    if (editingPosId) {
-      await updateDoc(doc(elRef, "positions", editingPosId), data);
-    } else {
-      await addDoc(collection(elRef, "positions"), data);
-    }
+    await runAction(async () => {
+      if (editingPosId) {
+        await updatePosition({ id: editingPosId as Id<"positions">, ...data });
+      } else {
+        await createPosition({ electionId, ...data });
+      }
 
-    resetPosForm();
-    setPosDialogOpen(false);
+      resetPosForm();
+      setPosDialogOpen(false);
+    });
     setSaving(false);
-    fetchData();
   };
 
   const togglePosLevel = (level: string) => {
@@ -205,19 +167,10 @@ const ElectionDetailPage = () => {
 
   const handleDeletePosition = async (posId: string) => {
     if (!confirm("Delete this position and all its candidates?")) return;
-    await deleteDoc(doc(elRef, "positions", posId));
-    const relatedCands = candidates.filter((c) => c.positionId === posId);
-    await Promise.all(
-      relatedCands.map((c) => deleteDoc(doc(elRef, "candidates", c.id))),
-    );
-
-    if (relatedCands.length > 0) {
-      await updateDoc(elRef, {
-        candidateCount: increment(-relatedCands.length),
-      });
-    }
-
-    fetchData();
+    await runAction(async () => {
+      // The server also removes the position's candidates and updates the count.
+      await removePosition({ id: posId as Id<"positions"> });
+    });
   };
 
   // --- Candidate CRUD ---
@@ -253,56 +206,46 @@ const ElectionDetailPage = () => {
   const handleSaveCandidate = async () => {
     setSaving(true);
 
-    let photoUrl = candPhotoPreview;
-    if (candPhoto) {
-      const storageRef = ref(
-        storage,
-        `candidates/${id}/${Date.now()}_${candPhoto.name}`,
-      );
-      await uploadBytes(storageRef, candPhoto);
-      photoUrl = await getDownloadURL(storageRef);
-    }
+    await runAction(async () => {
+      // No new file selected: leave the current photo as it is.
+      const photoStorageId = candPhoto ? await uploadImage(candPhoto) : undefined;
 
-    const data = {
-      fullName: candName,
-      manifesto: candManifesto,
-      departmentId: candDept,
-      level: candLevel,
-      positionId: candPositionId,
-      photoUrl,
-    };
+      const data = {
+        fullName: candName,
+        manifesto: candManifesto,
+        departmentId: candDept,
+        level: candLevel,
+        positionId: candPositionId as Id<"positions">,
+        photoStorageId,
+      };
 
-    if (editingCandId) {
-      await updateDoc(doc(elRef, "candidates", editingCandId), data);
-    } else {
-      await addDoc(collection(elRef, "candidates"), data);
-      await updateDoc(elRef, {
-        candidateCount: increment(1),
-      });
-    }
+      if (editingCandId) {
+        await updateCandidate({ id: editingCandId as Id<"candidates">, ...data });
+      } else {
+        await createCandidate({ electionId, ...data });
+      }
 
-    resetCandForm();
-    setCandDialogOpen(false);
+      resetCandForm();
+      setCandDialogOpen(false);
+    });
     setSaving(false);
-    fetchData();
   };
 
   const handleDeleteCandidate = async (candId: string) => {
     if (!confirm("Delete this candidate?")) return;
-    await deleteDoc(doc(elRef, "candidates", candId));
-    await updateDoc(elRef, {
-      candidateCount: increment(-1),
+    await runAction(async () => {
+      await removeCandidate({ id: candId as Id<"candidates"> });
     });
-    fetchData();
   };
 
   // --- Status change ---
   const handleStatusChange = async (newStatus: string) => {
-    setStatusValue(newStatus);
-    await updateDoc(elRef, { status: newStatus });
-    setElection((prev) =>
-      prev ? { ...prev, status: newStatus as Election["status"] } : prev,
-    );
+    await runAction(async () => {
+      await updateElection({
+        id: electionId,
+        status: newStatus as Election["status"],
+      });
+    });
   };
 
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,8 +256,8 @@ const ElectionDetailPage = () => {
   };
 
   // --- Edit Election Details ---
-  const toDatetimeLocal = (ts: { toDate: () => Date } | Date) => {
-    const d = "toDate" in ts ? ts.toDate() : ts;
+  const toDatetimeLocal = (value: number) => {
+    const d = toDate(value) ?? new Date();
     const pad = (n: number) => n.toString().padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
@@ -341,27 +284,22 @@ const ElectionDetailPage = () => {
   const handleSaveDetails = async () => {
     setSaving(true);
 
-    let logoUrl = editLogoPreview;
-    if (editLogoFile) {
-      const storageRef = ref(
-        storage,
-        `elections/logos/${Date.now()}_${editLogoFile.name}`,
-      );
-      await uploadBytes(storageRef, editLogoFile);
-      logoUrl = await getDownloadURL(storageRef);
-    }
+    await runAction(async () => {
+      // No new file selected: leave the current logo as it is.
+      const logoStorageId = editLogoFile ? await uploadImage(editLogoFile) : undefined;
 
-    await updateDoc(elRef, {
-      title: editTitle,
-      description: editDesc,
-      departmentId: editDeptId,
-      logoUrl,
-      startDate: new Date(editStartDate),
-      endDate: new Date(editEndDate),
+      await updateElection({
+        id: electionId,
+        title: editTitle,
+        description: editDesc,
+        departmentId: editDeptId,
+        logoStorageId,
+        startDate: new Date(editStartDate).getTime(),
+        endDate: new Date(editEndDate).getTime(),
+      });
+      setEditDialogOpen(false);
     });
-    setEditDialogOpen(false);
     setSaving(false);
-    fetchData();
   };
 
   if (loading) {
@@ -392,15 +330,15 @@ const ElectionDetailPage = () => {
         <div className="w-full flex flex-wrap gap-2">
           <button
             onClick={() => router.push(PAGES.admin.elections)}
-            className="mb-2 mr-auto flex items-center gap-1 text-xs md:text-sm text-muted-gray hover:text-charcoal font-sans"
+            className="mb-2 mr-auto flex items-center gap-1 text-xs md:text-sm text-muted-gray hover:text-foreground font-sans"
           >
             <ArrowLeft className="size-3.5 md:size-4" /> Back to Elections
           </button>
           <Link
             href={PAGES.admin.electionResults(id)}
             className={cn(
-              "font-sans rounded-none",
-              "flex w-full lg:w-fit items-center justify-center border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+              "font-sans rounded-sm",
+              "flex w-full lg:w-fit items-center justify-center rounded-sm border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
             <BarChart3 className="mr-2 size-3.5" /> Results
@@ -408,8 +346,8 @@ const ElectionDetailPage = () => {
           <Link
             href={PAGES.admin.electionAnalytics(id)}
             className={cn(
-              "font-sans rounded-none",
-              "flex w-full lg:w-fit items-center justify-center border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+              "font-sans rounded-sm",
+              "flex w-full lg:w-fit items-center justify-center rounded-sm border border-input bg-background px-3 py-2 text-xs md:text-sm ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
             )}
           >
             <ChartColumn className="mr-2 size-3.5" /> Analytics
@@ -418,7 +356,7 @@ const ElectionDetailPage = () => {
             <Button
               size="sm"
               variant="outline"
-              className="font-sans rounded-none px-3 py-2 h-auto w-full lg:w-fit"
+              className="font-sans rounded-sm px-3 py-2 h-auto w-full lg:w-fit"
               onClick={openEditDetails}
             >
               <Pencil className="mr-2 size-3.5" /> Edit
@@ -481,13 +419,13 @@ const ElectionDetailPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="font-sans rounded-none"
+                  className="font-sans rounded-sm"
                 >
                   <Plus className="mr-2 size-3.5" /> Add Position
                 </Button>
               }
             />
-            <DialogContent className="font-sans rounded-none p-6">
+            <DialogContent className="font-sans rounded-sm p-6">
               <DialogHeader>
                 <DialogTitle>
                   {editingPosId ? "Edit Position" : "Add Position"}
@@ -526,13 +464,13 @@ const ElectionDetailPage = () => {
                     ].map((lvl) => (
                       <label
                         key={lvl}
-                        className="flex items-center gap-1.5 border border-border px-3 py-1.5 text-sm cursor-pointer hover:bg-secondary"
+                        className="flex items-center gap-1.5 rounded-sm border border-border px-3 py-1.5 text-sm cursor-pointer hover:bg-secondary"
                       >
                         <input
                           type="checkbox"
                           checked={posLevels.includes(lvl)}
                           onChange={() => togglePosLevel(lvl)}
-                          className="size-4 rounded border-border"
+                          className="size-4 rounded-sm border-border"
                         />
                         {lvl.includes("00") ? `${lvl}L` : lvl}
                       </label>
@@ -562,7 +500,7 @@ const ElectionDetailPage = () => {
                   render={
                     <Button
                       variant="outline"
-                      className="font-sans rounded-none"
+                      className="font-sans rounded-sm"
                     >
                       Cancel
                     </Button>
@@ -571,7 +509,7 @@ const ElectionDetailPage = () => {
                 <Button
                   onClick={handleSavePosition}
                   disabled={saving || !posTitle}
-                  className="font-sans rounded-none"
+                  className="font-sans rounded-sm"
                 >
                   {saving ? "Saving..." : "Save"}
                 </Button>
@@ -589,7 +527,7 @@ const ElectionDetailPage = () => {
         )}
 
         {grouped.map(({ position, candidates: cands }) => (
-          <Card key={position.id} className="font-sans rounded-none">
+          <Card key={position.id} className="font-sans rounded-sm">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle className="text-lg font-serif md:text-xl lg:text-2xl font-semibold">
@@ -612,7 +550,7 @@ const ElectionDetailPage = () => {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="size-8 text-red-600 hover:text-red-700"
+                    className="size-8 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                     onClick={() => handleDeletePosition(position.id)}
                   >
                     <Trash2 className="size-3.5" />
@@ -625,9 +563,9 @@ const ElectionDetailPage = () => {
                 {cands.map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-start gap-3 border border-border p-3"
+                    className="flex items-start gap-3 rounded-sm border border-border p-3"
                   >
-                    <div className="relative size-12 shrink-0 overflow-hidden bg-muted">
+                    <div className="relative size-12 shrink-0 overflow-hidden rounded-sm bg-muted">
                       {c.photoUrl ? (
                         <Image
                           src={c.photoUrl}
@@ -663,7 +601,7 @@ const ElectionDetailPage = () => {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="size-7 text-red-600 hover:text-red-700"
+                          className="size-7 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                           onClick={() => handleDeleteCandidate(c.id)}
                         >
                           <Trash2 className="size-3" />
@@ -678,7 +616,7 @@ const ElectionDetailPage = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="mt-3 font-sans rounded-none"
+                  className="mt-3 font-sans rounded-sm"
                   onClick={() => openAddCandForPosition(position.id)}
                 >
                   <Plus className="mr-1 size-3.5" /> Add Candidate
@@ -697,7 +635,7 @@ const ElectionDetailPage = () => {
           if (!o) resetCandForm();
         }}
       >
-        <DialogContent className="max-h-[90dvh] overflow-y-auto font-sans rounded-none p-6">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto font-sans rounded-sm p-6">
           <DialogHeader>
             <DialogTitle>
               {editingCandId ? "Edit Candidate" : "Add Candidate"}
@@ -720,7 +658,7 @@ const ElectionDetailPage = () => {
               <Label>Photo</Label>
               <div className="flex items-center gap-4">
                 {candPhotoPreview && (
-                  <div className="relative size-16 overflow-hidden bg-muted">
+                  <div className="relative size-16 overflow-hidden rounded-sm bg-muted">
                     <Image
                       src={candPhotoPreview}
                       alt="Preview"
@@ -729,7 +667,7 @@ const ElectionDetailPage = () => {
                     />
                   </div>
                 )}
-                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-charcoal">
+                <label className="flex cursor-pointer items-center gap-2 rounded-sm border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-foreground">
                   <Upload className="size-4" />
                   Upload photo
                   <input
@@ -755,7 +693,7 @@ const ElectionDetailPage = () => {
                 maxLength={3000}
               />
               <p
-                className={`text-right text-xs ${candManifesto.length > 2800 ? "text-red-500" : "text-muted-gray"}`}
+                className={`text-right text-xs ${candManifesto.length > 2800 ? "text-red-500 dark:text-red-400" : "text-muted-gray"}`}
               >
                 {candManifesto.length} / 3000
               </p>
@@ -810,7 +748,7 @@ const ElectionDetailPage = () => {
           <div className="flex justify-end gap-2">
             <DialogClose
               render={
-                <Button variant="outline" className="rounded-none">
+                <Button variant="outline" className="rounded-sm">
                   Cancel
                 </Button>
               }
@@ -818,7 +756,7 @@ const ElectionDetailPage = () => {
             <Button
               onClick={handleSaveCandidate}
               disabled={saving || !candName || !candPositionId}
-              className="rounded-none"
+              className="rounded-sm"
             >
               {saving ? "Saving..." : "Save"}
             </Button>
@@ -828,7 +766,7 @@ const ElectionDetailPage = () => {
 
       {/* Edit Election Details Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-h-[90dvh] overflow-y-auto font-sans rounded-none p-6">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto font-sans rounded-sm p-6">
           <DialogHeader>
             <DialogTitle>Edit Election Details</DialogTitle>
             <DialogDescription>
@@ -857,7 +795,7 @@ const ElectionDetailPage = () => {
               <Label>Association Logo</Label>
               <div className="flex items-center gap-4">
                 {editLogoPreview && (
-                  <div className="relative size-16 overflow-hidden bg-muted border border-border">
+                  <div className="relative size-16 overflow-hidden bg-muted rounded-sm border border-border">
                     <Image
                       src={editLogoPreview}
                       alt="Logo preview"
@@ -866,7 +804,7 @@ const ElectionDetailPage = () => {
                     />
                   </div>
                 )}
-                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-charcoal">
+                <label className="flex cursor-pointer items-center gap-2 rounded-sm border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-foreground">
                   <Upload className="size-4" />
                   {editLogoPreview ? "Change logo" : "Upload logo"}
                   <input
@@ -925,7 +863,7 @@ const ElectionDetailPage = () => {
           <div className="flex justify-end gap-2">
             <DialogClose
               render={
-                <Button variant="outline" className="rounded-none">
+                <Button variant="outline" className="rounded-sm">
                   Cancel
                 </Button>
               }
@@ -933,7 +871,7 @@ const ElectionDetailPage = () => {
             <Button
               onClick={handleSaveDetails}
               disabled={saving || !editTitle || !editDeptId}
-              className="rounded-none"
+              className="rounded-sm"
             >
               {saving ? "Saving..." : "Save Changes"}
             </Button>

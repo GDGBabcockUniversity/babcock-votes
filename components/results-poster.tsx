@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import type { Election, Position, Candidate } from "@/lib/types";
+import { toDate } from "@/lib/date";
 
 type TallyCandidate = Candidate & { voteCount: number };
 
@@ -35,31 +36,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
     //     .toUpperCase();
     // };
 
-    const parseDate = (
-      dateValue:
-        | { toDate?: () => Date; seconds?: number }
-        | Date
-        | string
-        | number
-        | null
-        | undefined,
-    ) => {
-      if (!dateValue) return null;
-      try {
-        const val = dateValue as { toDate?: () => Date; seconds?: number };
-        const date =
-          typeof val.toDate === "function"
-            ? val.toDate()
-            : new Date(
-              val.seconds
-                ? val.seconds * 1000
-                : (dateValue as string | number | Date),
-            );
-        return date;
-      } catch (_) {
-        return null;
-      }
-    };
+    const parseDate = toDate;
 
     const formatDuration = (
       startVal: Parameters<typeof parseDate>[0],
@@ -115,7 +92,7 @@ export const ResultsPoster = forwardRef<HTMLDivElement, ResultsPosterProps>(
     return (
       <div
         ref={ref}
-        className="w-full bg-white font-sans text-charcoal flex flex-col justify-start relative border border-border print:border-none print:w-full print:color-adjust-exact"
+        className="light w-full bg-white font-sans text-charcoal flex flex-col justify-start relative border border-border print:border-none print:w-full print:color-adjust-exact"
         style={{
           backgroundColor: "#fff",
           WebkitPrintColorAdjust: "exact",

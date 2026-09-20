@@ -1,25 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { doc, getDoc, writeBatch, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useConvex, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
-import { DEPARTMENTS, PAGES } from "@/lib/constants";
+import { errorMessage } from "@/lib/errors";
+import { DEPARTMENTS, MATRIC_REGEX, PAGES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import type { EligibleVoter } from "@/lib/types";
-import { matricToDocId } from "@/lib/utils";
 
 type Step = "matric" | "confirm";
 
 const RegisterPage = () => {
   const router = useRouter();
-  const {
-    firebaseUser,
-    loading: authLoading,
-    refreshProfile,
-    signOut,
-  } = useAuth();
+  const { authUser, loading: authLoading, signOut } = useAuth();
+  const convex = useConvex();
+  const register = useMutation(api.registration.register);
 
   const [step, setStep] = useState<Step>("matric");
   const [matricNumber, setMatricNumber] = useState("");
@@ -32,9 +29,8 @@ const RegisterPage = () => {
     setError("");
 
     const safeMatric = matricNumber.trim();
-    const matricRegex = /^([a-zA-Z]{2}\/)?\d{2}\/\d{4}$/;
 
-    if (!matricRegex.test(safeMatric)) {
+    if (!MATRIC_REGEX.test(safeMatric)) {
       setError(
         "Matric number must be in format XX/XXXX or AA/XX/XXXX (e.g., 21/0456 or PT/22/2222).",
       );
@@ -43,72 +39,39 @@ const RegisterPage = () => {
 
     setSubmitting(true);
     try {
-      const docId = matricToDocId(safeMatric);
-      const snap = await getDoc(doc(db, "eligible_voters", docId));
-
-      if (!snap.exists()) {
-        setError(
-          "You are not listed as an eligible voter. Please contact your association admin.",
-        );
-        return;
-      }
-
-      const data = snap.data() as EligibleVoter;
-
-      if (data.claimedByUid) {
-        setError(
-          "This matric number has already been registered. If this is an error, please contact your association admin.",
-        );
-        return;
-      }
-
+      const data = await convex.query(api.registration.lookup, {
+        matric: safeMatric,
+      });
       setVoterData(data);
       setStep("confirm");
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(errorMessage(err));
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleConfirm = async () => {
-    if (!firebaseUser || !voterData) return;
+    if (!authUser || !voterData) return;
 
     setError("");
     setSubmitting(true);
 
     try {
-      const safeMatric = matricNumber.trim();
-      const docId = matricToDocId(safeMatric);
-      const batch = writeBatch(db);
-
-      // Claim the eligible_voters doc
-      batch.update(doc(db, "eligible_voters", docId), {
-        claimedByUid: firebaseUser.uid,
-        claimedEmail: firebaseUser.email,
-      });
-
-      // Create the user profile
-      batch.set(doc(db, "users", firebaseUser.uid), {
-        email: firebaseUser.email,
-        fullName: voterData.fullName,
-        matricNumber: safeMatric,
-        departmentId: voterData.departmentId,
-        level: voterData.level,
-        role: "voter",
-        createdAt: serverTimestamp(),
-      });
-
-      await batch.commit();
-      await refreshProfile();
-    } catch {
-      setError(
-        "Registration failed. This matric may have just been claimed. Please try again.",
-      );
+      // Claims the voter record and creates the profile atomically; the
+      // profile query is live, so the page moves on by itself.
+      await register({ matric: matricNumber.trim() });
+    } catch (err) {
+      setError(errorMessage(err, "Registration failed. Please try again."));
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Not signed in: back to login. Navigating has to happen in an effect, not while rendering.
+  useEffect(() => {
+    if (!authLoading && !authUser) router.replace(PAGES.auth.login);
+  }, [authLoading, authUser, router]);
 
   const handleReject = () => {
     setStep("matric");
@@ -125,13 +88,10 @@ const RegisterPage = () => {
     );
   }
 
-  if (!firebaseUser) {
-    router.replace(PAGES.auth.login);
-    return null;
-  }
+  if (!authUser) return null;
 
   return (
-    <div className="border border-border bg-white p-8 shadow-sm">
+    <div className="rounded-sm border border-border bg-card p-8 shadow-sm">
       <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
         Complete Registration
       </h1>
@@ -154,12 +114,12 @@ const RegisterPage = () => {
             />
           </div>
 
-          {error && <p className="text-center text-xs text-red-600">{error}</p>}
+          {error && <p className="text-center text-xs text-red-600 dark:text-red-400">{error}</p>}
 
           <button
             type="submit"
             disabled={submitting}
-            className="flex w-full items-center font-sans justify-center gap-2 bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex w-full items-center font-sans justify-center gap-2 rounded-sm bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {submitting ? "Looking up..." : "Look me up"}
           </button>
@@ -170,7 +130,7 @@ const RegisterPage = () => {
         <div className="mt-6 space-y-4">
           <p className="text-center text-sm text-muted-gray">Is this you?</p>
 
-          <div className="space-y-3 border border-border bg-background p-5">
+          <div className="space-y-3 rounded-sm border border-border bg-background p-5">
             <div>
               <span className="text-xs uppercase tracking-wider text-muted-gray">
                 Name
@@ -199,20 +159,20 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          {error && <p className="text-center text-xs text-red-600">{error}</p>}
+          {error && <p className="text-center text-xs text-red-600 dark:text-red-400">{error}</p>}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
               onClick={handleReject}
               disabled={submitting}
-              className="border border-border py-3 text-sm font-sans font-medium text-charcoal transition-colors hover:border-gold/50 disabled:opacity-50"
+              className="rounded-sm border border-border py-3 text-sm font-sans font-medium text-foreground transition-colors hover:border-gold/50 disabled:opacity-50"
             >
               That&rsquo;s not me
             </button>
             <button
               onClick={handleConfirm}
               disabled={submitting}
-              className="bg-gold py-3 text-sm font-sans font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="rounded-sm bg-gold py-3 text-sm font-sans font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {submitting ? "Registering..." : "Confirm & Continue"}
             </button>
@@ -224,11 +184,11 @@ const RegisterPage = () => {
         <button
           onClick={signOut}
           type="button"
-          className="text-xs text-muted-gray underline hover:text-charcoal transition-colors font-sans"
+          className="text-xs text-muted-gray underline hover:text-foreground transition-colors font-sans"
         >
           Signed in as{" "}
-          <span className="font-semibold text-charcoal">
-            {firebaseUser.email}
+          <span className="font-semibold text-foreground">
+            {authUser.email}
           </span>
           . Not you? Sign out.
         </button>

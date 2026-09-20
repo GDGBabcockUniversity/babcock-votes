@@ -1,4 +1,5 @@
-import { Timestamp } from "firebase/firestore";
+/** Milliseconds since the epoch, as stored by Convex. */
+export type Millis = number;
 
 export interface User {
   email: string;
@@ -7,15 +8,15 @@ export interface User {
   departmentId: string;
   level: string;
   role: "voter" | "dept_admin" | "super_admin";
-  createdAt: Timestamp;
+  createdAt: Millis;
 }
 
 export interface EligibleVoter {
   fullName: string;
   departmentId: string;
   level: string;
-  claimedByUid?: string;
-  claimedEmail?: string;
+  claimedByUid?: string | null;
+  claimedEmail?: string | null;
 }
 
 export interface Election {
@@ -24,20 +25,21 @@ export interface Election {
   description: string;
   departmentId: string;
   logoUrl?: string;
-  startDate: Timestamp;
-  endDate: Timestamp;
+  startDate: Millis;
+  endDate: Millis;
   status: "upcoming" | "active" | "closed";
   candidateCount: number;
   createdBy: string;
-  createdAt: Timestamp;
+  createdAt: Millis;
   isDuplicate?: boolean;
-  duplicatedFromElectionId?: string;
-  duplicatedAt?: Timestamp;
-  duplicatedBy?: string;
+  duplicatedFromElectionId?: string | null;
+  duplicatedAt?: Millis | null;
+  duplicatedBy?: string | null;
 }
 
 export interface Position {
   id: string;
+  electionId: string;
   title: string;
   description: string;
   order: number;
@@ -46,6 +48,7 @@ export interface Position {
 
 export interface Candidate {
   id: string;
+  electionId: string;
   positionId: string;
   fullName: string;
   photoUrl: string;
@@ -59,5 +62,5 @@ export interface Vote {
   positionId: string;
   candidateId: string;
   voterId: string;
-  votedAt: Timestamp;
+  votedAt: Millis;
 }

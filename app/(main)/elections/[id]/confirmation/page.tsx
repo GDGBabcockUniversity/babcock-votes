@@ -1,17 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  doc,
-  getDoc,
-  getDocs,
-  collection,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { Check } from "lucide-react";
 import type { Election } from "@/lib/types";
@@ -20,40 +13,21 @@ import { PAGES } from "@/lib/constants";
 const ConfirmationPage = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { firebaseUser, loading: authLoading } = useAuth();
-  const [election, setElection] = useState<Election | null>(null);
-  const [verified, setVerified] = useState(false);
+  const { authUser, loading: authLoading } = useAuth();
+  const voted = useQuery(api.votes.hasVoted, { electionId: id });
+  const detail = useQuery(api.elections.detail, { id });
+  const election: Election | null = detail?.election ?? null;
 
   useEffect(() => {
     if (authLoading) return;
 
-    if (!firebaseUser) {
+    // Only someone who actually voted gets to see the confirmation.
+    if (!authUser || voted === false) {
       router.replace(PAGES.main.electionDetail(id));
-      return;
     }
+  }, [id, authUser, authLoading, voted, router]);
 
-    const checkAndFetch = async () => {
-      // Verify the user actually voted
-      const voteQuery = query(
-        collection(db, "votes"),
-        where("electionId", "==", id),
-        where("voterId", "==", firebaseUser.uid),
-      );
-      const voteSnap = await getDocs(voteQuery);
-
-      if (voteSnap.empty) {
-        router.replace(PAGES.main.electionDetail(id));
-        return;
-      }
-
-      const snap = await getDoc(doc(db, "elections", id));
-      if (snap.exists()) {
-        setElection({ id: snap.id, ...snap.data() } as Election);
-      }
-      setVerified(true);
-    };
-    checkAndFetch();
-  }, [id, firebaseUser, authLoading, router]);
+  const verified = voted === true;
 
   if (!verified) {
     return (
@@ -74,7 +48,7 @@ const ConfirmationPage = () => {
         Ballot Secured
       </h1>
 
-      <p className="mt-3 max-w-xs text-sm text-muted-gray font-sans">
+      <p className="mt-3 max-w-xs text-sm text-charcoal-muted font-sans">
         {election
           ? `Your vote for the ${election.title} has been encrypted and recorded.`
           : "Your vote has been encrypted and recorded."}
@@ -83,14 +57,14 @@ const ConfirmationPage = () => {
       <div className="mt-10 w-full max-w-xs space-y-3 font-sans">
         <Link
           href={PAGES.main.home}
-          className="block bg-white py-3.5 text-center text-sm font-semibold text-charcoal transition-opacity hover:opacity-90"
+          className="block rounded-sm bg-white py-3.5 text-center text-sm font-semibold text-charcoal transition-opacity hover:opacity-90"
         >
           Return Home
         </Link>
       </div>
 
       <div className="mt-8 font-sans">
-        <p className="text-xs text-white/40">How was your experience?</p>
+        <p className="text-xs text-charcoal-muted">How was your experience?</p>
         <a
           href="https://docs.google.com/forms/d/e/1FAIpQLScO0fmvY1qrWgOcLiNq05XV3QSUzS4yGsnqfasq5JiAj7OqBw/viewform?usp=dialog"
           target="_blank"

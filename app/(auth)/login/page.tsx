@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { PAGES } from "@/lib/constants";
@@ -10,9 +10,10 @@ type LoginMode = "student" | "part-time";
 
 const LoginPage = () => {
   const {
-    firebaseUser,
+    authUser,
     userProfile,
     loading,
+    authError,
     signInWithGoogle,
     signInWithEmail,
   } = useAuth();
@@ -25,17 +26,21 @@ const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // If signed in but no profile, redirect to register
-  if (!loading && firebaseUser && !userProfile) {
-    router.replace(PAGES.auth.register);
-    return null;
-  }
+  // Signed in but no profile yet: finish registration first. Navigating has
+  // to happen in an effect, not while rendering.
+  const needsRegistration = !loading && !!authUser && !userProfile;
+  useEffect(() => {
+    if (needsRegistration) router.replace(PAGES.auth.register);
+  }, [needsRegistration, router]);
+
+  if (needsRegistration) return null;
 
   const handleGoogleSignIn = async () => {
     setError("");
     setSigningIn(true);
 
     try {
+      // Redirects to Google; the page navigates away, so the button stays busy.
       await signInWithGoogle();
     } catch (err: unknown) {
       const message =
@@ -43,7 +48,6 @@ const LoginPage = () => {
           ? err.message
           : "Sign-in failed. Please try again.";
       setError(message);
-    } finally {
       setSigningIn(false);
     }
   };
@@ -56,30 +60,18 @@ const LoginPage = () => {
     try {
       await signInWithEmail(email.trim(), password);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : "Sign-in failed. Please try again.";
-
-      // Provide friendlier messages for common Firebase errors
-      if (
-        message.includes("invalid-credential") ||
-        message.includes("wrong-password") ||
-        message.includes("user-not-found")
-      ) {
-        setError(
-          "Invalid email or password. Please check your credentials and try again.",
-        );
-      } else {
-        setError(message);
-      }
+      // Convex Auth reports a bad email/password as a generic failure.
+      console.error("[login] Email sign-in failed:", err);
+      setError(
+        "Invalid email or password. Please check your credentials and try again.",
+      );
     } finally {
       setSigningIn(false);
     }
   };
 
   return (
-    <div className="border border-border bg-white p-8 shadow-sm">
+    <div className="rounded-sm border border-border bg-card p-8 shadow-sm">
       <h1 className="text-center font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
         Babcock Votes
       </h1>
@@ -88,7 +80,7 @@ const LoginPage = () => {
       </p>
 
       {/* Tab toggle */}
-      <div className="mt-8 grid grid-cols-2 border border-border">
+      <div className="mt-8 grid grid-cols-2 rounded-sm border border-border">
         <button
           type="button"
           onClick={() => {
@@ -97,8 +89,8 @@ const LoginPage = () => {
           }}
           className={`py-2.5 text-xs font-sans font-semibold uppercase tracking-wider transition-colors ${
             mode === "student"
-              ? "bg-charcoal text-white"
-              : "bg-white text-muted-gray hover:text-charcoal"
+              ? "bg-foreground text-background"
+              : "bg-card text-muted-gray hover:text-foreground"
           }`}
         >
           Student
@@ -111,8 +103,8 @@ const LoginPage = () => {
           }}
           className={`py-2.5 text-xs font-sans font-semibold uppercase tracking-wider transition-colors ${
             mode === "part-time"
-              ? "bg-charcoal text-white"
-              : "bg-white text-muted-gray hover:text-charcoal"
+              ? "bg-foreground text-background"
+              : "bg-card text-muted-gray hover:text-foreground"
           }`}
         >
           Part-Time
@@ -124,7 +116,7 @@ const LoginPage = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={signingIn}
-            className="flex w-full items-center font-sans justify-center gap-3 bg-charcoal py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="flex w-full items-center font-sans justify-center gap-3 rounded-sm bg-foreground py-3.5 text-sm font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {signingIn ? (
               "Signing in..."
@@ -191,14 +183,18 @@ const LoginPage = () => {
             <button
               type="submit"
               disabled={signingIn}
-              className="flex w-full items-center font-sans justify-center gap-2 bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex w-full items-center font-sans justify-center gap-2 rounded-sm bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
               {signingIn ? "Signing in..." : "Sign In"}
             </button>
           </form>
         )}
 
-        {error && <p className="text-center text-xs text-red-600">{error}</p>}
+        {(error || authError) && (
+          <p className="text-center text-xs text-red-600 dark:text-red-400">
+            {error || authError}
+          </p>
+        )}
       </div>
     </div>
   );

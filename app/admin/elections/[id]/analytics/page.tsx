@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { doc, getDoc } from "firebase/firestore";
 import { CartesianGrid, Bar, BarChart, Line, LineChart, XAxis, YAxis } from "recharts";
-import { db } from "@/lib/firebase";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { PAGES } from "@/lib/constants";
 import type { ElectionAnalyticsSummary } from "@/lib/election-analytics-types";
 import { Badge } from "@/components/ui/badge";
@@ -24,26 +24,15 @@ const pct = (value: number) => `${value.toFixed(2)}%`;
 const chartConfig = {
   uniqueVoters: { label: "Unique voters", color: "#b8962e" },
   votes: { label: "Votes", color: "#b8962e" },
-  cumulativeVotes: { label: "Cumulative votes", color: "#1f1f1f" },
+  cumulativeVotes: { label: "Cumulative votes", color: "var(--foreground)" },
 } satisfies ChartConfig;
 
 const ElectionAnalyticsPage = () => {
   const { id } = useParams<{ id: string }>();
-  const [summary, setSummary] = useState<ElectionAnalyticsSummary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const run = async () => {
-      const snap = await getDoc(doc(db, "election_analytics", id));
-      if (snap.exists()) {
-        setSummary(snap.data() as ElectionAnalyticsSummary);
-      } else {
-        setSummary(null);
-      }
-      setLoading(false);
-    };
-    run();
-  }, [id]);
+  const analytics = useQuery(api.analytics.get, { electionId: id });
+  const loading = analytics === undefined;
+  // `null` means the summary hasn't been generated yet.
+  const summary = (analytics ?? null) as ElectionAnalyticsSummary | null;
 
   const sortedPositions = useMemo(
     () =>
@@ -66,7 +55,7 @@ const ElectionAnalyticsPage = () => {
       <div>
         <Link
           href={PAGES.admin.electionResults(id)}
-          className="mb-2 inline-flex items-center gap-1 font-sans text-xs text-muted-gray hover:text-charcoal"
+          className="mb-2 inline-flex items-center gap-1 font-sans text-xs text-muted-gray hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />
           Back to Results
@@ -77,9 +66,9 @@ const ElectionAnalyticsPage = () => {
       </div>
 
       {!summary ? (
-        <Card className="rounded-none border-dashed bg-gold-tint/20">
+        <Card className="rounded-sm border-dashed bg-gold-tint/20">
           <CardHeader>
-            <CardTitle className="font-serif text-xl font-semibold text-charcoal">
+            <CardTitle className="font-serif text-xl font-semibold text-foreground">
               No summary yet
             </CardTitle>
           </CardHeader>
@@ -90,7 +79,7 @@ const ElectionAnalyticsPage = () => {
             </p>
             <p className="mt-3">
               Run:
-              <span className="ml-1 rounded bg-secondary px-2 py-1 font-mono text-xs text-charcoal">
+              <span className="ml-1 rounded-sm bg-secondary px-2 py-1 font-mono text-xs text-foreground">
                 npm run generate-analytics -- {id}
               </span>
             </p>
@@ -99,16 +88,16 @@ const ElectionAnalyticsPage = () => {
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline" className="rounded-none font-sans">
+            <Badge variant="outline" className="rounded-sm font-sans">
               Schema v{summary.schemaVersion}
             </Badge>
-            <Badge variant="secondary" className="rounded-none font-sans">
+            <Badge variant="secondary" className="rounded-sm font-sans">
               Generated {new Date(summary.generatedAt).toLocaleString()}
             </Badge>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="font-sans text-xs uppercase tracking-wider text-muted-gray">
                   Eligible voters
@@ -118,7 +107,7 @@ const ElectionAnalyticsPage = () => {
                 {numberFmt.format(summary.turnout.eligibleVoters)}
               </CardContent>
             </Card>
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="font-sans text-xs uppercase tracking-wider text-muted-gray">
                   Unique voters
@@ -128,7 +117,7 @@ const ElectionAnalyticsPage = () => {
                 {numberFmt.format(summary.turnout.uniqueVoters)}
               </CardContent>
             </Card>
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="font-sans text-xs uppercase tracking-wider text-muted-gray">
                   Turnout rate
@@ -138,7 +127,7 @@ const ElectionAnalyticsPage = () => {
                 {pct(summary.turnout.turnoutRate)}
               </CardContent>
             </Card>
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader className="pb-2">
                 <CardTitle className="font-sans text-xs uppercase tracking-wider text-muted-gray">
                   Ballot records
@@ -151,9 +140,9 @@ const ElectionAnalyticsPage = () => {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader>
-                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-foreground">
                   Participation by level
                 </CardTitle>
               </CardHeader>
@@ -170,9 +159,9 @@ const ElectionAnalyticsPage = () => {
               </CardContent>
             </Card>
 
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader>
-                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-foreground">
                   Voting timeline
                 </CardTitle>
               </CardHeader>
@@ -197,19 +186,19 @@ const ElectionAnalyticsPage = () => {
             </Card>
           </div>
 
-          <Card className="rounded-none">
+          <Card className="rounded-sm">
             <CardHeader>
-              <CardTitle className="font-sans text-lg font-semibold text-charcoal">
+              <CardTitle className="font-sans text-lg font-semibold text-foreground">
                 Winners Board
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {summary.results.winnersBoard.map((item) => (
-                <div key={item.positionId} className="border border-border p-3 font-sans">
+                <div key={item.positionId} className="rounded-sm border border-border p-3 font-sans">
                   <p className="text-xs uppercase tracking-wider text-muted-gray">
                     {item.positionTitle}
                   </p>
-                  <p className="mt-1 text-base font-semibold text-charcoal">
+                  <p className="mt-1 text-base font-semibold text-foreground">
                     {item.winnerName}
                   </p>
                   <p className="mt-1 text-sm text-muted-gray">
@@ -221,9 +210,9 @@ const ElectionAnalyticsPage = () => {
           </Card>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader>
-                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-foreground">
                   Closest Race
                 </CardTitle>
               </CardHeader>
@@ -239,9 +228,9 @@ const ElectionAnalyticsPage = () => {
                 )}
               </CardContent>
             </Card>
-            <Card className="rounded-none">
+            <Card className="rounded-sm">
               <CardHeader>
-                <CardTitle className="font-sans text-lg font-semibold text-charcoal">
+                <CardTitle className="font-sans text-lg font-semibold text-foreground">
                   Most Decisive Race
                 </CardTitle>
               </CardHeader>
@@ -265,9 +254,9 @@ const ElectionAnalyticsPage = () => {
           <div className="space-y-4">
             <h2 className="font-sans text-xl font-bold">Per-position distribution</h2>
             {sortedPositions.map((position) => (
-              <Card key={position.positionId} className="rounded-none">
+              <Card key={position.positionId} className="rounded-sm">
                 <CardHeader>
-                  <CardTitle className="font-sans text-lg font-semibold text-charcoal">
+                  <CardTitle className="font-sans text-lg font-semibold text-foreground">
                     {position.title}
                   </CardTitle>
                 </CardHeader>
@@ -292,9 +281,9 @@ const ElectionAnalyticsPage = () => {
             ))}
           </div>
 
-          <Card className="rounded-none">
+          <Card className="rounded-sm">
             <CardHeader>
-              <CardTitle className="font-sans text-lg font-semibold text-charcoal">
+              <CardTitle className="font-sans text-lg font-semibold text-foreground">
                 Integrity
               </CardTitle>
             </CardHeader>

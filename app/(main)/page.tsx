@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { ElectionCard } from "@/components/election-card";
 import { ElectionCardSkeleton } from "@/components/skeleton-loader";
 import { Input } from "@/components/ui/input";
@@ -15,26 +15,10 @@ import { filterVisibleElections } from "@/lib/election-visibility";
 
 const HomePage = () => {
   const { userProfile } = useAuth();
-  const [elections, setElections] = useState<Election[]>([]);
+  const electionsData = useQuery(api.elections.list, { limit: 6 });
+  const elections: Election[] = electionsData ?? [];
+  const loading = electionsData === undefined;
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchElections = async () => {
-      const snap = await getDocs(
-        query(
-          collection(db, "elections"),
-          orderBy("startDate", "desc"),
-          limit(6),
-        ),
-      );
-      setElections(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Election),
-      );
-      setLoading(false);
-    };
-    fetchElections();
-  }, []);
 
   const visibleElections = filterVisibleElections(elections, userProfile);
 
@@ -61,7 +45,7 @@ const HomePage = () => {
           <h1 className="mt-6 font-serif text-4xl font-bold leading-tight md:mt-8 md:text-5xl lg:text-6xl">
             Democracy,
             <br />
-            <span className="font-normal italic text-gold">Elevated.</span>
+            <span className="font-normal italic text-gold-ink">Elevated.</span>
           </h1>
 
           <p className="mt-3 max-w-lg font-sans text-sm leading-relaxed text-muted-gray md:mt-4 md:text-base lg:text-lg">
@@ -94,7 +78,7 @@ const HomePage = () => {
             </h2>
             <Link
               href={PAGES.main.elections}
-              className="flex items-center gap-1 font-sans text-xs font-medium text-muted-gray hover:text-charcoal md:text-sm"
+              className="flex items-center gap-1 font-sans text-xs font-medium text-muted-gray hover:text-foreground md:text-sm"
             >
               See All <ArrowRight className="size-3" />
             </Link>
@@ -124,12 +108,12 @@ const HomePage = () => {
           <h3 className="font-serif text-lg font-bold italic text-white md:text-xl lg:text-2xl">
             Association Admin?
           </h3>
-          <p className="mt-1 font-sans text-sm text-muted-gray md:text-base">
+          <p className="mt-1 font-sans text-sm text-charcoal-muted md:text-base">
             Access real-time analytics and manage candidate applications.
           </p>
           <Link
             href={PAGES.admin.dashboard}
-            className="mt-4 inline-flex items-center gap-2 border border-white/20 bg-white px-4 py-2.5 font-sans text-xs font-semibold text-charcoal transition-colors hover:bg-white/90"
+            className="mt-4 inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white px-4 py-2.5 font-sans text-xs font-semibold text-charcoal transition-colors hover:bg-white/90"
           >
             Go to Dashboard <ArrowRight className="size-3" />
           </Link>

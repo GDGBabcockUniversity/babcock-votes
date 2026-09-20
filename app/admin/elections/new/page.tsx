@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { errorMessage } from "@/lib/errors";
+import { useUploadImage } from "@/lib/upload";
 import { useAuth } from "@/context/auth-context";
 import { DEPARTMENTS, PAGES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,9 @@ const STATUS_OPTIONS = ["upcoming", "active", "closed"] as const;
 
 const NewElectionPage = () => {
   const router = useRouter();
-  const { firebaseUser } = useAuth();
+  const { authUser } = useAuth();
+  const createElection = useMutation(api.elections.create);
+  const uploadImage = useUploadImage();
   const [loading, setLoading] = useState(false);
 
   const [title, setTitle] = useState("");
@@ -53,35 +56,25 @@ const NewElectionPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firebaseUser) return;
+    if (!authUser) return;
 
     setLoading(true);
     try {
-      let logoUrl = "";
-      if (logoFile) {
-        const storageRef = ref(
-          storage,
-          `elections/logos/${Date.now()}_${logoFile.name}`,
-        );
-        await uploadBytes(storageRef, logoFile);
-        logoUrl = await getDownloadURL(storageRef);
-      }
+      const logoStorageId = logoFile ? await uploadImage(logoFile) : undefined;
 
-      const docRef = await addDoc(collection(db, "elections"), {
+      const id = await createElection({
         title,
         description,
         departmentId,
-        status,
-        logoUrl,
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        candidateCount: 0,
-        createdBy: firebaseUser.uid,
-        createdAt: serverTimestamp(),
+        status: status as "upcoming" | "active" | "closed",
+        logoStorageId,
+        startDate: new Date(startDate).getTime(),
+        endDate: new Date(endDate).getTime(),
       });
-      router.push(PAGES.admin.electionDetail(docRef.id));
+      router.push(PAGES.admin.electionDetail(id));
     } catch (err) {
       console.error("Failed to create election:", err);
+      alert(errorMessage(err, "Failed to create election. Please try again."));
       setLoading(false);
     }
   };
@@ -95,7 +88,7 @@ const NewElectionPage = () => {
         Set up a new election for a department or association.
       </p>
 
-      <Card className="mt-6 rounded-none">
+      <Card className="mt-6 rounded-sm">
         <CardHeader className="font-sans">
           <CardTitle className="md:text-lg lg:text-xl">
             Election Details
@@ -139,7 +132,7 @@ const NewElectionPage = () => {
               </Label>
               <div className="flex items-center gap-4">
                 {logoPreview && (
-                  <div className="relative size-16 overflow-hidden bg-muted border border-border">
+                  <div className="relative size-16 overflow-hidden bg-muted rounded-sm border border-border">
                     <Image
                       src={logoPreview}
                       alt="Logo preview"
@@ -148,7 +141,7 @@ const NewElectionPage = () => {
                     />
                   </div>
                 )}
-                <label className="flex cursor-pointer items-center gap-2 border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-charcoal">
+                <label className="flex cursor-pointer items-center gap-2 rounded-sm border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-foreground">
                   <Upload className="size-4" />
                   {logoPreview ? "Change logo" : "Upload logo"}
                   <input
@@ -241,14 +234,14 @@ const NewElectionPage = () => {
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
-                className="font-sans rounded-none"
+                className="font-sans rounded-sm"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={loading}
-                className="font-sans rounded-none"
+                className="font-sans rounded-sm"
               >
                 {loading ? "Creating..." : "Create Election"}
               </Button>

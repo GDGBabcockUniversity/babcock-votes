@@ -4,16 +4,17 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useEffect } from "react";
 import { PAGES } from "@/lib/constants";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
-  const { firebaseUser, userProfile, loading } = useAuth();
+  const { authUser, userProfile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && firebaseUser && userProfile) {
+    if (!loading && authUser && userProfile) {
       router.replace(PAGES.main.home);
     }
-  }, [firebaseUser, userProfile, loading, router]);
+  }, [authUser, userProfile, loading, router]);
 
   if (loading) {
     return (
@@ -23,10 +24,11 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (firebaseUser && userProfile) return null;
+  if (authUser && userProfile) return null;
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-background px-4">
+    <main className="relative flex min-h-dvh items-center justify-center bg-background px-4">
+      <ThemeToggle className="absolute right-4 top-4" />
       <div className="w-full max-w-lg">{children}</div>
     </main>
   );

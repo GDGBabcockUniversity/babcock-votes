@@ -6,22 +6,34 @@ export const SkeletonLoader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
-      className={cn("animate-pulse rounded-md bg-secondary", className)}
+      className={cn("animate-pulse rounded-sm bg-secondary", className)}
       {...props}
     />
   );
 };
 
+/**
+ * These mirror the real cards' structure (same padding, same blocks in the same
+ * places), so content lands where the placeholder was instead of the layout
+ * jumping when the query resolves.
+ */
 export const ElectionCardSkeleton = () => {
   return (
-    <div className="flex flex-col gap-3 border border-border bg-white p-4">
-      <div className="flex items-center justify-between">
-        <SkeletonLoader className="h-5 w-24 rounded-full" />
-        <SkeletonLoader className="h-4 w-16" />
+    <div
+      className="flex h-full flex-col rounded-sm border border-border bg-card p-5"
+      aria-hidden="true"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <SkeletonLoader className="h-[18px] w-20 rounded-full" />
+        <SkeletonLoader className="size-10 shrink-0" />
       </div>
-      <div>
-        <SkeletonLoader className="h-6 w-3/4 mb-2" />
-        <SkeletonLoader className="h-4 w-1/2" />
+      <div className="my-4 flex flex-col gap-2">
+        <SkeletonLoader className="h-6 w-3/4" />
+        <SkeletonLoader className="h-6 w-1/2" />
+      </div>
+      <div className="mt-auto flex items-center gap-3">
+        <SkeletonLoader className="h-4 w-20" />
+        <SkeletonLoader className="h-4 w-24" />
       </div>
     </div>
   );
@@ -29,10 +41,15 @@ export const ElectionCardSkeleton = () => {
 
 export const CandidateCardSkeleton = () => {
   return (
-    <div className="flex flex-col items-center border border-border bg-white p-4 text-center">
-      <SkeletonLoader className="size-20 rounded-full mb-3" />
-      <SkeletonLoader className="h-5 w-3/4 mb-1" />
-      <SkeletonLoader className="h-3 w-1/2" />
+    <div
+      className="overflow-hidden rounded-sm border border-border bg-card"
+      aria-hidden="true"
+    >
+      <SkeletonLoader className="aspect-4/5 w-full rounded-none" />
+      <div className="flex flex-col gap-2 p-3">
+        <SkeletonLoader className="h-5 w-3/4" />
+        <SkeletonLoader className="h-3 w-full" />
+      </div>
     </div>
   );
 };

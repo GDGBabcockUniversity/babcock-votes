@@ -1,14 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  getCountFromServer,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Vote, Users, CalendarCheck, BarChart3 } from "lucide-react";
@@ -18,75 +11,44 @@ const AdminDashboard = () => {
   const { userProfile } = useAuth();
   const isSuperAdmin = userProfile?.role === "super_admin";
 
-  const [stats, setStats] = useState({
+  const statsData = useQuery(api.admin.dashboardStats);
+  const loading = statsData === undefined;
+  const stats = statsData ?? {
     totalElections: 0,
     activeElections: 0,
     totalVotes: 0,
+    totalVotesCapped: false,
     totalUsers: 0,
-  });
-  const [loading, setLoading] = useState(true);
+    totalUsersCapped: false,
+  };
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const electionsSnap = await getDocs(collection(db, "elections"));
-      const allElections = electionsSnap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
-
-      const scoped = isSuperAdmin
-        ? allElections
-        : allElections.filter(
-            (e) =>
-              (e as { departmentId?: string }).departmentId ===
-              userProfile?.departmentId,
-          );
-
-      const activeCount = scoped.filter(
-        (e) => (e as { status?: string }).status === "active",
-      ).length;
-
-      const [votesCount, usersCount] = await Promise.all([
-        isSuperAdmin
-          ? getCountFromServer(collection(db, "votes")).then(
-              (s) => s.data().count,
-            )
-          : Promise.resolve(0),
-        isSuperAdmin
-          ? getCountFromServer(collection(db, "users")).then(
-              (s) => s.data().count,
-            )
-          : getCountFromServer(
-              query(
-                collection(db, "users"),
-                where("departmentId", "==", userProfile?.departmentId),
-              ),
-            ).then((s) => s.data().count),
-      ]);
-
-      setStats({
-        totalElections: scoped.length,
-        activeElections: activeCount,
-        totalVotes: votesCount,
-        totalUsers: usersCount,
-      });
-      setLoading(false);
-    };
-    fetchStats();
-  }, [isSuperAdmin, userProfile?.departmentId]);
+  // A capped count means the real figure is higher than we were willing to scan.
+  const fmt = (value: number, capped?: boolean) =>
+    `${value.toLocaleString()}${capped ? "+" : ""}`;
 
   const cards = [
     {
       title: "Total Elections",
-      value: stats.totalElections,
+      value: fmt(stats.totalElections),
       icon: CalendarCheck,
     },
-    { title: "Active Now", value: stats.activeElections, icon: BarChart3 },
+    { title: "Active Now", value: fmt(stats.activeElections), icon: BarChart3 },
     ...(isSuperAdmin
-      ? [{ title: "Votes Cast", value: stats.totalVotes, icon: Vote }]
+      ? [
+          {
+            title: "Votes Cast",
+            value: fmt(stats.totalVotes, stats.totalVotesCapped),
+            icon: Vote,
+          },
+        ]
       : []),
-    { title: "Registered Voters", value: stats.totalUsers, icon: Users },
+    {
+      title: "Registered Voters",
+      value: fmt(stats.totalUsers, stats.totalUsersCapped),
+      icon: Users,
+    },
   ];
+
 
   return (
     <div>
@@ -107,18 +69,18 @@ const AdminDashboard = () => {
         }`}
       >
         {cards.map((card) => (
-          <Card key={card.title} className="rounded-none">
+          <Card key={card.title} className="rounded-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium uppercase tracking-wider font-sans text-muted-gray">
                 {card.title}
               </CardTitle>
-              <card.icon className="size-4 text-gold" />
+              <card.icon className="size-4 text-gold-ink" />
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="h-8 w-16 animate-pulse rounded bg-secondary" />
+                <div className="h-8 w-16 animate-pulse rounded-sm bg-secondary" />
               ) : (
-                <p className="text-2xl md:text-3xl font-sans font-bold">
+                <p className="font-sans text-2xl font-bold tabular-nums md:text-3xl">
                   {card.value}
                 </p>
               )}

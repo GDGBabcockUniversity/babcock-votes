@@ -1,20 +1,12 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import {
-  collection,
-  getDocs,
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { DEPARTMENTS, LEVELS } from "@/lib/constants";
-import { getDepartmentName, matricToDocId } from "@/lib/utils";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { errorMessage } from "@/lib/errors";
+import { DEPARTMENTS, LEVELS, MATRIC_REGEX } from "@/lib/constants";
+import { getDepartmentName } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -57,8 +49,15 @@ const PAGE_SIZE = 50;
 
 const EligibleVotersPage = () => {
   const [department, setDepartment] = useState("accounting");
-  const [voters, setVoters] = useState<VoterRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const votersData = useQuery(
+    api.eligibleVoters.listByDepartment,
+    department ? { departmentId: department } : "skip",
+  );
+  const voters: VoterRow[] = useMemo(() => votersData ?? [], [votersData]);
+  const loading = !!department && votersData === undefined;
+  const createVoter = useMutation(api.eligibleVoters.create);
+  const updateVoter = useMutation(api.eligibleVoters.update);
+  const removeVoter = useMutation(api.eligibleVoters.remove);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
@@ -77,32 +76,11 @@ const EligibleVotersPage = () => {
   // Selected voter for edit/delete
   const [selectedVoter, setSelectedVoter] = useState<VoterRow | null>(null);
 
-  const fetchVoters = async (deptId: string) => {
-    setLoading(true);
-    const q = query(
-      collection(db, "eligible_voters"),
-      where("departmentId", "==", deptId),
-    );
-    const snap = await getDocs(q);
-    const rows: VoterRow[] = snap.docs.map((d) => ({
-      docId: d.id,
-      matricNumber: d.id.replace(/-/g, "/").toUpperCase(),
-      ...(d.data() as EligibleVoter),
-    }));
-    rows.sort((a, b) => a.fullName.localeCompare(b.fullName));
-    setVoters(rows);
-    setLoading(false);
+  const changeDepartment = (id: string) => {
+    setDepartment(id);
+    setPage(1);
+    setSearch("");
   };
-
-  useEffect(() => {
-    if (department) {
-      fetchVoters(department);
-      setPage(1);
-      setSearch("");
-    } else {
-      setVoters([]);
-    }
-  }, [department]);
 
   const filtered = useMemo(() => {
     if (!search) return voters;
@@ -133,7 +111,7 @@ const EligibleVotersPage = () => {
   const handleAdd = async () => {
     setFormError("");
     const safeMatric = formMatric.trim();
-    if (!/^([a-zA-Z]{2}\/)?\d{2}\/\d{4}$/.test(safeMatric)) {
+    if (!MATRIC_REGEX.test(safeMatric)) {
       setFormError(
         "Matric must be in format XX/XXXX or AA/XX/XXXX (e.g., 21/0456 or PT/22/2222).",
       );
@@ -150,25 +128,17 @@ const EligibleVotersPage = () => {
 
     setFormLoading(true);
     try {
-      const docId = matricToDocId(safeMatric);
-      const existing = await getDoc(doc(db, "eligible_voters", docId));
-      if (existing.exists()) {
-        setFormError("A voter with this matric number already exists.");
-        setFormLoading(false);
-        return;
-      }
-
-      await setDoc(doc(db, "eligible_voters", docId), {
+      await createVoter({
+        matric: safeMatric,
         fullName: formName.trim(),
         departmentId: department,
         level: formLevel,
       });
 
       setAddOpen(false);
-      await fetchVoters(department);
-    } catch {
-      setFormError("Failed to add voter. Please try again.");
-    } finally {
+    } catch (err) {
+      setFormError(errorMessage(err, "Failed to add voter. Please try again."));
+        } finally {
       setFormLoading(false);
     }
   };
@@ -195,21 +165,15 @@ const EligibleVotersPage = () => {
 
     setFormLoading(true);
     try {
-      await updateDoc(doc(db, "eligible_voters", selectedVoter.docId), {
+      await updateVoter({
+        docId: selectedVoter.docId as Id<"eligibleVoters">,
         fullName: formName.trim(),
         level: formLevel,
       });
-      setVoters((prev) =>
-        prev.map((v) =>
-          v.docId === selectedVoter.docId
-            ? { ...v, fullName: formName.trim(), level: formLevel }
-            : v,
-        ),
-      );
       setEditOpen(false);
-    } catch {
-      setFormError("Failed to update voter.");
-    } finally {
+    } catch (err) {
+      setFormError(errorMessage(err, "Failed to update voter."));
+        } finally {
       setFormLoading(false);
     }
   };
@@ -224,12 +188,11 @@ const EligibleVotersPage = () => {
     if (!selectedVoter) return;
     setFormLoading(true);
     try {
-      await deleteDoc(doc(db, "eligible_voters", selectedVoter.docId));
-      setVoters((prev) => prev.filter((v) => v.docId !== selectedVoter.docId));
+      await removeVoter({ docId: selectedVoter.docId as Id<"eligibleVoters"> });
       setDeleteOpen(false);
-    } catch {
-      // silent
-    } finally {
+    } catch (err) {
+      alert(errorMessage(err, "Failed to delete voter."));
+        } finally {
       setFormLoading(false);
     }
   };
@@ -248,7 +211,7 @@ const EligibleVotersPage = () => {
         <Label className="mb-2 font-sans">Department</Label>
         <Select
           value={department}
-          onValueChange={(v) => setDepartment(v ?? "")}
+          onValueChange={(v) => changeDepartment(v ?? "")}
         >
           <SelectTrigger>
             <SelectValue
@@ -295,7 +258,7 @@ const EligibleVotersPage = () => {
               </span>
               <Button
                 onClick={openAddDialog}
-                className="rounded-none bg-gold font-sans text-sm font-semibold text-white hover:bg-gold/90"
+                className="rounded-sm bg-gold font-sans text-sm font-semibold text-white hover:bg-gold/90"
               >
                 <Plus className="mr-1.5 size-4" />
                 Add Voter
@@ -304,8 +267,8 @@ const EligibleVotersPage = () => {
           </div>
 
           {/* Table */}
-          <div className="mt-4 border border-border">
-            <Table className="rounded-none font-sans">
+          <div className="mt-4 rounded-sm border border-border">
+            <Table className="rounded-sm font-sans">
               <TableHeader>
                 <TableRow>
                   <TableHead className="pl-4">Name</TableHead>
@@ -358,13 +321,13 @@ const EligibleVotersPage = () => {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => openEditDialog(v)}
-                            className="p-1 text-muted-gray hover:bg-secondary hover:text-charcoal"
+                            className="cursor-pointer rounded-sm p-1 text-muted-gray hover:bg-secondary hover:text-foreground"
                           >
                             <Pencil className="size-3.5" />
                           </button>
                           <button
                             onClick={() => openDeleteDialog(v)}
-                            className="p-1 text-muted-gray hover:bg-red-50 hover:text-red-600"
+                            className="cursor-pointer rounded-sm p-1 text-muted-gray hover:bg-red-50 dark:hover:bg-red-950/40 hover:text-red-600 dark:hover:text-red-400"
                           >
                             <Trash2 className="size-3.5" />
                           </button>
@@ -389,7 +352,7 @@ const EligibleVotersPage = () => {
                   size="sm"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
-                  className="rounded-none"
+                  className="rounded-sm"
                 >
                   <ChevronLeft className="mr-1 size-4" />
                   Previous
@@ -399,7 +362,7 @@ const EligibleVotersPage = () => {
                   size="sm"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
-                  className="rounded-none"
+                  className="rounded-sm"
                 >
                   Next
                   <ChevronRight className="ml-1 size-4" />
@@ -454,19 +417,19 @@ const EligibleVotersPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            {formError && <p className="text-xs text-red-600">{formError}</p>}
+            {formError && <p className="text-xs text-red-600 dark:text-red-400">{formError}</p>}
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => setAddOpen(false)}
-                className="rounded-none"
+                className="rounded-sm"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleAdd}
                 disabled={formLoading}
-                className="rounded-none bg-gold text-white hover:bg-gold/90"
+                className="rounded-sm bg-gold text-white hover:bg-gold/90"
               >
                 {formLoading ? "Adding..." : "Add Voter"}
               </Button>
@@ -510,19 +473,19 @@ const EligibleVotersPage = () => {
                 </SelectContent>
               </Select>
             </div>
-            {formError && <p className="text-xs text-red-600">{formError}</p>}
+            {formError && <p className="text-xs text-red-600 dark:text-red-400">{formError}</p>}
             <div className="flex justify-end gap-2">
               <Button
                 variant="outline"
                 onClick={() => setEditOpen(false)}
-                className="rounded-none"
+                className="rounded-sm"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleEdit}
                 disabled={formLoading}
-                className="rounded-none bg-gold text-white hover:bg-gold/90"
+                className="rounded-sm bg-gold text-white hover:bg-gold/90"
               >
                 {formLoading ? "Saving..." : "Save Changes"}
               </Button>
@@ -543,7 +506,7 @@ const EligibleVotersPage = () => {
             </DialogDescription>
           </DialogHeader>
           {selectedVoter?.claimedByUid && (
-            <p className="text-xs text-red-600">
+            <p className="text-xs text-red-600 dark:text-red-400">
               ⚠ This voter has already registered. Deleting will NOT remove
               their user account.
             </p>
@@ -552,7 +515,7 @@ const EligibleVotersPage = () => {
             <Button
               variant="outline"
               onClick={() => setDeleteOpen(false)}
-              className="rounded-none"
+              className="rounded-sm"
             >
               Cancel
             </Button>
@@ -560,7 +523,7 @@ const EligibleVotersPage = () => {
               onClick={handleDelete}
               disabled={formLoading}
               variant="destructive"
-              className="rounded-none"
+              className="rounded-sm"
             >
               {formLoading ? "Deleting..." : "Delete"}
             </Button>

@@ -4,23 +4,12 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
+        // Candidate photos and election logos live in Convex file storage.
         protocol: "https",
-        hostname: "firebasestorage.googleapis.com",
+        hostname: "*.convex.cloud",
+        pathname: "/api/storage/**",
       },
     ],
-  },
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Cross-Origin-Opener-Policy",
-            value: "same-origin-allow-popups",
-          },
-        ],
-      },
-    ];
   },
 };
 

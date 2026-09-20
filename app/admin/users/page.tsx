@@ -1,15 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  query,
-  orderBy,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { errorMessage } from "@/lib/errors";
 import { useAuth } from "@/context/auth-context";
 import {
   Table,
@@ -48,38 +43,29 @@ const roleLabel: Record<string, string> = {
 };
 
 const UsersPage = () => {
-  const { firebaseUser, userProfile } = useAuth();
+  const { authUser, userProfile } = useAuth();
   const isSuperAdmin = userProfile?.role === "super_admin";
-  const [users, setUsers] = useState<(User & { uid: string })[]>([]);
-  const [loading, setLoading] = useState(true);
+  const usersData = useQuery(api.users.list);
+  const users: (User & { uid: string })[] = usersData ?? [];
+  const loading = usersData === undefined;
+  const setRole = useMutation(api.users.setRole);
   const [search, setSearch] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
-  useEffect(() => {
-    const fetch = async () => {
-      const snap = await getDocs(
-        query(collection(db, "users"), orderBy("createdAt", "desc")),
-      );
-      setUsers(
-        snap.docs.map(
-          (d) => ({ uid: d.id, ...d.data() }) as User & { uid: string },
-        ),
-      );
-      setLoading(false);
-    };
-    fetch();
-  }, []);
-
+  // The list is live, so a role change shows up by itself once it's saved.
   const handleRoleChange = async (uid: string, newRole: string) => {
     setUpdating(uid);
-    await updateDoc(doc(db, "users", uid), { role: newRole });
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.uid === uid ? { ...u, role: newRole as User["role"] } : u,
-      ),
-    );
-    setUpdating(null);
+    try {
+      await setRole({
+        userId: uid as Id<"users">,
+        role: newRole as User["role"],
+      });
+    } catch (err) {
+      alert(errorMessage(err, "Failed to update role."));
+    } finally {
+      setUpdating(null);
+    }
   };
 
   const handleSearch = (value: string) => {
@@ -123,8 +109,8 @@ const UsersPage = () => {
         />
       </div>
 
-      <div className="mt-4 border border-border">
-        <Table className="font-sans rounded-none">
+      <div className="mt-4 rounded-sm border border-border">
+        <Table className="font-sans rounded-sm">
           <TableHeader>
             <TableRow>
               <TableHead className="pl-4">Name</TableHead>
@@ -153,7 +139,7 @@ const UsersPage = () => {
               </TableRow>
             ) : (
               paginated.map((u) => {
-                const isSelf = u.uid === firebaseUser?.uid;
+                const isSelf = u.uid === authUser?.id;
                 return (
                   <TableRow key={u.uid}>
                     <TableCell className="font-medium pl-4">
@@ -206,19 +192,19 @@ const UsersPage = () => {
         <div className="mt-4 flex items-center justify-between font-sans text-sm">
           <p className="text-muted-gray">
             Showing{" "}
-            <span className="font-medium text-charcoal">
+            <span className="font-medium text-foreground">
               {startIndex + 1}&ndash;
               {Math.min(startIndex + PAGE_SIZE, filtered.length)}
             </span>{" "}
             of{" "}
-            <span className="font-medium text-charcoal">{filtered.length}</span>{" "}
+            <span className="font-medium text-foreground">{filtered.length}</span>{" "}
             users
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={safePagePage <= 1}
-              className="flex items-center gap-1 border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:border-gold/50 disabled:opacity-40 disabled:hover:border-border"
+              className="flex items-center gap-1 rounded-sm border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:border-gold/50 disabled:opacity-40 disabled:hover:border-border"
             >
               <ChevronLeft className="size-3.5" />
               Previous
@@ -229,7 +215,7 @@ const UsersPage = () => {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={safePagePage >= totalPages}
-              className="flex items-center gap-1 border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:border-gold/50 disabled:opacity-40 disabled:hover:border-border"
+              className="flex items-center gap-1 rounded-sm border border-border px-3 py-1.5 text-xs font-medium transition-colors hover:border-gold/50 disabled:opacity-40 disabled:hover:border-border"
             >
               Next
               <ChevronRight className="size-3.5" />

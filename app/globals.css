@@ -49,9 +49,16 @@
   --font-serif: "Miller Banner", Georgia, serif;
 
   --color-gold: #b8962e;
-  --color-gold-tint: #f5edd0;
-  --color-charcoal: #1f1f1f;
-  --color-muted-gray: #6b6b6b;
+  /* Gold that passes contrast as *text* on page/card surfaces. Plain gold is
+     the brand fill (2.8:1 on white) and is only legible as text on charcoal. */
+  --color-gold-ink: var(--gold-ink);
+  --color-gold-tint: var(--gold-tint);
+  --color-charcoal: var(--charcoal);
+  /* Foreground pair for charcoal panels, so dark sections don't borrow the
+     light theme's body greys (which fail against them). */
+  --color-charcoal-foreground: var(--charcoal-foreground);
+  --color-charcoal-muted: var(--charcoal-muted);
+  --color-muted-gray: var(--muted-gray);
 
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -91,7 +98,15 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
+:root,
+.light {
+  color-scheme: light;
+  --gold-tint: #f5edd0;
+  --gold-ink: #7a641f;
+  --charcoal: #1f1f1f;
+  --charcoal-foreground: #ffffff;
+  --charcoal-muted: #b3b3b3;
+  --muted-gray: #6b6b6b;
   --background: #ffffff;
   --foreground: #1f1f1f;
   --card: #ffffff;
@@ -112,7 +127,8 @@
   --ring: #b8962e;
   --chart-1: #b8962e;
   --chart-2: #d4b84a;
-  --chart-3: #f5edd0;
+  /* Deep gold rather than cream: the old value was 1.2:1 on white, i.e. invisible. */
+  --chart-3: #7d6420;
   --chart-4: #6b6b6b;
   --chart-5: #1f1f1f;
   --radius: 0.625rem;
@@ -126,6 +142,47 @@
   --sidebar-ring: #b8962e;
 }
 
+.dark {
+  color-scheme: dark;
+  --gold-tint: #2b2513;
+  --gold-ink: #d4b454;
+  --charcoal: #2a2a2a;
+  --charcoal-foreground: #ffffff;
+  --charcoal-muted: #b3b3b3;
+  --muted-gray: #a1a1a1;
+  --background: #121212;
+  --foreground: #ededed;
+  --card: #1a1a1a;
+  --card-foreground: #ededed;
+  --popover: #1a1a1a;
+  --popover-foreground: #ededed;
+  --primary: #b8962e;
+  --primary-foreground: #ffffff;
+  --secondary: #2a2618;
+  --secondary-foreground: #ededed;
+  --muted: #2a2618;
+  --muted-foreground: #a1a1a1;
+  --accent: #2a2618;
+  --accent-foreground: #ededed;
+  --destructive: #f87171;
+  --border: #2e2e2e;
+  --input: #3a3a3a;
+  --ring: #b8962e;
+  --chart-1: #d4b84a;
+  --chart-2: #b8962e;
+  --chart-3: #f5edd0;
+  --chart-4: #a1a1a1;
+  --chart-5: #ededed;
+  --sidebar: #171717;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #b8962e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a2618;
+  --sidebar-accent-foreground: #ededed;
+  --sidebar-border: #2e2e2e;
+  --sidebar-ring: #b8962e;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -136,12 +193,40 @@
   html {
     @apply font-sans;
   }
+  /* Keyboard users need to see where they are; pointer users never see this. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  /* Digits that sit in columns (tallies, counts) shouldn't jitter between values. */
+  table,
+  [data-slot="table"] {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
-* {
-  transition-property: color, background-color, border-color, opacity, box-shadow;
-  transition-duration: 0.2s;
-  transition-timing-function: ease-in-out;
+/* Theme switches and hover states ease rather than snap. Deliberately limited
+   to colour-ish properties: nothing here animates layout. */
+@media (prefers-reduced-motion: no-preference) {
+  *,
+  *::before,
+  *::after {
+    transition-property: color, background-color, border-color, outline-color,
+      opacity, box-shadow;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-in-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media print {

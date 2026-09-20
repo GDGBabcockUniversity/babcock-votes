@@ -10,14 +10,15 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { PAGES } from "@/lib/constants";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
-  const { firebaseUser, userProfile, loading } = useAuth();
+  const { authUser, userProfile, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading) {
-      if (!firebaseUser) {
+      if (!authUser) {
         router.replace(PAGES.auth.login);
       } else if (
         userProfile &&
@@ -27,7 +28,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         router.replace(PAGES.main.home);
       }
     }
-  }, [firebaseUser, userProfile, loading, router]);
+  }, [authUser, userProfile, loading, router]);
 
   if (loading) {
     return (
@@ -38,7 +39,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (
-    !firebaseUser ||
+    !authUser ||
     !userProfile ||
     (userProfile.role !== "super_admin" && userProfile.role !== "dept_admin")
   ) {
@@ -54,6 +55,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
           <span className="font-sans text-sm font-bold uppercase tracking-widest">
             Admin
           </span>
+          <ThemeToggle className="ml-auto" />
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-6 md:px-8">

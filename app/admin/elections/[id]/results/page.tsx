@@ -1,19 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  doc,
-  getDoc,
-  getDocs,
-  getCountFromServer,
-  collection,
-  query,
-  orderBy,
-  where,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useRef } from "react";
 import { ResultsPoster } from "@/components/results-poster";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,119 +24,41 @@ const ResultsPage = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
 
-  const [election, setElection] = useState<Election | null>(null);
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [candidates, setCandidates] = useState<
-    (Candidate & { voteCount: number })[]
-  >([]);
-  const [eligibleVoterCount, setEligibleVoterCount] = useState(0);
-  const [voterCount, setVoterCount] = useState(0);
-  const [positionVoterCounts, setPositionVoterCounts] = useState<
-    Record<string, number>
-  >({});
-  const [positionAbstainCounts, setPositionAbstainCounts] = useState<
-    Record<string, number>
-  >({});
-  const [analyticsReady, setAnalyticsReady] = useState(false);
-  const [loading, setLoading] = useState(true);
-
   const posterRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      const elRef = doc(db, "elections", id);
-      const elSnap = await getDoc(elRef);
-      if (!elSnap.exists()) {
-        setLoading(false);
-        return;
-      }
+  const detail = useQuery(api.elections.detail, { id });
+  const election: Election | null = detail?.election ?? null;
+  const positions: Position[] = detail?.positions ?? [];
 
-      const elData = { id: elSnap.id, ...elSnap.data() } as Election;
-      setElection(elData);
+  // Tallies come from server-side counters, so they stay live while votes come in.
+  const tallies = useQuery(api.votes.tallies, election ? { electionId: id } : "skip");
+  const eligibleVoterCountData = useQuery(
+    api.eligibleVoters.countByDepartment,
+    election ? { departmentId: election.departmentId } : "skip",
+  );
+  const eligibleVoterCount = eligibleVoterCountData ?? 0;
+  const analyticsReady = useQuery(
+    api.analytics.exists,
+    election ? { electionId: id } : "skip",
+  );
 
-      const [posSnap, candSnap, eligibleSnap, analyticsSnap] =
-        await Promise.all([
-          getDocs(
-            query(collection(elRef, "positions"), orderBy("order", "asc")),
-          ),
-          getDocs(collection(elRef, "candidates")),
-          getCountFromServer(
-            query(
-              collection(db, "eligible_voters"),
-              where("departmentId", "==", elData.departmentId),
-            ),
-          ),
-          getDoc(doc(db, "election_analytics", id)),
-        ]);
+  const loading =
+    detail === undefined ||
+    (election !== null &&
+      (tallies === undefined || eligibleVoterCountData === undefined));
 
-      setEligibleVoterCount(eligibleSnap.data().count);
-      setAnalyticsReady(analyticsSnap.exists());
+  const candidates: (Candidate & { voteCount: number })[] = (
+    detail?.candidates ?? []
+  ).map((c) => ({ ...c, voteCount: tallies?.candidateVotes[c.id] ?? 0 }));
+  const positionVoterCounts: Record<string, number> = tallies?.positionVotes ?? {};
+  const positionAbstainCounts: Record<string, number> = tallies?.positionAbstains ?? {};
 
-      const posItems = posSnap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Position,
-      );
-      setPositions(posItems);
-      const candItems = candSnap.docs.map(
-        (d) => ({ id: d.id, ...d.data() }) as Candidate,
-      );
-
-      // Tally votes per candidate using count queries (no doc downloads)
-      const candCounts = await Promise.all(
-        candItems.map((c) =>
-          getCountFromServer(
-            query(collection(db, "votes"), where("candidateId", "==", c.id)),
-          ).then((s) => ({ id: c.id, count: s.data().count })),
-        ),
-      );
-      const countMap = new Map(candCounts.map((c) => [c.id, c.count]));
-      setCandidates(
-        candItems.map((c) => ({ ...c, voteCount: countMap.get(c.id) ?? 0 })),
-      );
-
-      // Count votes per position and abstains per position in parallel
-      const [posCounts, abstainCounts] = await Promise.all([
-        Promise.all(
-          posItems.map((p) =>
-            getCountFromServer(
-              query(
-                collection(db, "votes"),
-                where("electionId", "==", id),
-                where("positionId", "==", p.id),
-              ),
-            ).then((s) => ({ id: p.id, count: s.data().count })),
-          ),
-        ),
-        Promise.all(
-          posItems.map((p) =>
-            getCountFromServer(
-              query(
-                collection(db, "votes"),
-                where("electionId", "==", id),
-                where("positionId", "==", p.id),
-                where("candidateId", "==", "abstain"),
-              ),
-            ).then((s) => ({ id: p.id, count: s.data().count })),
-          ),
-        ),
-      ]);
-      setPositionVoterCounts(
-        Object.fromEntries(posCounts.map((p) => [p.id, p.count])),
-      );
-      setPositionAbstainCounts(
-        Object.fromEntries(abstainCounts.map((p) => [p.id, p.count])),
-      );
-
-      // Derive unique voter count: maximum votes across any single position
-      // (ensures turnout is accurate even if some positions are level-restricted)
-      if (posItems.length > 0) {
-        const maxVotesForAnyPos = Math.max(...posCounts.map((p) => p.count));
-        setVoterCount(maxVotesForAnyPos);
-      }
-
-      setLoading(false);
-    };
-    fetchResults();
-  }, [id]);
+  // Unique voters: the most votes on any single position (accurate even when
+  // some positions are restricted to certain levels).
+  const voterCount =
+    positions.length > 0
+      ? Math.max(0, ...positions.map((p) => positionVoterCounts[p.id] ?? 0))
+      : 0;
 
   if (loading) {
     return (
@@ -247,7 +159,7 @@ const ResultsPage = () => {
       <div className="print:hidden">
         <button
           onClick={() => router.push(PAGES.admin.electionDetail(id))}
-          className="mb-2 flex items-center gap-1 font-sans text-xs text-muted-gray hover:text-charcoal"
+          className="mb-2 flex items-center gap-1 font-sans text-xs text-muted-gray hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" /> Back to Election
         </button>
@@ -264,7 +176,7 @@ const ResultsPage = () => {
 
           <div className="flex flex-wrap gap-2">
             <Link href={PAGES.admin.electionAnalytics(id)}>
-              <Button variant="outline" className="font-sans rounded-none">
+              <Button variant="outline" className="font-sans rounded-sm">
                 <ChartColumn className="mr-2 size-4" />
                 Analytics
               </Button>
@@ -273,7 +185,7 @@ const ResultsPage = () => {
               <Button
                 onClick={handleExportPdf}
                 disabled={candidates.length === 0}
-                className="font-sans rounded-none"
+                className="font-sans rounded-sm"
               >
                 <FileDown className="mr-2 size-4" />
                 Export as PDF
@@ -283,7 +195,7 @@ const ResultsPage = () => {
         </div>
 
         {!analyticsReady && (
-          <Card className="mt-4 rounded-none border-dashed bg-gold-tint/20">
+          <Card className="mt-4 rounded-sm border-dashed bg-gold-tint/20">
             <CardContent className="font-sans text-sm text-muted-gray">
               Analytics summary is not available yet. It will appear on the
               analytics page once generation completes.
@@ -298,7 +210,7 @@ const ResultsPage = () => {
               <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
                 Eligible Voters
               </CardTitle>
-              <UserCheck className="size-4 text-gold" />
+              <UserCheck className="size-4 text-gold-ink" />
             </CardHeader>
             <CardContent>
               <p className="font-sans text-2xl font-bold">
@@ -311,7 +223,7 @@ const ResultsPage = () => {
               <CardTitle className="font-sans text-xs font-medium uppercase tracking-wider text-muted-gray">
                 Voter Count (Turnout)
               </CardTitle>
-              <Users className="size-4 text-gold" />
+              <Users className="size-4 text-gold-ink" />
             </CardHeader>
             <CardContent>
               <p className="font-sans text-2xl font-bold">
@@ -374,9 +286,9 @@ const ResultsPage = () => {
                           {c.voteCount} votes ({pct}%)
                         </span>
                       </div>
-                      <div className="mt-1 h-2 w-full bg-secondary">
+                      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-secondary">
                         <div
-                          className="h-full bg-gold transition-all"
+                          className="h-full rounded-full bg-gold transition-all"
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -401,9 +313,9 @@ const ResultsPage = () => {
                           {abstainCount} ({abstainPct}%)
                         </span>
                       </div>
-                      <div className="mt-1 h-2 w-full bg-secondary">
+                      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-secondary">
                         <div
-                          className="h-full bg-muted-gray/40 transition-all"
+                          className="h-full rounded-full bg-muted-gray/40 transition-all"
                           style={{ width: `${abstainPct}%` }}
                         />
                       </div>
@@ -422,7 +334,7 @@ const ResultsPage = () => {
       </div>
 
       {/* Poster for PDF Export — visually hidden but in DOM so images preload */}
-      <div className="overflow-hidden h-0 opacity-0 pointer-events-none print:h-auto print:opacity-100 print:overflow-visible print:pointer-events-auto print:absolute print:inset-0 print:bg-white print:z-50 print:m-0 print:p-0">
+      <div className="overflow-hidden h-0 opacity-0 pointer-events-none print:h-auto print:opacity-100 print:overflow-visible print:pointer-events-auto print:absolute print:inset-0 print:bg-card print:z-50 print:m-0 print:p-0">
         <ResultsPoster
           ref={posterRef}
           election={election}

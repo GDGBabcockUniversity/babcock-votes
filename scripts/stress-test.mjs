@@ -1,45 +1,30 @@
 /*
   Babcock Votes Stress Tester
-  
-  Instructions:
-  1. Create a Firebase Service Account key from the Firebase Console (Project Settings -> Service Accounts -> Generate new private key).
-  2. Save it securely, and copy its raw JSON content.
-  3. Create a `.env.local` or `.env` file in the root directory and add:
-     FIREBASE_SERVICE_ACCOUNT_KEY='{ "type": "service_account", ... }'
-  
+
+  Creates synthetic voters and casts ballots through the same code path as the
+  real vote mutation (convex/lib/ballot.ts), concurrently, then removes the
+  synthetic voters and their votes again (pass --keep to leave them).
+
+  Run it against a demo/duplicated election on a dev deployment.
+
+  Setup: NEXT_PUBLIC_CONVEX_URL and OPS_SECRET in .env.local.
+
   Usage:
-  npm run stress-test <ELECTION_ID>
+    npm run stress-test <ELECTION_ID>
+
+  Optional env: STRESS_VOTERS=500 STRESS_CONCURRENCY=25 STRESS_LEVEL=100
 */
 
-import dotenv from "dotenv";
-dotenv.config({ path: ".env" });
-import { initializeApp, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { chunk, ops } from "./lib/convex.mjs";
 
-// 1. Initialize Firebase Admin
-let app;
-try {
-  if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
-    app = initializeApp({
-      credential: cert(serviceAccount),
-    });
-  } else {
-    app = initializeApp();
-  }
-} catch (e) {
-  console.error("\n❌ Failed to initialize Firebase Admin SDK.", e);
-  console.error(
-    "Please ensure FIREBASE_SERVICE_ACCOUNT_KEY is set in your .env file.\n",
-  );
-  process.exit(1);
-}
-
-const db = getFirestore(app);
+const NUM_VOTERS = Number(process.env.STRESS_VOTERS ?? 500);
+const CONCURRENCY = Number(process.env.STRESS_CONCURRENCY ?? 25);
+const LEVEL = process.env.STRESS_LEVEL ?? "100";
+const KEEP = process.argv.includes("--keep");
 
 async function runStressTest() {
   const electionId = process.argv[2];
-  if (!electionId) {
+  if (!electionId || electionId.startsWith("--")) {
     console.error("\n❌ Please provide an election ID.");
     console.error("Usage: npm run stress-test <election_id>\n");
     process.exit(1);
@@ -47,90 +32,70 @@ async function runStressTest() {
 
   console.log(`\nStarting stress test on election: ${electionId}...`);
 
-  const electionRef = db.collection("elections").doc(electionId);
-  const electionDoc = await electionRef.get();
+  const election = await ops.query("stressElection", { electionId }).catch((err) => {
+    console.error(`❌ ${err.message.split("\n")[0]}`);
+    process.exit(1);
+  });
 
-  if (!electionDoc.exists) {
-    console.error(`❌ Election ${electionId} not found.`);
+  if (election.status !== "active") {
+    console.error(`❌ Election is "${election.status}"; ballots are only accepted while active.`);
     process.exit(1);
   }
-
-  const [positionsSnap, candidatesSnap] = await Promise.all([
-    electionRef.collection("positions").get(),
-    electionRef.collection("candidates").get(),
-  ]);
-
-  const positions = positionsSnap.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-  const candidates = candidatesSnap.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  }));
-
-  if (positions.length === 0 || candidates.length === 0) {
+  if (election.positions.length === 0 || election.candidates.length === 0) {
     console.error("❌ Election has no positions or candidates. Cannot test.");
     process.exit(1);
   }
 
-  const NUM_VOTERS = 500;
-  console.log(`Simulating ${NUM_VOTERS} concurrent voters...\n`);
+  // Positions this synthetic level may vote on (some can be restricted).
+  const positions = election.positions.filter(
+    (p) => p.allowedLevels.length === 0 || p.allowedLevels.includes(LEVEL),
+  );
 
-  let successCount = 0;
-  let failCount = 0;
-
-  const startTime = Date.now();
-  const promises = [];
-
-  for (let i = 0; i < NUM_VOTERS; i++) {
-    const voterId = `stress_voter_${Date.now()}_${i}`;
-
-    // Pick exactly one random candidate per position
-    const selections = {};
-    for (const pos of positions) {
-      const posCands = candidates.filter((c) => c.positionId === pos.id);
-      if (posCands.length > 0) {
-        const randomCand =
-          posCands[Math.floor(Math.random() * posCands.length)];
-        selections[pos.id] = randomCand.id;
-      }
-    }
-
-    // Attempt to write the votes using a batch to mimic frontend atomic writes
-    const batch = db.batch();
-
-    Object.keys(selections).forEach((posId) => {
-      const voteDocId = `${voterId}_${posId}`;
-      const voteRef = db.collection("votes").doc(voteDocId);
-
-      batch.create(voteRef, {
-        electionId: electionId,
-        positionId: posId,
-        candidateId: selections[posId],
-        voterId: voterId,
-        votedAt: new Date(),
-      });
-    });
-
-    promises.push(
-      batch
-        .commit()
-        .then(() => {
-          successCount++;
-          if ((successCount + failCount) % 50 === 0) {
-            console.log(`Processed ${successCount + failCount} votes...`);
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          failCount++;
-        }),
+  const runId = Date.now().toString(36);
+  console.log(`Creating ${NUM_VOTERS} synthetic voters (level ${LEVEL})...`);
+  const voterIds = [];
+  for (let created = 0; created < NUM_VOTERS; created += 100) {
+    voterIds.push(
+      ...(await ops.mutation("stressCreateVoters", {
+        runId: `${runId}-${created}`,
+        count: Math.min(100, NUM_VOTERS - created),
+        departmentId: election.departmentId,
+        level: LEVEL,
+      })),
     );
   }
 
-  await Promise.all(promises);
+  console.log(`Casting ballots, ${CONCURRENCY} at a time...\n`);
+  let successCount = 0;
+  let failCount = 0;
 
+  const castBallot = async (voterId) => {
+    // One random candidate per position.
+    const selections = {};
+    for (const position of positions) {
+      const options = election.candidates.filter((c) => c.positionId === position.id);
+      if (options.length > 0) {
+        selections[position.id] = options[Math.floor(Math.random() * options.length)].id;
+      }
+    }
+
+    try {
+      await ops.mutation("stressCast", { electionId, voterId, selections });
+      successCount++;
+    } catch (err) {
+      console.error(err.message.split("\n")[0]);
+      failCount++;
+    }
+
+    if ((successCount + failCount) % 50 === 0) {
+      console.log(`Processed ${successCount + failCount} ballots...`);
+    }
+  };
+
+  const startTime = Date.now();
+  for (const group of chunk(voterIds, CONCURRENCY)) {
+    await Promise.all(group.map(castBallot));
+  }
   const duration = (Date.now() - startTime) / 1000;
 
   console.log(`\n=============================`);
@@ -139,10 +104,18 @@ async function runStressTest() {
   console.log(`Total duration : ${duration}s`);
   console.log(`Successful     : ${successCount}`);
   console.log(`Failed         : ${failCount}`);
-  console.log(
-    `Avg Throughput : ${(NUM_VOTERS / duration).toFixed(2)} votes/sec`,
-  );
+  console.log(`Avg Throughput : ${(NUM_VOTERS / duration).toFixed(2)} ballots/sec`);
   console.log(`=============================\n`);
+
+  if (KEEP) {
+    console.log("Synthetic voters and votes kept (--keep).");
+  } else {
+    console.log("Cleaning up synthetic voters and their votes...");
+    for (const group of chunk(voterIds, 25)) {
+      await ops.mutation("stressCleanup", { voterIds: group });
+    }
+    console.log("Done.");
+  }
 }
 
 runStressTest().catch(console.error);

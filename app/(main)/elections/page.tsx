@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { ElectionCard } from "@/components/election-card";
 import { ElectionCardSkeleton } from "@/components/skeleton-loader";
 import { Input } from "@/components/ui/input";
@@ -23,23 +23,11 @@ const FILTERS: { label: string; value: FilterStatus }[] = [
 
 const ElectionsPage = () => {
   const { userProfile } = useAuth();
-  const [elections, setElections] = useState<Election[]>([]);
-  const [loading, setLoading] = useState(true);
+  const electionsData = useQuery(api.elections.list, {});
+  const elections: Election[] = electionsData ?? [];
+  const loading = electionsData === undefined;
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterStatus>("all");
-
-  useEffect(() => {
-    const fetch = async () => {
-      const snap = await getDocs(
-        query(collection(db, "elections"), orderBy("startDate", "desc")),
-      );
-      setElections(
-        snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Election),
-      );
-      setLoading(false);
-    };
-    fetch();
-  }, []);
 
   const visibleElections = filterVisibleElections(elections, userProfile);
 
@@ -79,8 +67,8 @@ const ElectionsPage = () => {
             className={cn(
               "font-sans px-4 py-1.5 text-xs font-medium transition-colors",
               filter === f.value
-                ? "bg-charcoal text-white"
-                : "border border-border text-charcoal hover:bg-secondary",
+                ? "bg-foreground text-background"
+                : "rounded-sm border border-border text-foreground hover:bg-secondary",
             )}
           >
             {f.label}

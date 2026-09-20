@@ -1,39 +1,36 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  type ReactNode,
-} from "react";
-import {
-  onAuthStateChanged,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  type User as FirebaseUser,
-} from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
-import { auth, db, googleProvider } from "@/lib/firebase";
-import { SCHOOL_DOMAIN } from "@/lib/constants";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useConvexAuth, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { PAGES, SCHOOL_DOMAIN } from "@/lib/constants";
 import type { User } from "@/lib/types";
 
+export interface AuthUser {
+  id: string;
+  email: string;
+}
+
 interface AuthState {
-  firebaseUser: FirebaseUser | null;
+  authUser: AuthUser | null;
   userProfile: User | null;
   loading: boolean;
+  /** Set when a sign-in failed or was rejected. */
+  authError: string;
+  /** Redirects to Google; the page reloads on return, so this never resolves in practice. */
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
+  /** Kept for callers; the profile query is live so it updates by itself. */
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState>({
-  firebaseUser: null,
+  authUser: null,
   userProfile: null,
   loading: true,
+  authError: "",
   signInWithGoogle: async () => {},
   signInWithEmail: async () => {},
   refreshProfile: async () => {},
@@ -43,109 +40,57 @@ const AuthContext = createContext<AuthState>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
-  const [userProfile, setUserProfile] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { isLoading, isAuthenticated } = useConvexAuth();
+  const { signIn, signOut: convexSignOut } = useAuthActions();
+  const me = useQuery(api.users.me);
 
-  // Ref (not state) so the flag is visible immediately inside the
-  // onAuthStateChanged callback — no stale-closure issues.
-  const signingInRef = useRef(false);
+  const [authError, setAuthError] = useState("");
 
-  const loadProfile = useCallback(async (user: FirebaseUser) => {
-    try {
-      const snap = await getDoc(doc(db, "users", user.uid));
-      setUserProfile(snap.exists() ? (snap.data() as User) : null);
-    } catch (err) {
-      console.error("[auth-context] Failed to read user profile:", err);
-      setUserProfile(null);
-    }
-  }, []);
+  const authUser = me?.authUser ?? null;
+  const userProfile = me?.profile ?? null;
+
+  // Anyone without a profile who isn't on the school domain is turned away
+  // (the server also refuses to create such accounts; this covers old sessions).
+  const rejected =
+    !!authUser && !userProfile && !authUser.email.endsWith(`@${SCHOOL_DOMAIN}`);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      setFirebaseUser(user);
-
-      if (user && !signingInRef.current) {
-        // Only load profile here for cached sessions (page reload).
-        // Fresh sign-ins are handled by signInWithGoogle / signInWithEmail.
-        setLoading(true);
-        await loadProfile(user);
-        setLoading(false);
-      } else if (!user) {
-        setUserProfile(null);
-        setLoading(false);
-      }
-      // When signingInRef.current is true, DON'T set loading = false here.
-      // The sign-in function will set it after loading the profile.
-    });
-
-    return unsubscribe;
-  }, [loadProfile]);
+    if (!rejected) return;
+    // Sign out first; the message is set once that resolves.
+    void convexSignOut().then(() =>
+      setAuthError(
+        `Only @${SCHOOL_DOMAIN} email addresses are allowed. Please sign in with your school email.`,
+      ),
+    );
+  }, [rejected, convexSignOut]);
 
   const signInWithGoogle = async () => {
-    signingInRef.current = true;
-    try {
-      googleProvider.setCustomParameters({
-        prompt: "select_account",
-        hd: SCHOOL_DOMAIN,
-      });
-      const result = await signInWithPopup(auth, googleProvider);
-      const email = result.user.email ?? "";
-
-      if (!email.endsWith(`@${SCHOOL_DOMAIN}`)) {
-        await firebaseSignOut(auth);
-        setFirebaseUser(null);
-        setUserProfile(null);
-        throw new Error(
-          `Only @${SCHOOL_DOMAIN} email addresses are allowed. Please sign in with your school email.`,
-        );
-      }
-
-      // Token is fully established after signInWithPopup resolves.
-      // Safe to read Firestore now.
-      setFirebaseUser(result.user);
-      await loadProfile(result.user);
-    } finally {
-      signingInRef.current = false;
-      setLoading(false);
-    }
+    setAuthError("");
+    await signIn("google", { redirectTo: PAGES.auth.login });
   };
 
   const signInWithEmail = async (email: string, password: string) => {
-    signingInRef.current = true;
-    try {
-      const { signInWithEmailAndPassword } = await import("firebase/auth");
-      const result = await signInWithEmailAndPassword(auth, email, password);
-
-      setFirebaseUser(result.user);
-      await loadProfile(result.user);
-    } finally {
-      signingInRef.current = false;
-      setLoading(false);
-    }
+    setAuthError("");
+    const result = await signIn("password", { email, password, flow: "signIn" });
+    // A wrong password can resolve without signing in; make it an error.
+    if (!result.signingIn) throw new Error("Invalid credentials");
   };
 
-  const refreshProfile = useCallback(async () => {
-    if (!firebaseUser) return;
-    const snap = await getDoc(doc(db, "users", firebaseUser.uid));
-    setUserProfile(snap.exists() ? (snap.data() as User) : null);
-  }, [firebaseUser]);
-
   const signOut = async () => {
-    await firebaseSignOut(auth);
-    setFirebaseUser(null);
-    setUserProfile(null);
+    await convexSignOut();
   };
 
   return (
     <AuthContext.Provider
       value={{
-        firebaseUser,
+        authUser: rejected ? null : authUser,
         userProfile,
-        loading,
+        // Still resolving the session, or signed in but the profile query hasn't answered yet.
+        loading: isLoading || (isAuthenticated && me === undefined),
+        authError,
         signInWithGoogle,
         signInWithEmail,
-        refreshProfile,
+        refreshProfile: async () => {},
         signOut,
       }}
     >

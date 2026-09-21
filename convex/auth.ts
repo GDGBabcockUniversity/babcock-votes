@@ -16,15 +16,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     // Part-time students: accounts are provisioned by an admin script; nobody
     // can self-register with a password (see createOrUpdateUser).
     Password,
-    // Matric number or email, plus full name (see lib/identitySignIn.ts).
+    // Email plus full name (see lib/identitySignIn.ts).
     ConvexCredentials({
       id: "identity",
       authorize: async (credentials, ctx) => {
-        const str = (value: unknown) => (typeof value === "string" ? value : undefined);
+        const str = (value: unknown) => (typeof value === "string" ? value : "");
         const userId = await ctx.runMutation(internal.identitySignIn.resolve, {
-          matric: str(credentials.matric),
           email: str(credentials.email),
-          fullName: str(credentials.fullName) ?? "",
+          fullName: str(credentials.fullName),
         });
         return { userId };
       },

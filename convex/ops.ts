@@ -655,8 +655,9 @@ export const setRoleByEmail = mutation({
 
 /**
  * For `scripts/import-users.mjs`: create registered users, each claiming the
- * eligible-voter row for their matric (created if missing) so that signing in
- * with matric + full name finds this user instead of making a new one.
+ * eligible-voter row for their matric (created if missing). They then sign in
+ * with email + full name, or with Google (linked by verified email), so a user
+ * imported without an email can't sign in.
  *
  * Idempotent: a matric that is already claimed, or an email that already
  * belongs to a user, updates that user's profile and role instead.

@@ -21,11 +21,8 @@ interface AuthState {
   /** Redirects to Google; the page reloads on return, so this never resolves in practice. */
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  /** Matric number or email, plus full name. */
-  signInWithIdentity: (
-    identifier: { matric: string } | { email: string },
-    fullName: string,
-  ) => Promise<void>;
+  /** Email plus full name. */
+  signInWithIdentity: (email: string, fullName: string) => Promise<void>;
   /** Kept for callers; the profile query is live so it updates by itself. */
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -82,12 +79,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!result.signingIn) throw new Error("Invalid credentials");
   };
 
-  const signInWithIdentity = async (
-    identifier: { matric: string } | { email: string },
-    fullName: string,
-  ) => {
+  const signInWithIdentity = async (email: string, fullName: string) => {
     setAuthError("");
-    const result = await signIn("identity", { ...identifier, fullName });
+    const result = await signIn("identity", { email, fullName });
     if (!result.signingIn) throw new Error("Sign-in failed");
   };
 

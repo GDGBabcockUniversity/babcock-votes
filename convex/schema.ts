@@ -45,7 +45,6 @@ export default defineSchema({
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
-    .index("by_matric_key", ["matricKey"])
     .index("by_department", ["departmentId"])
     .index("by_legacy_id", ["legacyId"]),
 

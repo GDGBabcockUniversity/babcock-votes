@@ -73,7 +73,7 @@ describe("Firebase migration mutations", () => {
     expect(data.admin.email).toBe("admin@student.babcock.edu.ng"); // lowercased
     expect(data.admin.emailVerificationTime).toBeTypeOf("number"); // so Google sign-in links to it
     expect(data.admin.role).toBe("super_admin");
-    expect(data.voter1.matricKey).toBe("21-0456");
+    expect(data.voter1.matricNumber).toBe("21/0456");
     expect(data.real.createdBy).toBe(data.admin._id);
     expect(data.copy.duplicatedFromElectionId).toBe(data.real._id);
     expect(data.claimed.claimedByUserId).toBe(data.voter1._id);

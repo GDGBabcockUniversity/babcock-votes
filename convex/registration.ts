@@ -49,7 +49,7 @@ const resolveEligibleVoter = async (
     );
   }
 
-  return { voter, safeMatric, matricKey };
+  return { voter, safeMatric };
 };
 
 export const lookup = query({
@@ -74,7 +74,7 @@ export const register = mutation({
   args: { matric: v.string() },
   handler: async (ctx, args) => {
     const viewer = await requireSignedIn(ctx);
-    const { voter, safeMatric, matricKey } = await resolveEligibleVoter(
+    const { voter, safeMatric } = await resolveEligibleVoter(
       ctx,
       viewer,
       args.matric,
@@ -87,7 +87,6 @@ export const register = mutation({
     await ctx.db.patch(viewer._id, {
       fullName: voter.fullName,
       matricNumber: safeMatric,
-      matricKey,
       departmentId: voter.departmentId,
       level: voter.level,
       role: "voter",

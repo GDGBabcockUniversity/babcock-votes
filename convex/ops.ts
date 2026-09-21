@@ -112,7 +112,6 @@ export const migrateUsers = mutation({
         emailVerificationTime: row.createdAt,
         fullName: row.fullName,
         matricNumber: row.matricNumber,
-        matricKey: matricToDocId(row.matricNumber),
         departmentId: row.departmentId,
         level: row.level,
         role: row.role,
@@ -606,12 +605,31 @@ export const claimForUser = internalMutation({
     await ctx.db.patch(args.userId, {
       fullName: args.fullName,
       matricNumber: args.matricNumber,
-      matricKey,
       departmentId: args.departmentId,
       level: args.level,
       role: "voter",
       registeredAt: Date.now(),
     });
+  },
+});
+
+/**
+ * TEMPORARY: strips the retired `users.matricKey` field so it can be dropped
+ * from the schema. Run until `isDone`, then delete this function:
+ * `npx convex run ops:clearUserMatricKeys '{"cursor":null}'`
+ */
+export const clearUserMatricKeys = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("users").paginate({ cursor: args.cursor, numItems: 200 });
+    let cleared = 0;
+    for (const user of page.page) {
+      if (user.matricKey !== undefined) {
+        await ctx.db.patch(user._id, { matricKey: undefined });
+        cleared++;
+      }
+    }
+    return { cleared, continueCursor: page.continueCursor, isDone: page.isDone };
   },
 });
 

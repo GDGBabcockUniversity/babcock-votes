@@ -228,12 +228,3 @@
     scroll-behavior: auto !important;
   }
 }
-
-@media print {
-  @page {
-    margin: 1cm 0cm 1.5cm 0cm;
-  }
-  @page :first {
-    margin-top: 0;
-  }
-}

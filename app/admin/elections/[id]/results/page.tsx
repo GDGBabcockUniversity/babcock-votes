@@ -19,10 +19,14 @@ import {
 } from "lucide-react";
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
+import { useAuth } from "@/context/auth-context";
 
 const ResultsPage = () => {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { userProfile } = useAuth();
+  // Viewers only see results; analytics and election management stay admin-only.
+  const isViewer = userProfile?.role === "viewer";
 
   const posterRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +43,7 @@ const ResultsPage = () => {
   const eligibleVoterCount = eligibleVoterCountData ?? 0;
   const analyticsReady = useQuery(
     api.analytics.exists,
-    election ? { electionId: id } : "skip",
+    election && !isViewer ? { electionId: id } : "skip",
   );
 
   const loading =
@@ -158,10 +162,12 @@ const ResultsPage = () => {
     <>
       <div className="print:hidden">
         <button
-          onClick={() => router.push(PAGES.admin.electionDetail(id))}
+          onClick={() =>
+            router.push(isViewer ? PAGES.admin.liveResults : PAGES.admin.electionDetail(id))
+          }
           className="mb-2 flex items-center gap-1 font-sans text-xs text-muted-gray hover:text-foreground"
         >
-          <ArrowLeft className="size-3.5" /> Back to Election
+          <ArrowLeft className="size-3.5" /> {isViewer ? "Back to Live Results" : "Back to Election"}
         </button>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -175,12 +181,14 @@ const ResultsPage = () => {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Link href={PAGES.admin.electionAnalytics(id)}>
-              <Button variant="outline" className="font-sans rounded-sm">
-                <ChartColumn className="mr-2 size-4" />
-                Analytics
-              </Button>
-            </Link>
+            {!isViewer && (
+              <Link href={PAGES.admin.electionAnalytics(id)}>
+                <Button variant="outline" className="font-sans rounded-sm">
+                  <ChartColumn className="mr-2 size-4" />
+                  Analytics
+                </Button>
+              </Link>
+            )}
             {election.status === "closed" && (
               <Button
                 onClick={handleExportPdf}
@@ -194,7 +202,7 @@ const ResultsPage = () => {
           </div>
         </div>
 
-        {!analyticsReady && (
+        {!isViewer && !analyticsReady && (
           <Card className="mt-4 rounded-sm border-dashed bg-gold-tint/20">
             <CardContent className="font-sans text-sm text-muted-gray">
               Analytics summary is not available yet. It will appear on the

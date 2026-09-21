@@ -46,6 +46,8 @@ const CandidatesPage = () => {
   const election: Election | null = data?.election ?? null;
   const positions: Position[] = data?.positions ?? [];
   const candidates: Candidate[] = data?.candidates ?? [];
+  // Matches a vote with this election's ID and the signed-in user's ID as voter.
+  const hasVoted = useQuery(api.votes.hasVoted, { electionId: id });
   const [viewingCandidate, setViewingCandidate] = useState<Candidate | null>(
     null,
   );
@@ -174,12 +176,22 @@ const CandidatesPage = () => {
           {election.status === "active" && (
             <div className="mt-8">
               {userProfile?.departmentId === election.departmentId ? (
-                <Link
-                  href={PAGES.main.vote(id)}
-                  className="block w-full rounded-sm bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans transition-opacity hover:opacity-90"
-                >
-                  Vote Now
-                </Link>
+                hasVoted !== false ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="block w-full cursor-not-allowed rounded-sm bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans opacity-50"
+                  >
+                    {hasVoted ? "Your vote has been recorded" : "Vote Now"}
+                  </button>
+                ) : (
+                  <Link
+                    href={PAGES.main.vote(id)}
+                    className="block w-full rounded-sm bg-gold py-3.5 text-center text-sm font-semibold text-white font-sans transition-opacity hover:opacity-90"
+                  >
+                    Vote Now
+                  </Link>
+                )
               ) : (
                 <div className="rounded-sm border border-border bg-secondary p-4 text-center text-sm text-muted-gray font-sans">
                   You can only vote in your own department&apos;s elections.

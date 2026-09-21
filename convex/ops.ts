@@ -7,7 +7,7 @@
  */
 
 import { createAccount } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
@@ -21,6 +21,8 @@ import {
 } from "./_generated/server";
 import { castBallot } from "./lib/ballot";
 import { isRegistered, type RegisteredUser } from "./lib/access";
+import * as validate from "./lib/validate";
+import { MATRIC_REGEX } from "../lib/constants";
 import { matricToDocId } from "../lib/matric";
 import { role, electionStatus } from "./schema";
 
@@ -112,7 +114,6 @@ export const migrateUsers = mutation({
         emailVerificationTime: row.createdAt,
         fullName: row.fullName,
         matricNumber: row.matricNumber,
-        matricKey: matricToDocId(row.matricNumber),
         departmentId: row.departmentId,
         level: row.level,
         role: row.role,
@@ -606,12 +607,31 @@ export const claimForUser = internalMutation({
     await ctx.db.patch(args.userId, {
       fullName: args.fullName,
       matricNumber: args.matricNumber,
-      matricKey,
       departmentId: args.departmentId,
       level: args.level,
       role: "voter",
       registeredAt: Date.now(),
     });
+  },
+});
+
+/**
+ * TEMPORARY: strips the retired `users.matricKey` field so it can be dropped
+ * from the schema. Run until `isDone`, then delete this function:
+ * `npx convex run ops:clearUserMatricKeys '{"cursor":null}'`
+ */
+export const clearUserMatricKeys = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("users").paginate({ cursor: args.cursor, numItems: 200 });
+    let cleared = 0;
+    for (const user of page.page) {
+      if (user.matricKey !== undefined) {
+        await ctx.db.patch(user._id, { matricKey: undefined });
+        cleared++;
+      }
+    }
+    return { cleared, continueCursor: page.continueCursor, isDone: page.isDone };
   },
 });
 
@@ -632,6 +652,111 @@ export const setRoleByEmail = mutation({
 });
 
 // --- Seeding ---------------------------------------------------------------------
+
+/**
+ * For `scripts/import-users.mjs`: create registered users, each claiming the
+ * eligible-voter row for their matric (created if missing) so that signing in
+ * with matric + full name finds this user instead of making a new one.
+ *
+ * Idempotent: a matric that is already claimed, or an email that already
+ * belongs to a user, updates that user's profile and role instead.
+ */
+export const importUsers = mutation({
+  args: {
+    secret: v.string(),
+    rows: v.array(
+      v.object({
+        fullName: v.string(),
+        matricNumber: v.string(),
+        departmentId: v.string(),
+        level: v.string(),
+        email: v.optional(v.string()),
+        role: v.optional(role),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    let created = 0;
+    let updated = 0;
+    const failed: { matricNumber: string; reason: string }[] = [];
+
+    for (const row of args.rows) {
+      const matricNumber = row.matricNumber.trim();
+      try {
+        if (!MATRIC_REGEX.test(matricNumber)) throw new Error("Invalid matric number format.");
+        const matricKey = matricToDocId(matricNumber);
+        const email = row.email?.trim().toLowerCase() || undefined;
+        const profile = {
+          fullName: validate.text(row.fullName, "Full name"),
+          matricNumber,
+          departmentId: validate.departmentId(row.departmentId),
+          level: validate.level(row.level),
+        };
+
+        let voter = await ctx.db
+          .query("eligibleVoters")
+          .withIndex("by_matric_key", (q) => q.eq("matricKey", matricKey))
+          .unique();
+        const existing =
+          (voter?.claimedByUserId && (await ctx.db.get(voter.claimedByUserId))) ||
+          (email &&
+            (await ctx.db.query("users").withIndex("email", (q) => q.eq("email", email)).first())) ||
+          null;
+
+        if (existing?.matricNumber && matricToDocId(existing.matricNumber) !== matricKey) {
+          throw new Error(`Email already belongs to ${existing.matricNumber}.`);
+        }
+
+        let userId: Id<"users">;
+        if (existing) {
+          userId = existing._id;
+          await ctx.db.patch(userId, {
+            ...profile,
+            ...(email && { email }),
+            // Keep an existing role (e.g. an admin) unless the file sets one.
+            role: row.role ?? existing.role ?? "voter",
+            registeredAt: existing.registeredAt ?? Date.now(),
+          });
+          updated++;
+        } else {
+          userId = await ctx.db.insert("users", {
+            ...profile,
+            name: profile.fullName,
+            email,
+            // Verified, so a later Google sign-in with this email links to this user.
+            emailVerificationTime: email ? Date.now() : undefined,
+            role: row.role ?? "voter",
+            registeredAt: Date.now(),
+          });
+          created++;
+        }
+
+        if (!voter) {
+          const voterId = await ctx.db.insert("eligibleVoters", {
+            matricKey,
+            fullName: profile.fullName,
+            departmentId: profile.departmentId,
+            level: profile.level,
+          });
+          voter = (await ctx.db.get(voterId))!;
+        }
+        await ctx.db.patch(voter._id, {
+          fullName: profile.fullName,
+          departmentId: profile.departmentId,
+          level: profile.level,
+          claimedByUserId: userId,
+          claimedEmail: email ?? voter.claimedEmail,
+        });
+      } catch (err) {
+        const reason =
+          err instanceof ConvexError ? String(err.data) : err instanceof Error ? err.message : String(err);
+        failed.push({ matricNumber, reason });
+      }
+    }
+    return { created, updated, failed };
+  },
+});
 
 export const seedEligibleVoters = mutation({
   args: {

@@ -39,6 +39,7 @@ Scripts talk to the deployment named by `NEXT_PUBLIC_CONVEX_URL` in `.env.local`
 
 | Script | Purpose |
 | --- | --- |
+| `node scripts/import-users.mjs <json>` | Create registered users (and their eligible-voter rows) from JSON; see `scripts/users.example.json` |
 | `node scripts/seed-whitelist.mjs <csv>` | Load eligible voters (`fullName,matricNumber,departmentId,level`) |
 | `node scripts/seed-candidates.mjs <electionId> <csv>` | Load positions and candidates |
 | `node scripts/create-pt-accounts.mjs <csv>` | Create part-time student accounts; writes `pt-credentials.csv` |

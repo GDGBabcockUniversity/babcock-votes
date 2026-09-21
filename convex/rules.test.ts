@@ -201,6 +201,47 @@ describe("votes.tallies", () => {
       asUser(t, voter).query(api.votes.tallies, { electionId: election.electionId }),
     ).rejects.toMatchObject(failsWith("Forbidden"));
   });
+
+  it("is open to viewers of the election's department only", async () => {
+    const { t, election } = await setup();
+    const csViewer = await addUser(t, { email: "cs-viewer@student.babcock.edu.ng", role: "viewer" });
+    const otherViewer = await addUser(t, {
+      email: "law-viewer@student.babcock.edu.ng",
+      role: "viewer",
+      departmentId: "law",
+    });
+
+    const tallies = await asUser(t, csViewer).query(api.votes.tallies, {
+      electionId: election.electionId,
+    });
+    expect(tallies.positionVotes).toBeDefined();
+    expect(
+      await asUser(t, csViewer).query(api.eligibleVoters.countByDepartment, {
+        departmentId: "computer_science",
+      }),
+    ).toBe(0);
+
+    await expect(
+      asUser(t, otherViewer).query(api.votes.tallies, { electionId: election.electionId }),
+    ).rejects.toMatchObject(failsWith("Forbidden"));
+    await expect(
+      asUser(t, otherViewer).query(api.eligibleVoters.countByDepartment, {
+        departmentId: "computer_science",
+      }),
+    ).rejects.toMatchObject(failsWith("Forbidden"));
+  });
+
+  it("does not let viewers manage anything", async () => {
+    const { t, election } = await setup();
+    const viewer = await addUser(t, { email: "cs-viewer@student.babcock.edu.ng", role: "viewer" });
+
+    await expect(asUser(t, viewer).query(api.admin.dashboardStats, {})).rejects.toMatchObject(
+      failsWith("Forbidden"),
+    );
+    await expect(
+      asUser(t, viewer).query(api.analytics.exists, { electionId: election.electionId }),
+    ).rejects.toMatchObject(failsWith("Forbidden"));
+  });
 });
 
 describe("registration", () => {

@@ -21,6 +21,7 @@ import {
   Vote,
   Users,
   ClipboardList,
+  BarChart3,
   ArrowLeft,
   LogOut,
   Moon,
@@ -55,7 +56,19 @@ const navItems = [
     icon: ClipboardList,
     roles: ["super_admin"],
   },
+  {
+    href: PAGES.admin.liveResults,
+    label: "Live Results",
+    icon: BarChart3,
+    roles: ["viewer"],
+  },
 ];
+
+const roleLabel: Record<string, string> = {
+  super_admin: "Super Admin",
+  dept_admin: "Dept Admin",
+  viewer: "Viewer",
+};
 
 export const AdminSidebar = () => {
   const pathname = usePathname();
@@ -145,7 +158,7 @@ export const AdminSidebar = () => {
               {userProfile.fullName}
             </p>
             <p className="mt-0.5 truncate text-xs text-muted-gray">
-              {role === "super_admin" ? "Super Admin" : "Dept Admin"} &middot;{" "}
+              {roleLabel[role] ?? role} &middot;{" "}
               {getDepartmentName(userProfile.departmentId)}
             </p>
           </div>

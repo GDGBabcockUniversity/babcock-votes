@@ -73,7 +73,7 @@ describe("Firebase migration mutations", () => {
     expect(data.admin.email).toBe("admin@student.babcock.edu.ng"); // lowercased
     expect(data.admin.emailVerificationTime).toBeTypeOf("number"); // so Google sign-in links to it
     expect(data.admin.role).toBe("super_admin");
-    expect(data.voter1.matricKey).toBe("21-0456");
+    expect(data.voter1.matricNumber).toBe("21/0456");
     expect(data.real.createdBy).toBe(data.admin._id);
     expect(data.copy.duplicatedFromElectionId).toBe(data.real._id);
     expect(data.claimed.claimedByUserId).toBe(data.voter1._id);
@@ -123,5 +123,59 @@ describe("Firebase migration mutations", () => {
     const created = await t.run((ctx) => ctx.db.query("elections").first());
     const admin = await t.run((ctx) => ctx.db.query("users").withIndex("by_legacy_id", (q) => q.eq("legacyId", "fbAdmin")).unique());
     expect(created?.createdBy).toBe(admin?._id);
+  });
+});
+
+describe("ops.importUsers", () => {
+  const ada = {
+    fullName: "Ada Obi",
+    matricNumber: "21/0456",
+    departmentId: "computer_science",
+    level: "300",
+    email: "Ada@student.babcock.edu.ng",
+  };
+
+  it("creates a registered user that claims (or creates) their eligible-voter row", async () => {
+    const t = newTest();
+    const result = await t.mutation(api.ops.importUsers, { secret, rows: [ada] });
+    expect(result).toEqual({ created: 1, updated: 0, failed: [] });
+
+    const [users, voters] = await t.run(async (ctx) => [
+      await ctx.db.query("users").collect(),
+      await ctx.db.query("eligibleVoters").collect(),
+    ] as const);
+    expect(users).toHaveLength(1);
+    expect(users[0]).toMatchObject({ email: "ada@student.babcock.edu.ng", role: "voter", matricNumber: "21/0456" });
+    expect(voters).toHaveLength(1);
+    expect(voters[0]).toMatchObject({ matricKey: "21-0456", claimedByUserId: users[0]._id });
+  });
+
+  it("updates on re-run instead of duplicating, and keeps the role unless one is given", async () => {
+    const t = newTest();
+    await t.mutation(api.ops.importUsers, { secret, rows: [{ ...ada, role: "viewer" }] });
+
+    const again = await t.mutation(api.ops.importUsers, { secret, rows: [{ ...ada, level: "400" }] });
+    expect(again).toEqual({ created: 0, updated: 1, failed: [] });
+
+    const users = await t.run((ctx) => ctx.db.query("users").collect());
+    expect(users).toHaveLength(1);
+    expect(users[0]).toMatchObject({ level: "400", role: "viewer" });
+  });
+
+  it("reports bad rows without stopping the batch", async () => {
+    const t = newTest();
+    const result = await t.mutation(api.ops.importUsers, {
+      secret,
+      rows: [
+        { ...ada, departmentId: "nope" },
+        { ...ada, matricNumber: "bad" },
+        { ...ada, matricNumber: "21/0457", email: undefined },
+      ],
+    });
+    expect(result.created).toBe(1);
+    expect(result.failed).toEqual([
+      { matricNumber: "21/0456", reason: "Unknown department." },
+      { matricNumber: "bad", reason: "Invalid matric number format." },
+    ]);
   });
 });

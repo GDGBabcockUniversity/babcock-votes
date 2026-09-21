@@ -13,6 +13,7 @@ export const Header = () => {
   const isAdmin =
     userProfile?.role === "super_admin" ||
     userProfile?.role === "dept_admin";
+  const isViewer = userProfile?.role === "viewer";
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card">
@@ -45,6 +46,14 @@ export const Header = () => {
                 className="font-sans text-sm text-muted-gray transition-colors hover:text-foreground"
               >
                 Admin
+              </Link>
+            )}
+            {isViewer && (
+              <Link
+                href={PAGES.admin.liveResults}
+                className="font-sans text-sm text-muted-gray transition-colors hover:text-foreground"
+              >
+                Live Results
               </Link>
             )}
             {authUser && (
@@ -97,6 +106,15 @@ export const Header = () => {
                 className="rounded-sm px-3 py-2 text-sm hover:bg-secondary"
               >
                 Admin
+              </Link>
+            )}
+            {isViewer && (
+              <Link
+                href={PAGES.admin.liveResults}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-sm px-3 py-2 text-sm hover:bg-secondary"
+              >
+                Live Results
               </Link>
             )}
             {authUser && (

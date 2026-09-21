@@ -67,3 +67,16 @@ export const requireAdmin = async (
   }
   return viewer;
 };
+
+/**
+ * Require someone allowed to see an election's live results: an admin who may
+ * manage it, or a `viewer` whose department is the election's department.
+ */
+export const requireResultsAccess = async (ctx: Ctx, departmentId: string) => {
+  const viewer = await getViewer(ctx);
+  if (isRegistered(viewer) && viewer.role === "viewer") {
+    if (viewer.departmentId !== departmentId) throw fail("Forbidden.");
+    return viewer;
+  }
+  return requireAdmin(ctx, { departmentId });
+};

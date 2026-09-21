@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { fail, getViewer, isRegistered, requireAdmin } from "./lib/access";
 import { role } from "./schema";
+import { matricToDocId } from "../lib/matric";
 
 /** The signed-in user plus their voter profile (null until registered). */
 export const me = query({
@@ -100,10 +101,11 @@ export const removeByEmail = internalMutation({
     ]);
     for (const doc of [...accounts, ...sessions]) await ctx.db.delete(doc._id);
 
-    if (user.matricKey) {
+    if (user.matricNumber) {
+      const matricKey = matricToDocId(user.matricNumber);
       const voter = await ctx.db
         .query("eligibleVoters")
-        .withIndex("by_matric_key", (q) => q.eq("matricKey", user.matricKey!))
+        .withIndex("by_matric_key", (q) => q.eq("matricKey", matricKey))
         .unique();
       if (voter?.claimedByUserId === user._id) {
         await ctx.db.patch(voter._id, { claimedByUserId: undefined, claimedEmail: undefined });

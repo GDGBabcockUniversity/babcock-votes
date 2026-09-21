@@ -7,7 +7,7 @@ export interface User {
   matricNumber: string;
   departmentId: string;
   level: string;
-  role: "voter" | "dept_admin" | "super_admin";
+  role: "voter" | "dept_admin" | "super_admin" | "viewer";
   createdAt: Millis;
 }
 

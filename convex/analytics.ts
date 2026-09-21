@@ -75,6 +75,7 @@ export const loadMeta = internalQuery({
         title: election.title,
         departmentId: election.departmentId,
         status: election.status,
+        minWinnerPercentage: election.minWinnerPercentage,
       },
       positions: positions.map((p) => ({ id: p._id as string, title: p.title })),
       candidates: candidates.map((c) => ({

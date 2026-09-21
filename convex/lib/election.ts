@@ -16,6 +16,7 @@ export const toElection = async (
     : undefined,
   startDate: e.startDate,
   endDate: e.endDate,
+  minWinnerPercentage: e.minWinnerPercentage,
   status: e.status,
   candidateCount: e.candidateCount,
   createdBy: e.createdBy,

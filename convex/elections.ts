@@ -73,6 +73,7 @@ export const create = mutation({
     logoStorageId: v.optional(v.id("_storage")),
     startDate: v.number(),
     endDate: v.number(),
+    minWinnerPercentage: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const departmentId = validate.departmentId(args.departmentId);
@@ -87,6 +88,9 @@ export const create = mutation({
       logoStorageId: args.logoStorageId,
       startDate: args.startDate,
       endDate: args.endDate,
+      ...(args.minWinnerPercentage !== undefined && {
+        minWinnerPercentage: validate.minWinnerPercentage(args.minWinnerPercentage),
+      }),
       candidateCount: 0,
       createdBy: admin._id,
       createdAt: Date.now(),
@@ -94,7 +98,10 @@ export const create = mutation({
   },
 });
 
-/** Partial update: anything left out is unchanged; `logoStorageId: null` removes the logo. */
+/**
+ * Partial update: anything left out is unchanged; `logoStorageId: null` removes
+ * the logo and `minWinnerPercentage: null` removes the minimum.
+ */
 export const update = mutation({
   args: {
     id: v.id("elections"),
@@ -105,6 +112,7 @@ export const update = mutation({
     logoStorageId: v.optional(v.union(v.id("_storage"), v.null())),
     startDate: v.optional(v.number()),
     endDate: v.optional(v.number()),
+    minWinnerPercentage: v.optional(v.union(v.number(), v.null())),
   },
   handler: async (ctx, args) => {
     const election = await ctx.db.get(args.id);
@@ -132,6 +140,12 @@ export const update = mutation({
       ...(args.status !== undefined && { status: args.status }),
       ...(args.startDate !== undefined && { startDate: args.startDate }),
       ...(args.endDate !== undefined && { endDate: args.endDate }),
+      ...(args.minWinnerPercentage !== undefined && {
+        minWinnerPercentage:
+          args.minWinnerPercentage === null
+            ? undefined
+            : validate.minWinnerPercentage(args.minWinnerPercentage),
+      }),
       ...(args.logoStorageId !== undefined && {
         logoStorageId: args.logoStorageId ?? undefined,
       }),
@@ -170,6 +184,7 @@ export const duplicate = mutation({
       logoStorageId: source.logoStorageId,
       startDate: source.startDate,
       endDate: source.endDate,
+      minWinnerPercentage: source.minWinnerPercentage,
       status: "active",
       candidateCount: candidates.length,
       createdBy: admin._id,

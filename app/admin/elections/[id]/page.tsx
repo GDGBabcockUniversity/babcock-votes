@@ -106,6 +106,7 @@ const ElectionDetailPage = () => {
   const [editDeptId, setEditDeptId] = useState("");
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
+  const [editMinWinnerPct, setEditMinWinnerPct] = useState("");
   const [editLogoFile, setEditLogoFile] = useState<File | null>(null);
   const [editLogoPreview, setEditLogoPreview] = useState("");
 
@@ -269,6 +270,7 @@ const ElectionDetailPage = () => {
     setEditDeptId(election.departmentId);
     setEditStartDate(toDatetimeLocal(election.startDate));
     setEditEndDate(toDatetimeLocal(election.endDate));
+    setEditMinWinnerPct(election.minWinnerPercentage?.toString() ?? "");
     setEditLogoFile(null);
     setEditLogoPreview(election.logoUrl || "");
     setEditDialogOpen(true);
@@ -296,6 +298,7 @@ const ElectionDetailPage = () => {
         logoStorageId,
         startDate: new Date(editStartDate).getTime(),
         endDate: new Date(editEndDate).getTime(),
+        minWinnerPercentage: editMinWinnerPct.trim() ? Number(editMinWinnerPct) : null,
       });
       setEditDialogOpen(false);
     });
@@ -858,6 +861,23 @@ const ElectionDetailPage = () => {
                   onChange={(e) => setEditEndDate(e.target.value)}
                 />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Minimum winning percentage (optional)</Label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                min={0.01}
+                max={100}
+                step="any"
+                placeholder="e.g. 50"
+                value={editMinWinnerPct}
+                onChange={(e) => setEditMinWinnerPct(e.target.value)}
+              />
+              <p className="font-sans text-xs text-muted-gray">
+                Share of a position&apos;s ballots, abstentions included, a candidate needs to win.
+                Leave empty for the most votes to win.
+              </p>
             </div>
           </div>
           <div className="flex justify-end gap-2">

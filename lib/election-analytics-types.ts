@@ -13,6 +13,8 @@ export interface ElectionAnalyticsPosition {
   abstentions: number;
   abstainRate: number;
   winner: ElectionAnalyticsCandidate | null;
+  /** Someone leads but is under the election's minimum winning percentage. */
+  belowMinimum?: boolean;
   margin: {
     voteDifference: number;
     percentagePointDifference: number;
@@ -28,6 +30,7 @@ export interface ElectionAnalyticsSummary {
     title: string;
     departmentId: string;
     status: string;
+    minWinnerPercentage?: number;
   };
   turnout: {
     eligibleVoters: number;

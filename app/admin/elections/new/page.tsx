@@ -44,6 +44,7 @@ const NewElectionPage = () => {
   const [status, setStatus] = useState<string>("upcoming");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [minWinnerPercentage, setMinWinnerPercentage] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState("");
 
@@ -70,6 +71,9 @@ const NewElectionPage = () => {
         logoStorageId,
         startDate: new Date(startDate).getTime(),
         endDate: new Date(endDate).getTime(),
+        minWinnerPercentage: minWinnerPercentage.trim()
+          ? Number(minWinnerPercentage)
+          : undefined,
       });
       router.push(PAGES.admin.electionDetail(id));
     } catch (err) {
@@ -227,6 +231,28 @@ const NewElectionPage = () => {
                   required
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="minWinnerPercentage" className="lg:text-base font-medium">
+                Minimum winning percentage (optional)
+              </Label>
+              <Input
+                id="minWinnerPercentage"
+                type="number"
+                inputMode="decimal"
+                min={0.01}
+                max={100}
+                step="any"
+                placeholder="e.g. 50"
+                value={minWinnerPercentage}
+                onChange={(e) => setMinWinnerPercentage(e.target.value)}
+              />
+              <p className="font-sans text-xs text-muted-gray">
+                A candidate only wins a position with at least this share of that
+                position&apos;s ballots, abstentions included. Leave empty for the
+                candidate with the most votes to win.
+              </p>
             </div>
 
             <div className="flex justify-end gap-3 pt-2">

@@ -1,11 +1,10 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { fail, getViewer, requireAdmin, requireRegistered } from "./lib/access";
+import { fail, getViewer, requireRegistered, requireResultsAccess } from "./lib/access";
 import { castBallot } from "./lib/ballot";
 import { tallyElection } from "./lib/tally";
 import { loadCandidates, loadPositions } from "./lib/election";
 
-/** Whether the signed-in voter has a ballot in this election (voters only ever see their own). */
 export const hasVoted = query({
   args: { electionId: v.string() },
   handler: async (ctx, args) => {
@@ -36,7 +35,7 @@ export const cast = mutation({
 });
 
 /**
- * Live tallies for the admin results page, counted from the `votes` table on
+ * Live tallies for the results page (admins, and viewers of the election's department), counted from the `votes` table on
  * every read, so what admins see always matches the recorded ballots.
  */
 export const tallies = query({
@@ -45,7 +44,7 @@ export const tallies = query({
     const electionId = ctx.db.normalizeId("elections", args.electionId);
     const election = electionId ? await ctx.db.get(electionId) : null;
     if (!election) throw fail("Election not found.");
-    await requireAdmin(ctx, { departmentId: election.departmentId });
+    await requireResultsAccess(ctx, election.departmentId);
 
     const [positions, candidates] = await Promise.all([
       loadPositions(ctx, election._id),

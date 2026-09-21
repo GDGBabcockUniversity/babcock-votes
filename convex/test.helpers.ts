@@ -10,7 +10,7 @@ const modules = import.meta.glob("./**/!(*.*.*)*.*s");
 /** A fresh in-memory deployment loaded with the app's schema and functions. */
 export const newTest = () => convexTest(schema, modules);
 
-type Role = "voter" | "dept_admin" | "super_admin";
+type Role = "voter" | "dept_admin" | "super_admin" | "viewer";
 
 /** Seed a registered user and return their ID. */
 export const addUser = (

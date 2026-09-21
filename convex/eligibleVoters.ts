@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { fail, requireAdmin } from "./lib/access";
+import { fail, requireAdmin, requireResultsAccess } from "./lib/access";
 import * as validate from "./lib/validate";
 import { MATRIC_REGEX } from "../lib/constants";
 import { matricFromDocId, matricToDocId } from "../lib/matric";
@@ -29,10 +29,11 @@ export const listByDepartment = query({
   },
 });
 
+/** For turnout on the results page, so department viewers may read it too. */
 export const countByDepartment = query({
   args: { departmentId: v.string() },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireResultsAccess(ctx, args.departmentId);
     const voters = await ctx.db
       .query("eligibleVoters")
       .withIndex("by_department", (q) => q.eq("departmentId", args.departmentId))

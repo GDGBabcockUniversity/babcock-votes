@@ -6,6 +6,8 @@ export const role = v.union(
   v.literal("voter"),
   v.literal("dept_admin"),
   v.literal("super_admin"),
+  /** Read-only: live results for their own department's elections. */
+  v.literal("viewer"),
 );
 
 export const electionStatus = v.union(

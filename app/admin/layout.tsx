@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import {
@@ -12,23 +12,30 @@ import {
 import { PAGES } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+/** Viewers may only open the live-results list and an election's results page. */
+const isViewerPath = (pathname: string) =>
+  pathname === PAGES.admin.liveResults ||
+  /^\/admin\/elections\/[^/]+\/results$/.test(pathname);
+
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   const { authUser, userProfile, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const role = userProfile?.role;
+  const isAdmin = role === "super_admin" || role === "dept_admin";
+  const isViewer = role === "viewer";
+  const allowed = isAdmin || (isViewer && isViewerPath(pathname));
 
   useEffect(() => {
     if (!loading) {
       if (!authUser) {
         router.replace(PAGES.auth.login);
-      } else if (
-        userProfile &&
-        userProfile.role !== "super_admin" &&
-        userProfile.role !== "dept_admin"
-      ) {
-        router.replace(PAGES.main.home);
+      } else if (userProfile && !allowed) {
+        router.replace(isViewer ? PAGES.admin.liveResults : PAGES.main.home);
       }
     }
-  }, [authUser, userProfile, loading, router]);
+  }, [authUser, userProfile, loading, router, allowed, isViewer]);
 
   if (loading) {
     return (
@@ -38,11 +45,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (
-    !authUser ||
-    !userProfile ||
-    (userProfile.role !== "super_admin" && userProfile.role !== "dept_admin")
-  ) {
+  if (!authUser || !userProfile || !allowed) {
     return null;
   }
 
@@ -53,7 +56,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
         <header className="flex h-14 items-center gap-2 border-b border-border px-4 md:hidden">
           <SidebarTrigger />
           <span className="font-sans text-sm font-bold uppercase tracking-widest">
-            Admin
+            {isViewer ? "Live Results" : "Admin"}
           </span>
           <ThemeToggle className="ml-auto" />
         </header>

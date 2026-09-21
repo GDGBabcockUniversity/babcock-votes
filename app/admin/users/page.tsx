@@ -27,17 +27,19 @@ import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import type { User } from "@/lib/types";
 import { getDepartmentName } from "@/lib/utils";
 
-const ROLES = ["voter", "dept_admin", "super_admin"] as const;
+const ROLES = ["voter", "viewer", "dept_admin", "super_admin"] as const;
 const PAGE_SIZE = 20;
 
 const roleBadgeVariant: Record<string, "default" | "secondary" | "outline"> = {
   super_admin: "default",
   dept_admin: "secondary",
   voter: "outline",
+  viewer: "outline",
 };
 
 const roleLabel: Record<string, string> = {
   voter: "Voter",
+  viewer: "Results Viewer",
   dept_admin: "Department Admin",
   super_admin: "Super Admin",
 };

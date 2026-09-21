@@ -259,7 +259,7 @@ const migrateUsers = async () => {
       matricNumber: u.matricNumber,
       departmentId: u.departmentId,
       level: u.level,
-      role: ["voter", "dept_admin", "super_admin"].includes(u.role) ? u.role : "voter",
+      role: ["voter", "dept_admin", "super_admin", "viewer"].includes(u.role) ? u.role : "voter",
       createdAt: toMs(u.createdAt) ?? Date.now(),
     });
   }

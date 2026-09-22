@@ -2,11 +2,13 @@ import { ConvexError } from "convex/values";
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { PART_TIME_EMAIL_DOMAIN, SCHOOL_DOMAIN } from "../../lib/constants";
+import { requestVoterOtp, requireOtpUser, VOTER_OTP_PROVIDER } from "./voterOtp";
 
 export interface CreateOrUpdateUserArgs {
   /** Set when this sign-in belongs to an account that already exists. */
   existingUserId: Id<"users"> | null;
   type: "oauth" | "credentials" | "email" | "phone" | "verification";
+  provider?: { id: string };
   profile: Record<string, unknown> & {
     email?: string;
     emailVerified?: boolean;
@@ -34,11 +36,21 @@ const INVALID_CREDENTIALS =
  * - Password: accounts are provisioned by `createAccount` from our own server
  *   code (`convex/ops.ts`), which passes `shouldLinkViaEmail`. The public
  *   password sign-up form doesn't, so nobody can self-register with a password.
+ * - Voter OTP: a code emailed to a registered student (e.g. from an imported
+ *   class list); see lib/voterOtp.ts. `profile.email` is the matric key.
  */
 export const createOrUpdateUser = async (
   ctx: MutationCtx,
   args: CreateOrUpdateUserArgs,
 ): Promise<Id<"users">> => {
+  if (args.provider?.id === VOTER_OTP_PROVIDER) {
+    const matricKey = typeof args.profile.email === "string" ? args.profile.email : undefined;
+    if (args.type === "email") return requestVoterOtp(ctx, matricKey);
+    // The code was accepted: sign into whoever holds the matric now.
+    if (args.type === "verification") return (await requireOtpUser(ctx, matricKey ?? ""))._id;
+    throw new ConvexError(INVALID_CREDENTIALS);
+  }
+
   if (args.existingUserId) return args.existingUserId;
 
   const profile = args.profile as {

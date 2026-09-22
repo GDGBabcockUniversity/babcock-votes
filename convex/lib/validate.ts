@@ -30,3 +30,10 @@ export const dateRange = (startDate: number, endDate: number) => {
     throw fail("Start and end dates must be valid.");
   }
 };
+
+export const minWinnerPercentage = (value: number) => {
+  if (!Number.isFinite(value) || value <= 0 || value > 100) {
+    throw fail("Minimum winning percentage must be more than 0 and at most 100.");
+  }
+  return Math.round(value * 100) / 100;
+};

@@ -5,6 +5,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { PAGES, SCHOOL_DOMAIN } from "@/lib/constants";
+import { matricToDocId } from "@/lib/matric";
 import type { User } from "@/lib/types";
 
 export interface AuthUser {
@@ -21,11 +22,10 @@ interface AuthState {
   /** Redirects to Google; the page reloads on return, so this never resolves in practice. */
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<void>;
-  /** Matric number or email, plus full name. */
-  signInWithIdentity: (
-    identifier: { matric: string } | { email: string },
-    fullName: string,
-  ) => Promise<void>;
+  /** Email a 6-digit sign-in code to the registered student with this matric. */
+  sendVoterCode: (matric: string) => Promise<void>;
+  /** Sign in with the emailed code. */
+  verifyVoterCode: (matric: string, code: string) => Promise<void>;
   /** Kept for callers; the profile query is live so it updates by itself. */
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -38,7 +38,8 @@ const AuthContext = createContext<AuthState>({
   authError: "",
   signInWithGoogle: async () => {},
   signInWithEmail: async () => {},
-  signInWithIdentity: async () => {},
+  sendVoterCode: async () => {},
+  verifyVoterCode: async () => {},
   refreshProfile: async () => {},
   signOut: async () => {},
 });
@@ -82,13 +83,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!result.signingIn) throw new Error("Invalid credentials");
   };
 
-  const signInWithIdentity = async (
-    identifier: { matric: string } | { email: string },
-    fullName: string,
-  ) => {
+  // The identifier is the matric key; the server looks up where to send the code.
+  const sendVoterCode = async (matric: string) => {
     setAuthError("");
-    const result = await signIn("identity", { ...identifier, fullName });
-    if (!result.signingIn) throw new Error("Sign-in failed");
+    await signIn("voter-otp", { email: matricToDocId(matric.trim()) });
+  };
+
+  const verifyVoterCode = async (matric: string, code: string) => {
+    setAuthError("");
+    const result = await signIn("voter-otp", { email: matricToDocId(matric.trim()), code });
+    if (!result.signingIn) throw new Error("Invalid code");
   };
 
   const signOut = async () => {
@@ -105,7 +109,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         authError,
         signInWithGoogle,
         signInWithEmail,
-        signInWithIdentity,
+        sendVoterCode,
+        verifyVoterCode,
         refreshProfile: async () => {},
         signOut,
       }}

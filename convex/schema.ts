@@ -48,6 +48,7 @@ export default defineSchema({
     .index("email", ["email"])
     .index("phone", ["phone"])
     .index("by_department", ["departmentId"])
+    .index("by_matric_number", ["matricNumber"])
     .index("by_legacy_id", ["legacyId"]),
 
   eligibleVoters: defineTable({
@@ -78,6 +79,8 @@ export default defineSchema({
     duplicatedFromElectionId: v.optional(v.id("elections")),
     duplicatedAt: v.optional(v.number()),
     duplicatedBy: v.optional(v.id("users")),
+    /** Share of a position's ballots (abstentions included) a candidate needs to win. Unset = plurality. */
+    minWinnerPercentage: v.optional(v.number()),
     legacyId: v.optional(v.string()),
   })
     .index("by_start_date", ["startDate"])

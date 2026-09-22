@@ -49,3 +49,7 @@ audit-*.csv
 service-account*.json
 *-key.json
 .migration-progress.json
+
+# Class lists and other spreadsheets hold personal data
+*.xlsx
+data/

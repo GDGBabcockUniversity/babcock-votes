@@ -206,6 +206,19 @@ const ElectionAnalyticsPage = () => {
                   </p>
                 </div>
               ))}
+              {summary.results.positions
+                .filter((position) => position.belowMinimum)
+                .map((position) => (
+                  <div key={position.positionId} className="rounded-sm border border-dashed border-border p-3 font-sans">
+                    <p className="text-xs uppercase tracking-wider text-muted-gray">
+                      {position.title}
+                    </p>
+                    <p className="mt-1 text-base font-semibold text-foreground">No winner</p>
+                    <p className="mt-1 text-sm text-muted-gray">
+                      Nobody reached the minimum of {summary.election.minWinnerPercentage}%.
+                    </p>
+                  </div>
+                ))}
             </CardContent>
           </Card>
 

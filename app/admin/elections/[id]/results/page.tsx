@@ -4,8 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useRef } from "react";
-import { ResultsPoster } from "@/components/results-poster";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,8 @@ import {
 import type { Election, Position, Candidate } from "@/lib/types";
 import { PAGES } from "@/lib/constants";
 import { useAuth } from "@/context/auth-context";
+import { exportResultsPdf } from "@/lib/results-pdf";
+import { formatPercentage, resolveWinners } from "@/lib/winners";
 
 const ResultsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -28,7 +29,8 @@ const ResultsPage = () => {
   // Viewers only see results; analytics and election management stay admin-only.
   const isViewer = userProfile?.role === "viewer";
 
-  const posterRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const detail = useQuery(api.elections.detail, { id });
   const election: Election | null = detail?.election ?? null;
@@ -89,78 +91,29 @@ const ResultsPage = () => {
   });
 
   const handleExportPdf = async () => {
-    if (!posterRef.current) return;
-
-    const images = posterRef.current.querySelectorAll("img");
-    const originalSrcs: string[] = [];
-
-    // Compress each image to a small JPEG before printing
-    await Promise.all(
-      Array.from(images).map(async (img, i) => {
-        originalSrcs[i] = img.src;
-
-        try {
-          // Load the image into a temporary Image to get pixel data
-          const tempImg = new window.Image();
-          tempImg.crossOrigin = "anonymous";
-          tempImg.src = img.src;
-
-          await new Promise<void>((resolve) => {
-            if (tempImg.complete && tempImg.naturalHeight > 0) {
-              resolve();
-            } else {
-              tempImg.onload = () => resolve();
-              tempImg.onerror = () => resolve();
-            }
-          });
-
-          if (tempImg.naturalHeight === 0) return; // Skip broken images
-
-          // Downscale to 128x128 and compress as JPEG
-          const canvas = document.createElement("canvas");
-          const size = 128;
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext("2d");
-          if (!ctx) return;
-
-          // Draw cropped & centered (cover behavior)
-          const scale = Math.max(
-            size / tempImg.naturalWidth,
-            size / tempImg.naturalHeight,
-          );
-          const sw = size / scale;
-          const sh = size / scale;
-          const sx = (tempImg.naturalWidth - sw) / 2;
-          const sy = (tempImg.naturalHeight - sh) / 2;
-          ctx.drawImage(tempImg, sx, sy, sw, sh, 0, 0, size, size);
-
-          img.src = canvas.toDataURL("image/jpeg", 0.7);
-        } catch {
-          // If compression fails, keep the original
-        }
-      }),
-    );
-
-    // Set a structured filename for the PDF
-    const originalTitle = document.title;
-    const dateStr = new Date().toISOString().slice(0, 10);
-    const electionName =
-      election?.title?.replace(/[^\w\s-]/g, "").trim() || "Election";
-    document.title = `BabcockVotes - ${electionName} - Results - ${dateStr}`;
-
-    window.print();
-
-    // Restore original page title and image sources after print dialog closes
-    document.title = originalTitle;
-    Array.from(images).forEach((img, i) => {
-      if (originalSrcs[i]) img.src = originalSrcs[i];
-    });
+    setExporting(true);
+    setExportError(null);
+    try {
+      await exportResultsPdf({
+        election,
+        positions,
+        candidates,
+        positionVoterCounts,
+        positionAbstainCounts,
+        voterCount,
+        eligibleVoterCount,
+      });
+    } catch (err) {
+      console.error("Failed to export results PDF", err);
+      setExportError("Couldn't generate the PDF. Please try again.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
     <>
-      <div className="print:hidden">
+      <div>
         <button
           onClick={() =>
             router.push(isViewer ? PAGES.admin.liveResults : PAGES.admin.electionDetail(id))
@@ -178,6 +131,12 @@ const ResultsPage = () => {
             <p className="mt-1 font-sans text-sm text-muted-gray">
               {election.title}
             </p>
+            {election.minWinnerPercentage != null && (
+              <p className="mt-1 font-sans text-xs text-muted-gray">
+                Minimum winning percentage:{" "}
+                {formatPercentage(election.minWinnerPercentage)} of a position&apos;s ballots
+              </p>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -192,15 +151,19 @@ const ResultsPage = () => {
             {election.status === "closed" && (
               <Button
                 onClick={handleExportPdf}
-                disabled={candidates.length === 0}
+                disabled={candidates.length === 0 || exporting}
                 className="font-sans rounded-sm"
               >
                 <FileDown className="mr-2 size-4" />
-                Export as PDF
+                {exporting ? "Generating…" : "Export as PDF"}
               </Button>
             )}
           </div>
         </div>
+
+        {exportError && (
+          <p className="mt-3 font-sans text-sm text-destructive">{exportError}</p>
+        )}
 
         {!isViewer && !analyticsReady && (
           <Card className="mt-4 rounded-sm border-dashed bg-gold-tint/20">
@@ -262,12 +225,24 @@ const ResultsPage = () => {
         {/* Per-position results */}
         <h2 className="font-serif text-xl font-bold">Vote Breakdown</h2>
         <div className="mt-4 space-y-6">
-          {grouped.map(({ position, candidates: cands }) => (
+          {grouped.map(({ position, candidates: cands }) => {
+            const outcome = resolveWinners(
+              cands,
+              positionVoterCounts[position.id] ?? 0,
+              election.minWinnerPercentage,
+            );
+            return (
             <Card key={position.id}>
               <CardHeader>
                 <CardTitle className="font-serif text-lg font-semibold md:text-2xl">
                   {position.title}
                 </CardTitle>
+                {outcome.belowMinimum && (
+                  <p className="font-sans text-sm text-red-600 dark:text-red-400">
+                    No winner: no candidate reached the minimum of{" "}
+                    {formatPercentage(election.minWinnerPercentage!)}.
+                  </p>
+                )}
               </CardHeader>
               <CardContent className="space-y-3">
                 {cands.map((c, idx) => {
@@ -280,12 +255,20 @@ const ResultsPage = () => {
                     <div key={c.id}>
                       <div className="flex items-center justify-between font-sans text-sm">
                         <span className="font-medium">
-                          {idx === 0 && c.voteCount > 0 && (
+                          {outcome.winners.includes(c) && (
                             <Badge
                               variant="default"
                               className="mr-2 text-[10px]"
                             >
-                              Leading
+                              {election.status === "closed" ? "Winner" : "Leading"}
+                            </Badge>
+                          )}
+                          {outcome.belowMinimum && idx === 0 && (
+                            <Badge
+                              variant="outline"
+                              className="mr-2 text-[10px]"
+                            >
+                              Below minimum
                             </Badge>
                           )}
                           {c.fullName}
@@ -337,23 +320,11 @@ const ResultsPage = () => {
                 )}
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Poster for PDF Export — visually hidden but in DOM so images preload */}
-      <div className="overflow-hidden h-0 opacity-0 pointer-events-none print:h-auto print:opacity-100 print:overflow-visible print:pointer-events-auto print:absolute print:inset-0 print:bg-card print:z-50 print:m-0 print:p-0">
-        <ResultsPoster
-          ref={posterRef}
-          election={election}
-          positions={positions}
-          candidates={candidates}
-          voterCount={voterCount}
-          eligibleVoterCount={eligibleVoterCount}
-          positionVoterCounts={positionVoterCounts}
-          positionAbstainCounts={positionAbstainCounts}
-        />
-      </div>
     </>
   );
 };

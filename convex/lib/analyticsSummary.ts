@@ -1,3 +1,4 @@
+import { meetsMinimum } from "../../lib/winners";
 import type {
   ElectionAnalyticsCandidate,
   ElectionAnalyticsPosition,
@@ -5,7 +6,13 @@ import type {
 } from "../../lib/election-analytics-types";
 
 export interface AnalyticsInput {
-  election: { id: string; title: string; departmentId: string; status: string };
+  election: {
+    id: string;
+    title: string;
+    departmentId: string;
+    status: string;
+    minWinnerPercentage?: number;
+  };
   positions: { id: string; title: string }[];
   candidates: { id: string; fullName: string; positionId: string }[];
   /** Eligible voters in the election's department, counted per level. */
@@ -127,8 +134,12 @@ export const buildSummary = (input: AnalyticsInput): ElectionAnalyticsSummary =>
     ];
 
     const withVotes = candidateRows.filter((c) => c.votes > 0);
-    const winner = withVotes[0] ?? null;
+    const leader = withVotes[0] ?? null;
     const runnerUp = withVotes[1] ?? null;
+    const qualifies =
+      leader !== null &&
+      meetsMinimum(leader.votes, totalVoteRecords, election.minWinnerPercentage);
+    const winner = qualifies ? leader : null;
 
     return {
       positionId: position.id,
@@ -137,11 +148,12 @@ export const buildSummary = (input: AnalyticsInput): ElectionAnalyticsSummary =>
       abstentions,
       abstainRate: pct(abstentions, totalVoteRecords),
       winner,
-      margin: winner
+      belowMinimum: leader !== null && !qualifies,
+      margin: leader
         ? {
-            voteDifference: winner.votes - (runnerUp?.votes ?? 0),
+            voteDifference: leader.votes - (runnerUp?.votes ?? 0),
             percentagePointDifference: Number(
-              (winner.percentage - (runnerUp?.percentage ?? 0)).toFixed(2),
+              (leader.percentage - (runnerUp?.percentage ?? 0)).toFixed(2),
             ),
           }
         : null,

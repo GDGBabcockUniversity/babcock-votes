@@ -3,7 +3,8 @@
  *
  * Each user is created already registered and claims the eligible-voter row
  * for their matric (the row is created if it doesn't exist), so they can sign
- * in straight away with matric number (or email) + full name.
+ * in straight away with email + full name (or Google). A user without an
+ * "email" can't sign in.
  *
  * JSON format: an array of objects
  *   [
@@ -12,7 +13,7 @@
  *       "matricNumber": "21/0456",
  *       "departmentId": "computer_science",
  *       "level": "300",
- *       "email": "ada@student.babcock.edu.ng",   // optional
+ *       "email": "ada@student.babcock.edu.ng",   // needed to sign in
  *       "role": "voter"                          // optional: voter | viewer | dept_admin | super_admin
  *     }
  *   ]

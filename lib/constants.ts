@@ -13,6 +13,7 @@ export const DEPARTMENTS = [
   { id: "law", name: "Law" },
   { id: "mass_comm", name: "Mass Communication" },
   { id: "mathematics", name: "Mathematics" },
+  { id: "medicine", name: "Medicine" },
   { id: "microbiology", name: "Microbiology" },
   { id: "nursing", name: "Nursing" },
   { id: "political_science", name: "Political Science" },

@@ -1199,3 +1199,201 @@ export const countVotesPage = query({
     };
   },
 });
+
+// --- Copy between deployments ------------------------------------------------------
+
+/**
+ * For `scripts/migrate-dev-to-prod.mjs`: a page of registered users, with the
+ * profile fields needed to recreate them on another deployment.
+ */
+export const exportUsersPage = query({
+  args: { secret: v.string(), cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    const page = await ctx.db.query("users").paginate({ numItems: 500, cursor: args.cursor });
+    const rows = page.page.filter(isRegistered).map((user) => ({
+      email: user.email,
+      name: user.name,
+      fullName: user.fullName,
+      matricNumber: user.matricNumber,
+      departmentId: user.departmentId,
+      level: user.level,
+      role: user.role,
+      phone: user.phone,
+      emailVerificationTime: user.emailVerificationTime,
+      registeredAt: user.registeredAt,
+    }));
+    return {
+      rows,
+      skipped: page.page.length - rows.length,
+      continueCursor: page.continueCursor,
+      isDone: page.isDone,
+    };
+  },
+});
+
+/**
+ * For `scripts/migrate-dev-to-prod.mjs`: a page of eligible voters. A claim is
+ * exported as the claiming user's matric number, since user IDs differ
+ * between deployments.
+ */
+export const exportEligibleVotersPage = query({
+  args: { secret: v.string(), cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    const page = await ctx.db
+      .query("eligibleVoters")
+      .paginate({ numItems: 500, cursor: args.cursor });
+    const rows = await Promise.all(
+      page.page.map(async (voter) => {
+        const claimant = voter.claimedByUserId ? await ctx.db.get(voter.claimedByUserId) : null;
+        return {
+          matricKey: voter.matricKey,
+          fullName: voter.fullName,
+          departmentId: voter.departmentId,
+          level: voter.level,
+          claimedMatricNumber: claimant?.matricNumber,
+          claimedEmail: voter.claimedEmail,
+        };
+      }),
+    );
+    return { rows, continueCursor: page.continueCursor, isDone: page.isDone };
+  },
+});
+
+/**
+ * For `scripts/migrate-dev-to-prod.mjs`: create or update registered users,
+ * matched by matric number, then by email. Sign-in accounts aren't copied;
+ * voter codes and Google sign-ins attach to these users on first use.
+ */
+export const upsertUsers = mutation({
+  args: {
+    secret: v.string(),
+    rows: v.array(
+      v.object({
+        email: v.optional(v.string()),
+        name: v.optional(v.string()),
+        fullName: v.string(),
+        matricNumber: v.string(),
+        departmentId: v.string(),
+        level: v.string(),
+        role,
+        phone: v.optional(v.string()),
+        emailVerificationTime: v.optional(v.number()),
+        registeredAt: v.optional(v.number()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    let created = 0;
+    let updated = 0;
+    const failed: { matricNumber: string; reason: string }[] = [];
+
+    for (const row of args.rows) {
+      try {
+        const email = row.email?.trim().toLowerCase() || undefined;
+        const [byMatric, ...others] = await findUsersByMatric(ctx, row.matricNumber);
+        if (others.length) throw new Error("More than one user has this matric number.");
+        const byEmail = email
+          ? await ctx.db
+              .query("users")
+              .withIndex("email", (q) => q.eq("email", email))
+              .first()
+          : null;
+        const existing = byMatric ?? byEmail;
+        if (byEmail && byEmail._id !== existing?._id) {
+          throw new Error(`Email already belongs to ${byEmail.matricNumber ?? "another user"}.`);
+        }
+        if (
+          existing?.matricNumber &&
+          matricToDocId(existing.matricNumber) !== matricToDocId(row.matricNumber)
+        ) {
+          throw new Error(`Email already belongs to ${existing.matricNumber}.`);
+        }
+
+        const fields = {
+          fullName: row.fullName,
+          matricNumber: row.matricNumber,
+          departmentId: validate.departmentId(row.departmentId),
+          level: row.level,
+          role: row.role,
+          registeredAt: row.registeredAt ?? existing?.registeredAt ?? Date.now(),
+          // Only fields the source has, so an update never clears one.
+          ...(email && { email }),
+          ...(row.name && { name: row.name }),
+          ...(row.phone && { phone: row.phone }),
+          ...(row.emailVerificationTime && { emailVerificationTime: row.emailVerificationTime }),
+        };
+        if (existing) {
+          await ctx.db.patch(existing._id, fields);
+          updated++;
+        } else {
+          await ctx.db.insert("users", fields);
+          created++;
+        }
+      } catch (err) {
+        const reason =
+          err instanceof ConvexError ? String(err.data) : err instanceof Error ? err.message : String(err);
+        failed.push({ matricNumber: row.matricNumber, reason });
+      }
+    }
+    return { created, updated, failed };
+  },
+});
+
+/**
+ * For `scripts/migrate-dev-to-prod.mjs`: create or update eligible voters by
+ * matric key, claimed by the user holding `claimedMatricNumber` here. A claim
+ * that can't be matched to a user leaves the row's current claim as it is.
+ */
+export const upsertEligibleVoters = mutation({
+  args: {
+    secret: v.string(),
+    rows: v.array(
+      v.object({
+        matricKey: v.string(),
+        fullName: v.string(),
+        departmentId: v.string(),
+        level: v.string(),
+        claimedMatricNumber: v.optional(v.string()),
+        claimedEmail: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    let created = 0;
+    let updated = 0;
+    const unresolvedClaims: string[] = [];
+
+    for (const row of args.rows) {
+      let claimant: Id<"users"> | undefined;
+      if (row.claimedMatricNumber) {
+        const [user, ...others] = await findUsersByMatric(ctx, row.claimedMatricNumber);
+        if (user && !others.length) claimant = user._id;
+      }
+      if (row.claimedMatricNumber && !claimant) unresolvedClaims.push(row.matricKey);
+
+      const fields = {
+        matricKey: row.matricKey,
+        fullName: row.fullName,
+        departmentId: row.departmentId,
+        level: row.level,
+        ...(claimant && { claimedByUserId: claimant, claimedEmail: row.claimedEmail }),
+      };
+      const existing = await ctx.db
+        .query("eligibleVoters")
+        .withIndex("by_matric_key", (q) => q.eq("matricKey", row.matricKey))
+        .unique();
+      if (existing) {
+        await ctx.db.patch(existing._id, fields);
+        updated++;
+      } else {
+        await ctx.db.insert("eligibleVoters", fields);
+        created++;
+      }
+    }
+    return { created, updated, unresolvedClaims };
+  },
+});

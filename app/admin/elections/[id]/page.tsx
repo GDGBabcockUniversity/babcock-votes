@@ -92,6 +92,8 @@ const ElectionDetailPage = () => {
   const [candPositionId, setCandPositionId] = useState("");
   const [candPhoto, setCandPhoto] = useState<File | null>(null);
   const [candPhotoPreview, setCandPhotoPreview] = useState("");
+  const [photoDragging, setPhotoDragging] = useState(false);
+  const [photoError, setPhotoError] = useState("");
   const [editingCandId, setEditingCandId] = useState<string | null>(null);
   const [candDialogOpen, setCandDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -182,6 +184,7 @@ const ElectionDetailPage = () => {
     setCandLevel("");
     setCandPositionId("");
     setCandPhoto(null);
+    setPhotoError("");
     setCandPhotoPreview("");
     setEditingCandId(null);
   };
@@ -194,6 +197,7 @@ const ElectionDetailPage = () => {
     setCandPositionId(cand.positionId);
     setCandPhotoPreview(cand.photoUrl || "");
     setCandPhoto(null);
+    setPhotoError("");
     setEditingCandId(cand.id);
     setCandDialogOpen(true);
   };
@@ -249,11 +253,27 @@ const ElectionDetailPage = () => {
     });
   };
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const setPhotoFile = (file: File | undefined) => {
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please choose an image file.");
+      return;
+    }
+    setPhotoError("");
     setCandPhoto(file);
     setCandPhotoPreview(URL.createObjectURL(file));
+  };
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhotoFile(e.target.files?.[0]);
+    // Allow picking the same file again after removing or replacing it.
+    e.target.value = "";
+  };
+
+  const handlePhotoDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    setPhotoDragging(false);
+    setPhotoFile(e.dataTransfer.files?.[0]);
   };
 
   // --- Edit Election Details ---
@@ -670,9 +690,32 @@ const ElectionDetailPage = () => {
                     />
                   </div>
                 )}
-                <label className="flex cursor-pointer items-center gap-2 rounded-sm border border-dashed border-border px-4 py-2 text-sm text-muted-gray hover:border-gold hover:text-foreground">
+                <label
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "copy";
+                    setPhotoDragging(true);
+                  }}
+                  onDragLeave={(e) => {
+                    // Moving over the icon or text inside also fires dragleave; ignore that.
+                    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+                      setPhotoDragging(false);
+                    }
+                  }}
+                  onDrop={handlePhotoDrop}
+                  className={cn(
+                    "flex flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded-sm border border-dashed px-4 py-5 text-center text-sm text-muted-gray transition-colors hover:border-gold hover:text-foreground",
+                    photoDragging ? "border-gold bg-gold-tint/40 text-foreground" : "border-border",
+                  )}
+                >
                   <Upload className="size-4" />
-                  Upload photo
+                  <span>
+                    {photoDragging
+                      ? "Drop the photo here"
+                      : candPhotoPreview
+                        ? "Drag a new photo here or click to replace"
+                        : "Drag a photo here or click to upload"}
+                  </span>
                   <input
                     type="file"
                     accept="image/*"
@@ -681,6 +724,9 @@ const ElectionDetailPage = () => {
                   />
                 </label>
               </div>
+              {photoError && (
+                <p className="font-sans text-xs text-red-600 dark:text-red-400">{photoError}</p>
+              )}
             </div>
 
             <div className="space-y-2">

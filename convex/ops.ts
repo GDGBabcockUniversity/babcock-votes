@@ -836,6 +836,81 @@ export const importClassList = mutation({
   },
 });
 
+/**
+ * For `scripts/sync-eligible-voters.mjs`: give every registered user in a
+ * department an eligible-voter row claimed by them, so turnout and the
+ * eligible-voter counts include them. One page of users per call; run until
+ * `isDone`.
+ *
+ * Idempotent: an unclaimed row is linked instead of duplicated, and a row
+ * claimed by another user is left alone and reported.
+ */
+export const syncEligibleVotersFromUsers = mutation({
+  args: {
+    secret: v.string(),
+    departmentId: v.string(),
+    cursor: v.union(v.string(), v.null()),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    const departmentId = validate.departmentId(args.departmentId);
+    const page = await ctx.db
+      .query("users")
+      .withIndex("by_department", (q) => q.eq("departmentId", departmentId))
+      .paginate({ numItems: 200, cursor: args.cursor });
+
+    let created = 0;
+    let linked = 0;
+    let alreadyEligible = 0;
+    let notRegistered = 0;
+    const conflicts: { matricNumber: string; reason: string }[] = [];
+
+    for (const user of page.page) {
+      if (!isRegistered(user)) {
+        notRegistered++;
+        continue;
+      }
+      const matricKey = matricToDocId(user.matricNumber);
+      const voter = await ctx.db
+        .query("eligibleVoters")
+        .withIndex("by_matric_key", (q) => q.eq("matricKey", matricKey))
+        .unique();
+
+      if (!voter) {
+        await ctx.db.insert("eligibleVoters", {
+          matricKey,
+          fullName: user.fullName,
+          departmentId: user.departmentId,
+          level: user.level,
+          claimedByUserId: user._id,
+          claimedEmail: user.email,
+        });
+        created++;
+      } else if (!voter.claimedByUserId) {
+        await ctx.db.patch(voter._id, { claimedByUserId: user._id, claimedEmail: user.email });
+        linked++;
+      } else if (voter.claimedByUserId === user._id) {
+        alreadyEligible++;
+      } else {
+        conflicts.push({
+          matricNumber: user.matricNumber,
+          reason: `Eligible-voter row is already claimed by ${voter.claimedEmail ?? voter.claimedByUserId}.`,
+        });
+      }
+    }
+
+    return {
+      created,
+      linked,
+      alreadyEligible,
+      notRegistered,
+      conflicts,
+      continueCursor: page.continueCursor,
+      isDone: page.isDone,
+    };
+  },
+});
+
 export const seedEligibleVoters = mutation({
   args: {
     secret: v.string(),

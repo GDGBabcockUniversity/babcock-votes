@@ -22,7 +22,7 @@ interface LoadedImage {
   height: number;
 }
 
-const LOGO_SRC = "/gdg-logo.jpg";
+const LOGO_SRC = "/gdg-logo.png";
 
 // A4 portrait, in mm.
 const PAGE_W = 210;

@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useConvex, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { errorMessage } from "@/lib/errors";
-import { DEPARTMENTS, MATRIC_REGEX, PAGES } from "@/lib/constants";
+import { DEPARTMENTS, MATRIC_REGEX } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import type { EligibleVoter } from "@/lib/types";
+import { VoterCodeForm } from "@/components/voter-code-sign-in";
 
 type Step = "matric" | "confirm";
 
 const RegisterPage = () => {
-  const router = useRouter();
   const { authUser, loading: authLoading, signOut } = useAuth();
   const convex = useConvex();
   const register = useMutation(api.registration.register);
@@ -68,11 +67,6 @@ const RegisterPage = () => {
     }
   };
 
-  // Not signed in: back to login. Navigating has to happen in an effect, not while rendering.
-  useEffect(() => {
-    if (!authLoading && !authUser) router.replace(PAGES.auth.login);
-  }, [authLoading, authUser, router]);
-
   const handleReject = () => {
     setStep("matric");
     setVoterData(null);
@@ -88,7 +82,10 @@ const RegisterPage = () => {
     );
   }
 
-  if (!authUser) return null;
+  // Signed out: registered students (e.g. an imported class list) sign in with an emailed code.
+  if (!authUser) return <VoterCodeForm />;
+
+  // Signed in (Google) without a profile yet: claim a matric number.
 
   return (
     <div className="rounded-sm border border-border bg-card p-8 shadow-sm">

@@ -1,16 +1,17 @@
 [
   {
-    "fullName": "Ada Obi",
-    "matricNumber": "21/0456",
+    "fullName": "Emily Obi",
+    "matricNumber": "23/0956",
     "departmentId": "computer_science",
-    "level": "300",
-    "email": "ada@student.babcock.edu.ng"
+    "level": "400",
+    "email": "emi@gmail.com"
   },
   {
-    "fullName": "Tunde Bello",
-    "matricNumber": "PT/22/2222",
+    "fullName": "Michael Bello",
+    "matricNumber": "23/2222",
     "departmentId": "computer_science",
-    "level": "200",
+    "email": "michael@gmail.com",
+    "level": "400",
     "role": "viewer"
   }
 ]

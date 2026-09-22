@@ -20,6 +20,7 @@ import {
   type QueryCtx,
 } from "./_generated/server";
 import { castBallot } from "./lib/ballot";
+import { findUsersByMatric } from "./lib/voterOtp";
 import { isRegistered, type RegisteredUser } from "./lib/access";
 import * as validate from "./lib/validate";
 import { MATRIC_REGEX } from "../lib/constants";
@@ -749,6 +750,82 @@ export const importUsers = mutation({
           claimedByUserId: userId,
           claimedEmail: email ?? voter.claimedEmail,
         });
+      } catch (err) {
+        const reason =
+          err instanceof ConvexError ? String(err.data) : err instanceof Error ? err.message : String(err);
+        failed.push({ matricNumber, reason });
+      }
+    }
+    return { created, updated, failed };
+  },
+});
+
+/**
+ * For `scripts/import-class-list.mjs`: create registered voters in `users`
+ * only (no eligible-voter rows). Their email is where their sign-in code is
+ * sent (see lib/voterOtp.ts).
+ *
+ * Idempotent: a matric number that already has a user updates that user's
+ * profile, email and phone; their role is kept.
+ */
+export const importClassList = mutation({
+  args: {
+    secret: v.string(),
+    rows: v.array(
+      v.object({
+        fullName: v.string(),
+        matricNumber: v.string(),
+        departmentId: v.string(),
+        level: v.string(),
+        email: v.string(),
+        phone: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    let created = 0;
+    let updated = 0;
+    const failed: { matricNumber: string; reason: string }[] = [];
+
+    for (const row of args.rows) {
+      const matricNumber = row.matricNumber.trim().toUpperCase();
+      try {
+        if (!MATRIC_REGEX.test(matricNumber)) throw new Error("Invalid matric number format.");
+        const email = row.email.trim().toLowerCase();
+        if (!email.includes("@")) throw new Error("Invalid email.");
+        const profile = {
+          name: validate.text(row.fullName, "Full name"),
+          fullName: validate.text(row.fullName, "Full name"),
+          matricNumber,
+          departmentId: validate.departmentId(row.departmentId),
+          level: validate.level(row.level),
+          email,
+          emailVerificationTime: Date.now(),
+          ...(row.phone?.trim() && { phone: row.phone.trim() }),
+        };
+
+        const [existing, ...others] = await findUsersByMatric(ctx, matricNumber);
+        if (others.length) throw new Error("More than one user has this matric number.");
+        const emailOwner = await ctx.db
+          .query("users")
+          .withIndex("email", (q) => q.eq("email", email))
+          .first();
+        if (emailOwner && emailOwner._id !== existing?._id) {
+          throw new Error(`Email already belongs to ${emailOwner.matricNumber ?? "another user"}.`);
+        }
+
+        if (existing) {
+          await ctx.db.patch(existing._id, {
+            ...profile,
+            role: existing.role ?? "voter",
+            registeredAt: existing.registeredAt ?? Date.now(),
+          });
+          updated++;
+        } else {
+          await ctx.db.insert("users", { ...profile, role: "voter", registeredAt: Date.now() });
+          created++;
+        }
       } catch (err) {
         const reason =
           err instanceof ConvexError ? String(err.data) : err instanceof Error ? err.message : String(err);

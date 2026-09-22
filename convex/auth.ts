@@ -1,11 +1,12 @@
 import Google from "@auth/core/providers/google";
-import { ConvexCredentials } from "@convex-dev/auth/providers/ConvexCredentials";
+import { Email } from "@convex-dev/auth/providers/Email";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { SCHOOL_DOMAIN } from "../lib/constants";
-import { internal } from "./_generated/api";
 import type { MutationCtx } from "./_generated/server";
 import { createOrUpdateUser } from "./lib/authCallbacks";
+import { generateVoterOtp, VOTER_OTP_MAX_AGE_S, VOTER_OTP_PROVIDER } from "./lib/voterOtp";
+import { sendVoterOtpEmail } from "./lib/voterOtpEmail";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [
@@ -16,17 +17,14 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
     // Part-time students: accounts are provisioned by an admin script; nobody
     // can self-register with a password (see createOrUpdateUser).
     Password,
-    // Email plus full name (see lib/identitySignIn.ts).
-    ConvexCredentials({
-      id: "identity",
-      authorize: async (credentials, ctx) => {
-        const str = (value: unknown) => (typeof value === "string" ? value : "");
-        const userId = await ctx.runMutation(internal.identitySignIn.resolve, {
-          email: str(credentials.email),
-          fullName: str(credentials.fullName),
-        });
-        return { userId };
-      },
+    // Registered students (e.g. an imported class list): a 6-digit code
+    // emailed to them. The identifier is the matric key (see lib/voterOtp.ts);
+    // the default `authorize` checks the code was issued for that matric.
+    Email({
+      id: VOTER_OTP_PROVIDER,
+      maxAge: VOTER_OTP_MAX_AGE_S,
+      generateVerificationToken: generateVoterOtp,
+      sendVerificationRequest: sendVoterOtpEmail,
     }),
   ],
   callbacks: {

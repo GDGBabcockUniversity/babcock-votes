@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { PAGES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
-import { errorMessage } from "@/lib/errors";
+import { VoterCodeSignIn } from "@/components/voter-code-sign-in";
 
 type LoginMode = "student" | "part-time";
 
@@ -17,16 +17,11 @@ const LoginPage = () => {
     authError,
     signInWithGoogle,
     signInWithEmail,
-    signInWithIdentity,
   } = useAuth();
   const router = useRouter();
   const [mode, setMode] = useState<LoginMode>("student");
   const [error, setError] = useState("");
   const [signingIn, setSigningIn] = useState(false);
-
-  // Student form state
-  const [studentEmail, setStudentEmail] = useState("");
-  const [fullName, setFullName] = useState("");
 
   // Part-time form state
   const [email, setEmail] = useState("");
@@ -40,21 +35,6 @@ const LoginPage = () => {
   }, [needsRegistration, router]);
 
   if (needsRegistration) return null;
-
-  const handleIdentitySignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSigningIn(true);
-
-    try {
-      await signInWithIdentity(studentEmail.trim(), fullName.trim());
-    } catch (err: unknown) {
-      console.error("[login] Identity sign-in failed:", err);
-      setError(errorMessage(err, "Sign-in failed. Please check your details and try again."));
-    } finally {
-      setSigningIn(false);
-    }
-  };
 
   const handleGoogleSignIn = async () => {
     setError("");
@@ -175,52 +155,8 @@ const LoginPage = () => {
           </div>
         )}
 
-        {mode === "student" && (
-          <form onSubmit={handleIdentitySignIn} className="space-y-4">
-            <div>
-              <label
-                htmlFor="student-email"
-                className="mb-2 block text-sm font-medium font-sans"
-              >
-                Email
-              </label>
-              <Input
-                id="student-email"
-                type="email"
-                autoComplete="email"
-                placeholder="e.g., you@student.babcock.edu.ng"
-                value={studentEmail}
-                onChange={(e) => setStudentEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="student-full-name"
-                className="mb-2 block text-sm font-medium font-sans"
-              >
-                Full Name
-              </label>
-              <Input
-                id="student-full-name"
-                type="text"
-                autoComplete="name"
-                placeholder="As it appears on the class list"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={signingIn}
-              className="flex w-full items-center font-sans justify-center gap-2 rounded-sm bg-gold py-3.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              {signingIn ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
-        )}
-
+        {/* Matric number -> a 6-digit code emailed to the student. */}
+        {mode === "student" && <VoterCodeSignIn />}
 
         {mode === "part-time" && (
           <form onSubmit={handleEmailSignIn} className="space-y-4">

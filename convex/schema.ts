@@ -48,6 +48,7 @@ export default defineSchema({
     .index("email", ["email"])
     .index("phone", ["phone"])
     .index("by_department", ["departmentId"])
+    .index("by_matric_number", ["matricNumber"])
     .index("by_legacy_id", ["legacyId"]),
 
   eligibleVoters: defineTable({

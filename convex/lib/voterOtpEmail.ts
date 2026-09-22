@@ -102,13 +102,13 @@ export const voterOtpMessage = ({
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:520px;margin:0 auto;background:#ffffff;border:1px solid #e5e1d8;border-radius:4px;">
       <tr>
         <td style="padding:32px;">
-          <img src="${escapeHtml(logoUrl)}" width="260" height="53" alt="Google Developer Group Babcock University" style="display:block;width:260px;max-width:100%;height:auto;margin:0 0 24px;border:0;" />
           <h1 style="margin:0 0 24px;font-size:24px;">Babcock Votes</h1>
           <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;">Hello ${name},</p>
           <p style="margin:0 0 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;">Your sign-in code is:</p>
           <p style="margin:0 0 24px;font-family:'Courier New',monospace;font-size:32px;font-weight:bold;letter-spacing:8px;">${escapeHtml(code)}</p>
           <p style="margin:0;font-family:Arial,sans-serif;font-size:13px;line-height:1.5;color:#5c584f;">Enter it on the login page. It works once and expires in 1 hour; requesting a new code cancels this one. If you didn't ask for it, you can ignore this email.</p>
           <p style="margin:24px 0 0;font-family:Arial,sans-serif;font-size:15px;line-height:1.5;">Warm regards,<br />The GDG Babcock Team</p>
+          <img src="${escapeHtml(logoUrl)}" width="180" height="37" alt="Google Developer Group Babcock University" style="display:block;width:180px;max-width:100%;height:auto;margin:16px 0 0;border:0;" />
         </td>
       </tr>
     </table>

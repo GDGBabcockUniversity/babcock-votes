@@ -42,7 +42,7 @@ Scripts talk to the deployment named by `NEXT_PUBLIC_CONVEX_URL` in `.env.local`
 | `node scripts/import-users.mjs <json>` | Create registered users (and their eligible-voter rows) from JSON; see `scripts/users.example.json` |
 | `node scripts/seed-whitelist.mjs <csv>` | Load eligible voters (`fullName,matricNumber,departmentId,level`) |
 | `node scripts/sync-eligible-voters.mjs --department <id>` | Make every registered user in a department an eligible voter (run after a class-list import) |
-| `node scripts/migrate-dev-to-prod.mjs [--yes]` | Copy registered users and eligible voters from dev (`.env.local`) to production (`.env.prod`); a dry run without `--yes` |
+| `node scripts/migrate-dev-to-prod.mjs [--yes]` | Copy registered users, eligible voters, elections, positions, candidates, and their images from dev (`.env.local`) to production (`.env.prod`); a dry run without `--yes` |
 | `node scripts/seed-candidates.mjs <electionId> <csv>` | Load positions and candidates |
 | `node scripts/create-pt-accounts.mjs <csv>` | Create part-time student accounts; writes `pt-credentials.csv` |
 | `node scripts/audit-votes.mjs <electionId>` | Export every vote to `audit-<electionId>.csv` |

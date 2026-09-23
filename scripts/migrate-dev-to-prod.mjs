@@ -1,5 +1,6 @@
 /**
- * Copy registered users and eligible voters from one deployment to another,
+ * Copy registered users, eligible voters, elections, positions, candidates,
+ * and their images from one deployment to another,
  * by default dev (.env.local) to production (.env.prod).
  *
  * Users are matched by matric number, then email, and created or updated;
@@ -86,14 +87,61 @@ console.log(`From: ${from.url}\nTo:   ${to.url}\n`);
 
 const users = await readAll(from, "exportUsersPage");
 const voters = await readAll(from, "exportEligibleVotersPage");
+const [elections, positions, candidates] = await Promise.all([
+  readAll(from, "exportElectionsPage"),
+  readAll(from, "exportPositionsPage"),
+  readAll(from, "exportCandidatesPage"),
+]);
 console.log(
   `Read ${users.rows.length} registered users (${users.skipped} unregistered skipped) ` +
-    `and ${voters.rows.length} eligible voters.`,
+    `and ${voters.rows.length} eligible voters.\n` +
+    `Read ${elections.rows.length} elections, ${positions.rows.length} positions, ` +
+  `${candidates.rows.length} candidates.`,
 );
 
 if (!WRITE) {
   console.log("\nDry run: nothing written. Re-run with --yes to copy them to the target.");
   process.exit(0);
+}
+
+try {
+  await to.query("verifyCounts", {});
+} catch (error) {
+  throw new Error(
+    `Cannot access the target deployment. Check that .env.prod has the correct ` +
+    `OPS_SECRET and that the current Convex functions are deployed there. ` +
+    `Original error: ${error.message}`,
+  );
+}
+
+// Storage IDs are deployment-specific. Download each source image through its
+// resolved URL and upload it into the target deployment before writing rows.
+let imageFailures = 0;
+const copyImage = async (url, label) => {
+  if (!url) return undefined;
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`download failed (${response.status})`);
+    const uploadUrl = await to.mutation("migrationUploadUrl", {});
+    const upload = await fetch(uploadUrl, {
+      method: "POST",
+      headers: { "Content-Type": response.headers.get("content-type") ?? "application/octet-stream" },
+      body: await response.arrayBuffer(),
+    });
+    if (!upload.ok) throw new Error(`upload failed (${upload.status})`);
+    return (await upload.json()).storageId;
+  } catch (error) {
+    imageFailures++;
+    console.log(`  ✗ ${label}: ${error.message}`);
+    return undefined;
+  }
+};
+
+for (const row of elections.rows) {
+  row.logoStorageId = await copyImage(row.logoUrl, `election ${row.title} logo`);
+}
+for (const row of candidates.rows) {
+  row.photoStorageId = await copyImage(row.photoUrl, `candidate ${row.fullName} photo`);
 }
 
 // Users first, so eligible-voter claims can find them.
@@ -127,4 +175,28 @@ console.log(
     `${unresolved.length} claims unresolved.`,
 );
 
-process.exit(failed || unresolved.length ? 1 : 0);
+let migrationFailed = 0;
+const electionRows = elections.rows.map(({ logoUrl, ...row }) => row);
+const candidateRows = candidates.rows.map(({ photoUrl, ...row }) => row);
+const electionResult = await to.mutation("upsertElections", { rows: electionRows });
+migrationFailed += electionResult.unresolved.length;
+console.log(
+  `Elections: ${electionResult.created} created, ${electionResult.updated} updated, ` +
+    `${electionResult.unresolved.length} unresolved.`,
+);
+
+const positionResult = await to.mutation("upsertPositions", { rows: positions.rows });
+migrationFailed += positionResult.unresolved.length;
+console.log(
+  `Positions: ${positionResult.created} created, ${positionResult.updated} updated, ` +
+    `${positionResult.unresolved.length} unresolved.`,
+);
+
+const candidateResult = await to.mutation("upsertCandidates", { rows: candidateRows });
+migrationFailed += candidateResult.unresolved.length;
+console.log(
+  `Candidates: ${candidateResult.created} created, ${candidateResult.updated} updated, ` +
+    `${candidateResult.unresolved.length} unresolved.`,
+);
+
+process.exit(failed || unresolved.length || migrationFailed || imageFailures ? 1 : 0);

@@ -26,6 +26,7 @@ export const VoterCodeSignIn = () => {
   const { sendVoterCode, verifyVoterCode } = useAuth();
 
   const [step, setStep] = useState<Step>("matric");
+  const [fullName, setFullName] = useState("");
   const [matricNumber, setMatricNumber] = useState("");
   const [maskedEmail, setMaskedEmail] = useState("");
   const [code, setCode] = useState("");
@@ -51,6 +52,10 @@ export const VoterCodeSignIn = () => {
     setError("");
 
     const safeMatric = matricNumber.trim();
+    if (!fullName.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
     if (!MATRIC_REGEX.test(safeMatric)) {
       setError(
         "Matric number must be in format XX/XXXX or AA/XX/XXXX (e.g., 21/0456 or PT/22/2222).",
@@ -60,7 +65,10 @@ export const VoterCodeSignIn = () => {
 
     setSubmitting(true);
     try {
-      const { maskedEmail } = await convex.query(api.voterOtp.lookup, { matric: safeMatric });
+      const { maskedEmail } = await convex.query(api.voterOtp.lookup, {
+        matric: safeMatric,
+        fullName: fullName.trim(),
+      });
       await sendCode();
       setMaskedEmail(maskedEmail);
       setNotice("");
@@ -119,6 +127,19 @@ export const VoterCodeSignIn = () => {
     <>
       {step === "matric" && (
         <form onSubmit={handleRequest} className="space-y-4">
+          <div>
+            <label htmlFor="otp-full-name" className="mb-2 block lg:text-lg font-medium">
+              Full Name
+            </label>
+            <Input
+              id="otp-full-name"
+              type="text"
+              placeholder="Enter your full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
           <div>
             <label htmlFor="otp-matric" className="mb-2 block lg:text-lg font-medium">
               Matric. Number

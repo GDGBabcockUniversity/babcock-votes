@@ -261,13 +261,13 @@ describe("registration", () => {
     const voterRow = await seedVoter(t);
     const asUnregistered = asUser(t, user);
 
-    expect(await asUnregistered.query(api.registration.lookup, { matric: "21/0456" })).toEqual({
+    expect(await asUnregistered.query(api.registration.lookup, { matric: "21/0456", fullName: "Ada Obi" })).toEqual({
       fullName: "Ada Obi",
       departmentId: "computer_science",
       level: "200",
     });
 
-    await asUnregistered.mutation(api.registration.register, { matric: "21/0456" });
+    await asUnregistered.mutation(api.registration.register, { matric: "21/0456", fullName: "Ada Obi" });
 
     const me = await asUnregistered.query(api.users.me, {});
     expect(me?.profile).toMatchObject({ fullName: "Ada Obi", role: "voter", level: "200" });
@@ -281,9 +281,9 @@ describe("registration", () => {
     const first = await addUnregisteredUser(t, "first@student.babcock.edu.ng");
     const second = await addUnregisteredUser(t, "second@student.babcock.edu.ng");
 
-    await asUser(t, first).mutation(api.registration.register, { matric: "21/0456" });
+    await asUser(t, first).mutation(api.registration.register, { matric: "21/0456", fullName: "Ada Obi" });
     await expect(
-      asUser(t, second).mutation(api.registration.register, { matric: "21/0456" }),
+      asUser(t, second).mutation(api.registration.register, { matric: "21/0456", fullName: "Ada Obi" }),
     ).rejects.toMatchObject(failsWith("already been registered"));
   });
 
@@ -294,13 +294,13 @@ describe("registration", () => {
     const outsider = asUser(t, await addUnregisteredUser(t, "x@gmail.com"));
 
     await expect(
-      school.mutation(api.registration.register, { matric: "99/9999" }),
+      school.mutation(api.registration.register, { matric: "99/9999", fullName: "Ada Obi" }),
     ).rejects.toMatchObject(failsWith("not listed as an eligible voter"));
     await expect(
-      school.mutation(api.registration.register, { matric: "nonsense" }),
+      school.mutation(api.registration.register, { matric: "nonsense", fullName: "Ada Obi" }),
     ).rejects.toMatchObject(failsWith("Matric number must be in format"));
     await expect(
-      outsider.mutation(api.registration.register, { matric: "21/0456" }),
+      outsider.mutation(api.registration.register, { matric: "21/0456", fullName: "Ada Obi" }),
     ).rejects.toMatchObject(failsWith("Only @student.babcock.edu.ng"));
   });
 });

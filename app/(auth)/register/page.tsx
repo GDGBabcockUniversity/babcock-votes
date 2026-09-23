@@ -18,6 +18,7 @@ const RegisterPage = () => {
   const register = useMutation(api.registration.register);
 
   const [step, setStep] = useState<Step>("matric");
+  const [fullName, setFullName] = useState("");
   const [matricNumber, setMatricNumber] = useState("");
   const [voterData, setVoterData] = useState<EligibleVoter | null>(null);
   const [error, setError] = useState("");
@@ -28,6 +29,12 @@ const RegisterPage = () => {
     setError("");
 
     const safeMatric = matricNumber.trim();
+    const safeFullName = fullName.trim();
+
+    if (!safeFullName) {
+      setError("Please enter your full name.");
+      return;
+    }
 
     if (!MATRIC_REGEX.test(safeMatric)) {
       setError(
@@ -40,6 +47,7 @@ const RegisterPage = () => {
     try {
       const data = await convex.query(api.registration.lookup, {
         matric: safeMatric,
+        fullName: safeFullName,
       });
       setVoterData(data);
       setStep("confirm");
@@ -59,7 +67,7 @@ const RegisterPage = () => {
     try {
       // Claims the voter record and creates the profile atomically; the
       // profile query is live, so the page moves on by itself.
-      await register({ matric: matricNumber.trim() });
+      await register({ matric: matricNumber.trim(), fullName: fullName.trim() });
     } catch (err) {
       setError(errorMessage(err, "Registration failed. Please try again."));
     } finally {
@@ -71,6 +79,7 @@ const RegisterPage = () => {
     setStep("matric");
     setVoterData(null);
     setMatricNumber("");
+    setFullName("");
     setError("");
   };
 
@@ -98,6 +107,16 @@ const RegisterPage = () => {
 
       {step === "matric" && (
         <form onSubmit={handleLookup} className="mt-6 space-y-4">
+          <div>
+            <label className="mb-2 block lg:text-lg font-medium">Full Name</label>
+            <Input
+              type="text"
+              placeholder="Enter your full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
           <div>
             <label className="mb-2 block lg:text-lg font-medium">
               Matric. Number

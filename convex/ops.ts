@@ -1261,6 +1261,215 @@ export const exportEligibleVotersPage = query({
   },
 });
 
+/** For deployment copies, export elections with source document IDs as legacy IDs. */
+export const exportElectionsPage = query({
+  args: { secret: v.string(), cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    const page = await ctx.db.query("elections").paginate({ numItems: 100, cursor: args.cursor });
+    const rows = await Promise.all(page.page.map(async (election) => {
+      const creator = await ctx.db.get(election.createdBy);
+      return {
+        legacyId: election._id,
+        title: election.title,
+        description: election.description,
+        departmentId: election.departmentId,
+        status: election.status,
+        startDate: election.startDate,
+        endDate: election.endDate,
+        candidateCount: election.candidateCount,
+        minWinnerPercentage: election.minWinnerPercentage,
+        createdByMatricNumber: creator?.matricNumber,
+        createdByEmail: creator?.email,
+        createdAt: election.createdAt,
+        isDuplicate: election.isDuplicate,
+        duplicatedFromLegacyId: election.duplicatedFromElectionId,
+        duplicatedAt: election.duplicatedAt,
+        logoUrl: election.logoStorageId
+          ? ((await ctx.storage.getUrl(election.logoStorageId)) ?? undefined)
+          : undefined,
+      };
+    }));
+    return { rows, continueCursor: page.continueCursor, isDone: page.isDone };
+  },
+});
+
+export const exportPositionsPage = query({
+  args: { secret: v.string(), cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    const page = await ctx.db.query("positions").paginate({ numItems: 200, cursor: args.cursor });
+    return {
+      rows: page.page.map((position) => ({
+        legacyId: position._id,
+        electionLegacyId: position.electionId,
+        title: position.title,
+        description: position.description,
+        order: position.order,
+        allowedLevels: position.allowedLevels,
+      })),
+      continueCursor: page.continueCursor,
+      isDone: page.isDone,
+    };
+  },
+});
+
+export const exportCandidatesPage = query({
+  args: { secret: v.string(), cursor: v.union(v.string(), v.null()) },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    const page = await ctx.db.query("candidates").paginate({ numItems: 200, cursor: args.cursor });
+    const rows = await Promise.all(page.page.map(async (candidate) => ({
+      legacyId: candidate._id,
+      electionLegacyId: candidate.electionId,
+      positionLegacyId: candidate.positionId,
+      fullName: candidate.fullName,
+      manifesto: candidate.manifesto,
+      departmentId: candidate.departmentId,
+      level: candidate.level,
+      photoUrl: candidate.photoStorageId
+        ? ((await ctx.storage.getUrl(candidate.photoStorageId)) ?? undefined)
+        : undefined,
+    })));
+    return { rows, continueCursor: page.continueCursor, isDone: page.isDone };
+  },
+});
+
+export const upsertElections = mutation({
+  args: {
+    secret: v.string(),
+    rows: v.array(v.object({
+      legacyId: v.string(),
+      title: v.string(),
+      description: v.string(),
+      departmentId: v.string(),
+      status: electionStatus,
+      startDate: v.number(),
+      endDate: v.number(),
+      candidateCount: v.number(),
+      minWinnerPercentage: v.optional(v.number()),
+      createdByMatricNumber: v.optional(v.string()),
+      createdByEmail: v.optional(v.string()),
+      createdAt: v.number(),
+      isDuplicate: v.optional(v.boolean()),
+      duplicatedFromLegacyId: v.optional(v.string()),
+      duplicatedAt: v.optional(v.number()),
+      logoStorageId: v.optional(v.id("_storage")),
+    })),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    let created = 0;
+    let updated = 0;
+    const unresolved: string[] = [];
+    const fallbackAdmin = (await ctx.db.query("users").collect()).find((u) => u.role === "super_admin");
+
+    for (const row of args.rows) {
+      const byMatric = row.createdByMatricNumber
+        ? (await findUsersByMatric(ctx, row.createdByMatricNumber))[0]
+        : null;
+      const byEmail = row.createdByEmail
+        ? await ctx.db.query("users").withIndex("email", (q) => q.eq("email", row.createdByEmail!.toLowerCase())).first()
+        : null;
+      const createdBy = byMatric?._id ?? byEmail?._id ?? fallbackAdmin?._id;
+      if (!createdBy) {
+        unresolved.push(row.legacyId);
+        continue;
+      }
+      const existing = await ctx.db.query("elections").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.legacyId)).unique();
+      const fields = {
+        title: row.title,
+        description: row.description,
+        departmentId: row.departmentId,
+        status: row.status,
+        startDate: row.startDate,
+        endDate: row.endDate,
+        candidateCount: row.candidateCount,
+        minWinnerPercentage: row.minWinnerPercentage,
+        createdBy,
+        createdAt: row.createdAt,
+        isDuplicate: row.isDuplicate,
+        duplicatedAt: row.duplicatedAt,
+        ...(row.logoStorageId !== undefined && { logoStorageId: row.logoStorageId }),
+        legacyId: row.legacyId,
+      };
+      if (existing) {
+        await ctx.db.patch(existing._id, fields);
+        updated++;
+      } else {
+        await ctx.db.insert("elections", fields);
+        created++;
+      }
+    }
+
+    // Resolve duplicate links after all rows have been upserted.
+    for (const row of args.rows) {
+      if (!row.duplicatedFromLegacyId) continue;
+      const election = await ctx.db.query("elections").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.legacyId)).unique();
+      const source = await ctx.db.query("elections").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.duplicatedFromLegacyId!)).unique();
+      if (election && source) await ctx.db.patch(election._id, { duplicatedFromElectionId: source._id });
+    }
+    return { created, updated, unresolved };
+  },
+});
+
+export const upsertPositions = mutation({
+  args: {
+    secret: v.string(),
+    rows: v.array(v.object({
+      legacyId: v.string(), electionLegacyId: v.string(), title: v.string(), description: v.string(),
+      order: v.number(), allowedLevels: v.array(v.string()),
+    })),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    let created = 0;
+    let updated = 0;
+    const unresolved: string[] = [];
+    for (const row of args.rows) {
+      const election = await ctx.db.query("elections").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.electionLegacyId)).unique();
+      if (!election) { unresolved.push(row.legacyId); continue; }
+      const existing = await ctx.db.query("positions").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.legacyId)).unique();
+      const fields = { electionId: election._id, title: row.title, description: row.description, order: row.order, allowedLevels: row.allowedLevels, legacyId: row.legacyId };
+      if (existing) { await ctx.db.replace(existing._id, fields); updated++; }
+      else { await ctx.db.insert("positions", fields); created++; }
+    }
+    return { created, updated, unresolved };
+  },
+});
+
+export const upsertCandidates = mutation({
+  args: {
+    secret: v.string(),
+    rows: v.array(v.object({
+      legacyId: v.string(), electionLegacyId: v.string(), positionLegacyId: v.string(), fullName: v.string(),
+      manifesto: v.string(), departmentId: v.string(), level: v.string(), photoStorageId: v.optional(v.id("_storage")),
+    })),
+  },
+  handler: async (ctx, args) => {
+    assertOps(args.secret);
+    let created = 0;
+    let updated = 0;
+    const unresolved: string[] = [];
+    for (const row of args.rows) {
+      const [election, position] = await Promise.all([
+        ctx.db.query("elections").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.electionLegacyId)).unique(),
+        ctx.db.query("positions").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.positionLegacyId)).unique(),
+      ]);
+      if (!election || !position) { unresolved.push(row.legacyId); continue; }
+      const existing = await ctx.db.query("candidates").withIndex("by_legacy_id", (q) => q.eq("legacyId", row.legacyId)).unique();
+      const fields = {
+        electionId: election._id, positionId: position._id, fullName: row.fullName, manifesto: row.manifesto,
+        departmentId: row.departmentId, level: row.level, legacyId: row.legacyId,
+        ...(row.photoStorageId !== undefined && { photoStorageId: row.photoStorageId }),
+      };
+      if (existing) { await ctx.db.patch(existing._id, fields); updated++; }
+      else { await ctx.db.insert("candidates", fields); created++; }
+    }
+    return { created, updated, unresolved };
+  },
+});
+
 /**
  * For `scripts/migrate-dev-to-prod.mjs`: create or update registered users,
  * matched by matric number, then by email. Sign-in accounts aren't copied;

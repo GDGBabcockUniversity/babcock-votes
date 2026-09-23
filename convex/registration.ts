@@ -13,6 +13,7 @@ const resolveEligibleVoter = async (
   ctx: QueryCtx,
   viewer: Doc<"users">,
   matric: string,
+  fullName: string,
 ) => {
   if (isRegistered(viewer)) {
     throw fail("You have already completed registration.");
@@ -49,14 +50,19 @@ const resolveEligibleVoter = async (
     );
   }
 
+  const normalizeName = (value: string) => value.trim().replace(/\s+/g, " ").toLowerCase();
+  if (!fullName.trim() || normalizeName(fullName) !== normalizeName(voter.fullName)) {
+    throw fail("The full name does not match the eligible-voter record.");
+  }
+
   return { voter, safeMatric };
 };
 
 export const lookup = query({
-  args: { matric: v.string() },
+  args: { matric: v.string(), fullName: v.string() },
   handler: async (ctx, args) => {
     const viewer = await requireSignedIn(ctx);
-    const { voter } = await resolveEligibleVoter(ctx, viewer, args.matric);
+    const { voter } = await resolveEligibleVoter(ctx, viewer, args.matric, args.fullName);
     return {
       fullName: voter.fullName,
       departmentId: voter.departmentId,
@@ -71,13 +77,14 @@ export const lookup = query({
  * retries into the "already registered" error.
  */
 export const register = mutation({
-  args: { matric: v.string() },
+  args: { matric: v.string(), fullName: v.string() },
   handler: async (ctx, args) => {
     const viewer = await requireSignedIn(ctx);
     const { voter, safeMatric } = await resolveEligibleVoter(
       ctx,
       viewer,
       args.matric,
+      args.fullName,
     );
 
     await ctx.db.patch(voter._id, {

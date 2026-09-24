@@ -7,12 +7,9 @@ import { maskEmail, prepareVoterOtpEmail, requireOtpUser } from "./lib/voterOtp"
  * masked. No auth, so it reveals nothing beyond the masked address.
  */
 export const lookup = query({
-  args: { matric: v.string(), fullName: v.string() },
+  args: { matric: v.string() },
   handler: async (ctx, args) => {
     const user = await requireOtpUser(ctx, args.matric);
-    if (user.fullName?.trim().replace(/\s+/g, " ").toLowerCase() !== args.fullName.trim().replace(/\s+/g, " ").toLowerCase()) {
-      throw new Error("The full name does not match the matric number.");
-    }
     return { maskedEmail: maskEmail(user.email) };
   },
 });

@@ -57,10 +57,10 @@ const verify = (matricKey: string, existingUserId: Id<"users">): Args => ({
 });
 
 describe("voterOtp.lookup", () => {
-  it("masks the email", async () => {
+  it("looks up and masks the email using only the matric number", async () => {
     const t = newTest();
     await importStudent(t);
-    expect(await t.query(api.voterOtp.lookup, { matric: "18/2428", fullName: "Popoola Olamide Bridget" })).toEqual({
+    expect(await t.query(api.voterOtp.lookup, { matric: "18/2428" })).toEqual({
       maskedEmail: "o****e@gmail.com",
     });
     expect(maskEmail("ab@x.com")).toBe("a****@x.com");
@@ -84,11 +84,11 @@ describe("voterOtp.lookup", () => {
     });
 
     for (const matric of ["18/9999", "18/0002", "nonsense"]) {
-      await expect(t.query(api.voterOtp.lookup, { matric, fullName: "Ada Obi" })).rejects.toMatchObject(
+      await expect(t.query(api.voterOtp.lookup, { matric })).rejects.toMatchObject(
         failsWith("not listed"),
       );
     }
-    await expect(t.query(api.voterOtp.lookup, { matric: "18/0001", fullName: "Ada Obi" })).rejects.toMatchObject(
+    await expect(t.query(api.voterOtp.lookup, { matric: "18/0001" })).rejects.toMatchObject(
       failsWith("don't have an email"),
     );
   });

@@ -138,7 +138,11 @@ export const buildSummary = (input: AnalyticsInput): ElectionAnalyticsSummary =>
     const runnerUp = withVotes[1] ?? null;
     const qualifies =
       leader !== null &&
-      meetsMinimum(leader.votes, totalVoteRecords, election.minWinnerPercentage);
+      meetsMinimum(
+        leader.votes,
+        totalVoteRecords,
+        candidateRows.length === 1 ? election.minWinnerPercentage : undefined,
+      );
     const winner = qualifies ? leader : null;
 
     return {

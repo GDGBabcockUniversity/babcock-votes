@@ -188,7 +188,7 @@ export const exportResultsPdf = async (input: ResultsPdfInput) => {
   y += 5;
   if (election.minWinnerPercentage != null) {
     doc.text(
-      `Minimum winning percentage: ${formatPercentage(election.minWinnerPercentage)} of a position's ballots`,
+      `Unopposed minimum winning percentage: ${formatPercentage(election.minWinnerPercentage)} of a position's ballots`,
       MARGIN,
       y,
     );

@@ -215,7 +215,7 @@ const ElectionAnalyticsPage = () => {
                     </p>
                     <p className="mt-1 text-base font-semibold text-foreground">No winner</p>
                     <p className="mt-1 text-sm text-muted-gray">
-                      Nobody reached the minimum of {summary.election.minWinnerPercentage}%.
+                      The unopposed candidate did not reach the minimum of {summary.election.minWinnerPercentage}%.
                     </p>
                   </div>
                 ))}

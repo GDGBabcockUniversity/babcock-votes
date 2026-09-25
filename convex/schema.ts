@@ -79,7 +79,7 @@ export default defineSchema({
     duplicatedFromElectionId: v.optional(v.id("elections")),
     duplicatedAt: v.optional(v.number()),
     duplicatedBy: v.optional(v.id("users")),
-    /** Share of a position's ballots (abstentions included) a candidate needs to win. Unset = plurality. */
+    /** Share of a position's ballots (abstentions included) an unopposed candidate needs to win. Unset = plurality. */
     minWinnerPercentage: v.optional(v.number()),
     legacyId: v.optional(v.string()),
   })

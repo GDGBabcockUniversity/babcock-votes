@@ -23,7 +23,7 @@ export interface PositionOutcome<T> {
   winners: T[];
   /** Everyone else, in the order given. */
   others: T[];
-  /** Someone leads, but not by enough to meet the minimum. */
+  /** The unopposed candidate has votes but does not meet the minimum. */
   belowMinimum: boolean;
 }
 
@@ -35,7 +35,7 @@ export const resolveWinners = <T extends { voteCount: number }>(
 ): PositionOutcome<T> => {
   const top = ranked[0]?.voteCount ?? 0;
   const leaders = top > 0 ? ranked.filter((c) => c.voteCount === top) : [];
-  const qualifies = meetsMinimum(top, positionBallots, minPercentage);
+  const qualifies = meetsMinimum(top, positionBallots, ranked.length === 1 ? minPercentage : undefined);
   const winners = qualifies ? leaders : [];
   return {
     winners,

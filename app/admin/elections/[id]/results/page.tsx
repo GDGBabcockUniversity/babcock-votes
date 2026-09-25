@@ -133,7 +133,7 @@ const ResultsPage = () => {
             </p>
             {election.minWinnerPercentage != null && (
               <p className="mt-1 font-sans text-xs text-muted-gray">
-                Minimum winning percentage:{" "}
+                Unopposed minimum winning percentage:{" "}
                 {formatPercentage(election.minWinnerPercentage)} of a position&apos;s ballots
               </p>
             )}
@@ -239,7 +239,7 @@ const ResultsPage = () => {
                 </CardTitle>
                 {outcome.belowMinimum && (
                   <p className="font-sans text-sm text-red-600 dark:text-red-400">
-                    No winner: no candidate reached the minimum of{" "}
+                    No winner: the unopposed candidate did not reach the minimum of{" "}
                     {formatPercentage(election.minWinnerPercentage!)}.
                   </p>
                 )}

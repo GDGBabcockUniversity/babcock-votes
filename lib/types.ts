@@ -27,7 +27,7 @@ export interface Election {
   logoUrl?: string;
   startDate: Millis;
   endDate: Millis;
-  /** Share of a position's ballots (abstentions included) needed to win; unset = plurality. */
+  /** Share of a position's ballots (abstentions included) an unopposed candidate needs to win; unset = plurality. */
   minWinnerPercentage?: number;
   status: "upcoming" | "active" | "closed";
   candidateCount: number;

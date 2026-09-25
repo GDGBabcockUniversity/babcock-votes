@@ -17,16 +17,25 @@ describe("resolveWinners", () => {
   });
 
   it("gives everyone tied on top the win", () => {
-    const { winners } = resolveWinners([cand("A", 4), cand("B", 4), cand("C", 1)], 10);
+    const { winners } = resolveWinners([cand("A", 4), cand("B", 4), cand("C", 1)], 10, 75);
     expect(winners.map((c) => c.name)).toEqual(["A", "B"]);
   });
 
-  it("declares no winner when the leader is under the minimum", () => {
-    // 4 of 10 ballots is 40%, under a 50% minimum.
-    const { winners, others, belowMinimum } = resolveWinners([cand("A", 4), cand("B", 3)], 10, 50);
-    expect(winners).toEqual([]);
-    expect(others).toHaveLength(2);
-    expect(belowMinimum).toBe(true);
+  it("uses plurality for contested positions even below the minimum", () => {
+    const { winners, others, belowMinimum } = resolveWinners([cand("A", 4), cand("B", 3)], 10, 75);
+    expect(winners.map((c) => c.name)).toEqual(["A"]);
+    expect(others.map((c) => c.name)).toEqual(["B"]);
+    expect(belowMinimum).toBe(false);
+  });
+
+  it("counts opponents with zero votes as contested", () => {
+    expect(resolveWinners([cand("A", 4), cand("B", 0)], 10, 75).winners.map((c) => c.name)).toEqual(["A"]);
+  });
+
+  it("requires an unopposed candidate to reach 75%", () => {
+    expect(resolveWinners([cand("A", 74)], 100, 75).belowMinimum).toBe(true);
+    expect(resolveWinners([cand("A", 74)], 100, 75).winners).toEqual([]);
+    expect(resolveWinners([cand("A", 75)], 100, 75).winners).toHaveLength(1);
   });
 
   it("counts abstentions in the base, so they can block a winner", () => {
@@ -69,14 +78,25 @@ describe("analytics summary", () => {
     expect(position.belowMinimum).toBe(false);
   });
 
-  it("leaves the winner empty when the leader has 50% and the minimum is 60%", () => {
-    const summary = buildSummary(input(60));
+  it("names the contested leader even below the minimum", () => {
+    const summary = buildSummary(input(75));
     const [position] = summary.results.positions;
-    expect(position.winner).toBeNull();
-    expect(position.belowMinimum).toBe(true);
-    expect(summary.results.winnersBoard).toEqual([]);
-    // The race is still measured between the top two candidates.
+    expect(position.winner?.name).toBe("Alice");
+    expect(position.belowMinimum).toBe(false);
+    expect(summary.results.winnersBoard).toHaveLength(1);
     expect(position.margin?.voteDifference).toBe(2);
+  });
+
+  it("applies the minimum to unopposed candidates", () => {
+    const data = input(75);
+    data.candidates = data.candidates.slice(0, 1);
+    data.votes = data.votes.map((vote) => ({ ...vote, candidateId: vote.candidateId === "b" ? "abstain" : vote.candidateId }));
+    const summary = buildSummary(data);
+    expect(summary.results.positions[0].winner).toBeNull();
+    expect(summary.results.positions[0].belowMinimum).toBe(true);
+    expect(summary.results.winnersBoard).toEqual([]);
+    data.election.minWinnerPercentage = 50;
+    expect(buildSummary(data).results.positions[0].winner?.name).toBe("Alice");
   });
 
   it("names the winner when the leader reaches the minimum", () => {

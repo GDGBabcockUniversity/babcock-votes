@@ -235,7 +235,7 @@ const NewElectionPage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="minWinnerPercentage" className="lg:text-base font-medium">
-                Minimum winning percentage (optional)
+                Unopposed minimum winning percentage (optional)
               </Label>
               <Input
                 id="minWinnerPercentage"
@@ -249,7 +249,7 @@ const NewElectionPage = () => {
                 onChange={(e) => setMinWinnerPercentage(e.target.value)}
               />
               <p className="font-sans text-xs text-muted-gray">
-                A candidate only wins a position with at least this share of that
+                An unopposed candidate only wins with at least this share of that
                 position&apos;s ballots, abstentions included. Leave empty for the
                 candidate with the most votes to win.
               </p>

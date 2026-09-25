@@ -909,7 +909,7 @@ const ElectionDetailPage = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Minimum winning percentage (optional)</Label>
+              <Label>Unopposed minimum winning percentage (optional)</Label>
               <Input
                 type="number"
                 inputMode="decimal"
@@ -921,7 +921,7 @@ const ElectionDetailPage = () => {
                 onChange={(e) => setEditMinWinnerPct(e.target.value)}
               />
               <p className="font-sans text-xs text-muted-gray">
-                Share of a position&apos;s ballots, abstentions included, a candidate needs to win.
+                Share of a position&apos;s ballots, abstentions included, an unopposed candidate needs to win.
                 Leave empty for the most votes to win.
               </p>
             </div>

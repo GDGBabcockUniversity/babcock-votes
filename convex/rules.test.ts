@@ -49,6 +49,18 @@ describe("votes.cast", () => {
     expect(vote.candidateId).toBe("abstain");
   });
 
+  it("accepts an explicit abstention selection", async () => {
+    const { t, voter, election } = await setup();
+
+    await asUser(t, voter).mutation(api.votes.cast, {
+      electionId: election.electionId,
+      selections: { [election.president]: "abstain" },
+    });
+
+    const [vote] = await t.run((ctx) => ctx.db.query("votes").collect());
+    expect(vote.candidateId).toBe("abstain");
+  });
+
   it("includes level-restricted positions for eligible levels", async () => {
     const { t, election } = await setup();
     const senior = await addUser(t, { email: "senior@student.babcock.edu.ng", role: "voter", level: "400" });

@@ -1129,7 +1129,10 @@ export const stressCast = mutation({
     secret: v.string(),
     electionId: v.id("elections"),
     voterId: v.id("users"),
-    selections: v.record(v.id("positions"), v.id("candidates")),
+    selections: v.record(
+      v.id("positions"),
+      v.union(v.id("candidates"), v.literal("abstain")),
+    ),
   },
   handler: async (ctx, args) => {
     assertOps(args.secret);

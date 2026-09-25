@@ -65,7 +65,10 @@ const VotePage = () => {
       // candidates, and records the whole ballot atomically.
       await cast({
         electionId: id as Id<"elections">,
-        selections: selections as Record<Id<"positions">, Id<"candidates">>,
+        selections: selections as Record<
+          Id<"positions">,
+          Id<"candidates"> | "abstain"
+        >,
       });
       router.replace(PAGES.main.confirmation(id));
     } catch (err) {

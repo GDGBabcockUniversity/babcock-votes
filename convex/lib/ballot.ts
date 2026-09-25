@@ -2,6 +2,8 @@ import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
 import { fail, type RegisteredUser } from "./access";
 
+export type BallotSelection = Id<"candidates"> | "abstain";
+
 /**
  * Record a voter's full ballot. This replaces the Firestore rules that guarded
  * `votes`: the election must be active, the voter must belong to its
@@ -16,7 +18,7 @@ export const castBallot = async (
   ctx: MutationCtx,
   voter: RegisteredUser,
   electionId: Id<"elections">,
-  selections: Record<string, Id<"candidates">>,
+  selections: Record<string, BallotSelection>,
 ) => {
   const election = await ctx.db.get(electionId);
   if (!election) throw fail("This election no longer exists.");
@@ -61,9 +63,9 @@ export const castBallot = async (
     if (!eligibleIds.has(positionId)) {
       throw fail("Ballot contains a position you cannot vote for.");
     }
-    const valid = candidates.some(
-      (c) => c._id === candidateId && c.positionId === positionId,
-    );
+    const valid =
+      candidateId === "abstain" ||
+      candidates.some((c) => c._id === candidateId && c.positionId === positionId);
     if (!valid) throw fail("Ballot contains an invalid candidate.");
   }
 

@@ -26,7 +26,10 @@ export const hasVoted = query({
 export const cast = mutation({
   args: {
     electionId: v.id("elections"),
-    selections: v.record(v.id("positions"), v.id("candidates")),
+    selections: v.record(
+      v.id("positions"),
+      v.union(v.id("candidates"), v.literal("abstain")),
+    ),
   },
   handler: async (ctx, args) => {
     const voter = await requireRegistered(ctx);

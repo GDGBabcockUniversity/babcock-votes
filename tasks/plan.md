@@ -142,7 +142,7 @@ Google OAuth remains enabled and clears pending OTP confirmation on sign-in.
 | Risk | Impact | Mitigation |
 |---|---|---|
 | The confirmation flag is user-level rather than session-level, so an OTP sign-in on one device temporarily gates that voter’s other sessions. | Medium | Acknowledge the profile and clear the flag; Google sign-in also clears it. |
-| Existing voters may have no `eligibleVoters` row because class-list imports store a complete voter profile directly. | Medium | Confirm the voter profile from the registered user record, which is the existing source of truth for those imports. |
+| Existing voter profiles without a matching eligibility row cannot pass email confirmation. | Medium | Keep the user blocked and restore/sync the authoritative eligible-voter record before allowing email-code access. |
 
 ## Open Questions
 

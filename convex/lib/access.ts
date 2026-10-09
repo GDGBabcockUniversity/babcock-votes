@@ -42,6 +42,9 @@ export const requireSignedIn = async (ctx: Ctx) => {
 export const requireRegistered = async (ctx: Ctx) => {
   const viewer = await requireSignedIn(ctx);
   if (!isRegistered(viewer)) throw fail("Please complete registration first.");
+  if (viewer.role === "voter" && viewer.emailLoginConfirmed === false) {
+    throw fail("Confirm your voter details before continuing.");
+  }
   return viewer;
 };
 

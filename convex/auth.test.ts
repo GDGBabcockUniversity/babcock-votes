@@ -46,6 +46,7 @@ describe("sign-in gate (createOrUpdateUser)", () => {
         level: "300",
         role: "voter",
         legacyId: "fbAda",
+        emailLoginConfirmed: false,
       }),
     );
 
@@ -53,6 +54,7 @@ describe("sign-in gate (createOrUpdateUser)", () => {
 
     expect(result).toBe(migrated);
     expect(await userCount(t)).toBe(1);
+    expect((await t.run((ctx) => ctx.db.get(migrated)))?.emailLoginConfirmed).toBe(true);
   });
 
   it("creates a verified user for a brand-new school Google account", async () => {

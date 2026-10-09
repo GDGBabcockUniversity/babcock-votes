@@ -287,6 +287,26 @@ describe("registration", () => {
     expect(claimed?.claimedByUserId).toBe(user);
   });
 
+  it("gates email-code voters on confirming their stored details", async () => {
+    const { t, voter, election } = await setup();
+    await t.run((ctx) => ctx.db.patch(voter, { emailLoginConfirmed: false }));
+    const signedIn = asUser(t, voter);
+
+    expect(await signedIn.query(api.registration.emailSignInConfirmation, {})).toMatchObject({
+      fullName: "voter",
+      matricNumber: expect.any(String),
+    });
+    await expect(
+      signedIn.mutation(api.votes.cast, {
+        electionId: election.electionId,
+        selections: { [election.president]: election.alice },
+      }),
+    ).rejects.toMatchObject(failsWith("Confirm your voter details"));
+
+    await signedIn.mutation(api.registration.confirmEmailSignIn, {});
+    expect((await signedIn.query(api.users.me, {}))?.needsEmailConfirmation).toBe(false);
+  });
+
   it("refuses a matric someone else already claimed", async () => {
     const { t } = await setup();
     await seedVoter(t);

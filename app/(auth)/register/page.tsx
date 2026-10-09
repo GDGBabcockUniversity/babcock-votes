@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useConvex, useMutation } from "convex/react";
+import { useRouter } from "next/navigation";
+import { useConvex, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { errorMessage } from "@/lib/errors";
-import { DEPARTMENTS, MATRIC_REGEX } from "@/lib/constants";
+import { DEPARTMENTS, MATRIC_REGEX, PAGES } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import type { EligibleVoter } from "@/lib/types";
 import { VoterCodeForm } from "@/components/voter-code-sign-in";
@@ -13,9 +14,21 @@ import { VoterCodeForm } from "@/components/voter-code-sign-in";
 type Step = "matric" | "confirm";
 
 const RegisterPage = () => {
-  const { authUser, loading: authLoading, signOut } = useAuth();
+  const {
+    authUser,
+    userProfile,
+    loading: authLoading,
+    needsEmailConfirmation,
+    signOut,
+  } = useAuth();
+  const router = useRouter();
   const convex = useConvex();
   const register = useMutation(api.registration.register);
+  const confirmEmailSignIn = useMutation(api.registration.confirmEmailSignIn);
+  const emailVoterData = useQuery(
+    api.registration.emailSignInConfirmation,
+    authUser && needsEmailConfirmation ? {} : "skip",
+  );
 
   const [step, setStep] = useState<Step>("matric");
   const [fullName, setFullName] = useState("");
@@ -23,6 +36,23 @@ const RegisterPage = () => {
   const [voterData, setVoterData] = useState<EligibleVoter | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const handleEmailConfirmation = async () => {
+    setError("");
+    setSubmitting(true);
+    try {
+      await confirmEmailSignIn({});
+    } catch (err) {
+      setError(errorMessage(err, "We couldn't confirm your voter details."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleEmailGoBack = async () => {
+    await signOut();
+    router.replace(PAGES.auth.login);
+  };
 
   const handleLookup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,11 +105,9 @@ const RegisterPage = () => {
     }
   };
 
-  const handleReject = () => {
+  const handleGoBack = () => {
     setStep("matric");
     setVoterData(null);
-    setMatricNumber("");
-    setFullName("");
     setError("");
   };
 
@@ -93,6 +121,93 @@ const RegisterPage = () => {
 
   // Signed out: registered students (e.g. an imported class list) sign in with an emailed code.
   if (!authUser) return <VoterCodeForm />;
+
+  if (authUser && userProfile && needsEmailConfirmation) {
+    if (emailVoterData === undefined) {
+      return (
+        <div className="flex justify-center py-24">
+          <div className="size-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-sm border border-border bg-card p-8 shadow-sm">
+        <h1 className="text-center font-serif text-2xl font-bold md:text-3xl">
+          Confirm your voter details
+        </h1>
+        <p className="mt-2 text-center text-sm text-muted-gray">
+          Is this you? Confirm the details to continue to Babcock Votes.
+        </p>
+        <div className="mt-6 space-y-3 rounded-sm border border-border bg-background p-5">
+          <div>
+            <span className="text-xs uppercase tracking-wider text-muted-gray">
+              Name
+            </span>
+            <p className="text-lg font-medium">{emailVoterData.fullName}</p>
+          </div>
+          <div>
+            <span className="text-xs uppercase tracking-wider text-muted-gray">
+              Matric Number
+            </span>
+            <p className="font-medium">{emailVoterData.matricNumber}</p>
+          </div>
+          <div>
+            <span className="text-xs uppercase tracking-wider text-muted-gray">
+              Department
+            </span>
+            <p className="font-medium">
+              {DEPARTMENTS.find(
+                (department) => department.id === emailVoterData.departmentId,
+              )?.name ?? emailVoterData.departmentId}
+            </p>
+          </div>
+          <div>
+            <span className="text-xs uppercase tracking-wider text-muted-gray">
+              Level
+            </span>
+            <p className="font-medium">{emailVoterData.level}</p>
+          </div>
+        </div>
+        {error && (
+          <p className="mt-4 text-center text-xs text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )}
+        <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2">
+          <button
+            type="button"
+            onClick={handleEmailGoBack}
+            disabled={submitting}
+            className="rounded-sm border border-border py-3 font-sans text-sm font-medium hover:border-gold/50 disabled:opacity-50"
+          >
+            Go back
+          </button>
+          <button
+            type="button"
+            onClick={handleEmailConfirmation}
+            disabled={submitting || !emailVoterData}
+            className="rounded-sm bg-gold py-3 font-sans text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
+          >
+            {submitting ? "Confirming..." : "Is this you?"}
+          </button>
+        </div>
+        <div className="mt-6 text-center">
+          <button
+            onClick={signOut}
+            type="button"
+            className="text-xs text-muted-gray underline hover:text-foreground"
+          >
+            Signed in as{" "}
+            <span className="font-semibold text-foreground">
+              {authUser.email}
+            </span>
+            . Not you? Sign out.
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Signed in (Google) without a profile yet: claim a matric number.
 
@@ -179,18 +294,18 @@ const RegisterPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <button
-              onClick={handleReject}
+              onClick={handleGoBack}
               disabled={submitting}
               className="rounded-sm border border-border py-3 text-sm font-sans font-medium text-foreground transition-colors hover:border-gold/50 disabled:opacity-50"
             >
-              That&rsquo;s not me
+              Go back
             </button>
             <button
               onClick={handleConfirm}
               disabled={submitting}
               className="rounded-sm bg-gold py-3 text-sm font-sans font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
             >
-              {submitting ? "Registering..." : "Confirm & Continue"}
+              {submitting ? "Registering..." : "Is this you?"}
             </button>
           </div>
         </div>

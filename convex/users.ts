@@ -13,6 +13,7 @@ export const me = query({
 
     return {
       authUser: { id: viewer._id, email: viewer.email ?? "" },
+      needsEmailConfirmation: viewer.emailLoginConfirmed === false,
       profile: isRegistered(viewer)
         ? {
             email: viewer.email ?? "",

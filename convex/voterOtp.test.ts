@@ -106,6 +106,7 @@ describe("sign-in gate: voter-otp", () => {
     expect(requested).toBe(userId);
     expect(signedIn).toBe(userId);
     expect(await userCount(t)).toBe(before);
+    expect((await t.run((ctx) => ctx.db.get(userId)))?.emailLoginConfirmed).toBe(false);
   });
 
   it("refuses a matric held by more than one user rather than guess", async () => {

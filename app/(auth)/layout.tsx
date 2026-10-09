@@ -7,14 +7,16 @@ import { PAGES } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const AuthLayout = ({ children }: { children: React.ReactNode }) => {
-  const { authUser, userProfile, loading } = useAuth();
+  const { authUser, userProfile, loading, needsEmailConfirmation } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && authUser && userProfile) {
-      router.replace(PAGES.main.home);
+      router.replace(
+        needsEmailConfirmation ? PAGES.auth.register : PAGES.main.home,
+      );
     }
-  }, [authUser, userProfile, loading, router]);
+  }, [authUser, userProfile, loading, needsEmailConfirmation, router]);
 
   if (loading) {
     return (
@@ -24,7 +26,7 @@ const AuthLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (authUser && userProfile) return null;
+  if (authUser && userProfile && !needsEmailConfirmation) return null;
 
   return (
     <main className="relative flex min-h-dvh items-center justify-center bg-background px-4">

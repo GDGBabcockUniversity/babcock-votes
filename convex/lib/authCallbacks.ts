@@ -47,11 +47,25 @@ export const createOrUpdateUser = async (
     const matricKey = typeof args.profile.email === "string" ? args.profile.email : undefined;
     if (args.type === "email") return requestVoterOtp(ctx, matricKey);
     // The code was accepted: sign into whoever holds the matric now.
-    if (args.type === "verification") return (await requireOtpUser(ctx, matricKey ?? ""))._id;
+    if (args.type === "verification") {
+      const user = await requireOtpUser(ctx, matricKey ?? "");
+      if (user.role === "voter") {
+        await ctx.db.patch(user._id, { emailLoginConfirmed: false });
+      }
+      return user._id;
+    }
     throw new ConvexError(INVALID_CREDENTIALS);
   }
 
-  if (args.existingUserId) return args.existingUserId;
+  if (args.existingUserId) {
+    if (
+      args.type === "oauth" &&
+      (await ctx.db.get(args.existingUserId))?.role === "voter"
+    ) {
+      await ctx.db.patch(args.existingUserId, { emailLoginConfirmed: true });
+    }
+    return args.existingUserId;
+  }
 
   const profile = args.profile as {
     email?: string;
@@ -84,7 +98,12 @@ export const createOrUpdateUser = async (
     .withIndex("email", (q) => q.eq("email", email))
     .filter((q) => q.neq(q.field("emailVerificationTime"), undefined))
     .take(2);
-  if (matches.length === 1) return matches[0]._id;
+  if (matches.length === 1) {
+    if (matches[0].role === "voter") {
+      await ctx.db.patch(matches[0]._id, { emailLoginConfirmed: true });
+    }
+    return matches[0]._id;
+  }
 
   return ctx.db.insert("users", {
     email,

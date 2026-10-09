@@ -16,6 +16,7 @@ export interface AuthUser {
 interface AuthState {
   authUser: AuthUser | null;
   userProfile: User | null;
+  needsEmailConfirmation: boolean;
   loading: boolean;
   /** Set when a sign-in failed or was rejected. */
   authError: string;
@@ -34,6 +35,7 @@ interface AuthState {
 const AuthContext = createContext<AuthState>({
   authUser: null,
   userProfile: null,
+  needsEmailConfirmation: false,
   loading: true,
   authError: "",
   signInWithGoogle: async () => {},
@@ -55,6 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const authUser = me?.authUser ?? null;
   const userProfile = me?.profile ?? null;
+  const needsEmailConfirmation = me?.needsEmailConfirmation ?? false;
 
   // Anyone without a profile who isn't on the school domain is turned away
   // (the server also refuses to create such accounts; this covers old sessions).
@@ -104,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       value={{
         authUser: rejected ? null : authUser,
         userProfile,
+        needsEmailConfirmation,
         // Still resolving the session, or signed in but the profile query hasn't answered yet.
         loading: isLoading || (isAuthenticated && me === undefined),
         authError,

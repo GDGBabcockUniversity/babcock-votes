@@ -7,17 +7,17 @@ import { useEffect } from "react";
 import { PAGES } from "@/lib/constants";
 
 const MainLayout = ({ children }: { children: React.ReactNode }) => {
-  const { authUser, userProfile, loading } = useAuth();
+  const { authUser, userProfile, loading, needsEmailConfirmation } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && !authUser) {
       router.replace(PAGES.auth.login);
     }
-    if (!loading && authUser && !userProfile) {
+    if (!loading && authUser && (!userProfile || needsEmailConfirmation)) {
       router.replace(PAGES.auth.register);
     }
-  }, [authUser, userProfile, loading, router]);
+  }, [authUser, userProfile, loading, needsEmailConfirmation, router]);
 
   if (loading) {
     return (
@@ -27,7 +27,7 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!authUser || !userProfile) return null;
+  if (!authUser || !userProfile || needsEmailConfirmation) return null;
 
   return (
     <div className="min-h-dvh bg-background">

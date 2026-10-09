@@ -101,3 +101,40 @@ export const register = mutation({
     });
   },
 });
+
+/** The voter's own stored profile shown after an email-code sign-in. */
+export const emailSignInConfirmation = query({
+  args: {},
+  handler: async (ctx) => {
+    const viewer = await requireSignedIn(ctx);
+    if (!isRegistered(viewer) || viewer.role !== "voter") {
+      throw fail("A registered voter account is required.");
+    }
+    if (viewer.emailLoginConfirmed !== false) {
+      throw fail("There are no voter details waiting for confirmation.");
+    }
+
+    return {
+      fullName: viewer.fullName,
+      matricNumber: viewer.matricNumber,
+      departmentId: viewer.departmentId,
+      level: viewer.level,
+    };
+  },
+});
+
+/** Acknowledge the registered voter profile before enabling app access. */
+export const confirmEmailSignIn = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const viewer = await requireSignedIn(ctx);
+    if (!isRegistered(viewer) || viewer.role !== "voter") {
+      throw fail("A registered voter account is required.");
+    }
+    if (viewer.emailLoginConfirmed !== false) {
+      throw fail("There are no voter details waiting for confirmation.");
+    }
+
+    await ctx.db.patch(viewer._id, { emailLoginConfirmed: true });
+  },
+});

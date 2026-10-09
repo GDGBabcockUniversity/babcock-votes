@@ -18,7 +18,7 @@ const isViewerPath = (pathname: string) =>
   /^\/admin\/elections\/[^/]+\/results$/.test(pathname);
 
 const AdminLayout = ({ children }: { children: React.ReactNode }) => {
-  const { authUser, userProfile, loading } = useAuth();
+  const { authUser, userProfile, loading, needsEmailConfirmation } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -31,11 +31,21 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     if (!loading) {
       if (!authUser) {
         router.replace(PAGES.auth.login);
+      } else if (needsEmailConfirmation) {
+        router.replace(PAGES.auth.register);
       } else if (userProfile && !allowed) {
         router.replace(isViewer ? PAGES.admin.liveResults : PAGES.main.home);
       }
     }
-  }, [authUser, userProfile, loading, router, allowed, isViewer]);
+  }, [
+    authUser,
+    userProfile,
+    loading,
+    needsEmailConfirmation,
+    router,
+    allowed,
+    isViewer,
+  ]);
 
   if (loading) {
     return (
@@ -45,7 +55,7 @@ const AdminLayout = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  if (!authUser || !userProfile || !allowed) {
+  if (!authUser || !userProfile || needsEmailConfirmation || !allowed) {
     return null;
   }
 

@@ -42,6 +42,8 @@ export default defineSchema({
     level: v.optional(v.string()),
     role: v.optional(role),
     registeredAt: v.optional(v.number()),
+    /** Email OTP sessions must acknowledge their voter record before app access. */
+    emailLoginConfirmed: v.optional(v.boolean()),
     /** Firebase UID; only used while migrating. */
     legacyId: v.optional(v.string()),
   })

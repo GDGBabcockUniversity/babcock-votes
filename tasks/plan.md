@@ -14,6 +14,7 @@ Keep school Google OAuth enabled. For email-code sign-in, look up a registered v
 
 - Reuse the current matric-keyed `voter-otp` provider; do not accept a new email address because eligible-voter records do not store one.
 - Use a user-level `emailLoginConfirmed` gate: successful voter OTP verification sets it false; the profile confirmation mutation sets it true. Existing accounts and Google sign-ins remain usable; Google clears a pending OTP confirmation.
+- During pending confirmation, recheck the voter’s matric against the eligible-voter table and require that row to be claimed by the same user before showing details or enabling access.
 - Enforce the confirmation on server-side registered-voter functions as well as client route layouts, so a direct URL or API call cannot bypass it.
 - The OTP path is for existing registered voters. It does not create a new voter identity because the matching contact email belongs to an existing account record.
 

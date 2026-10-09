@@ -5,6 +5,25 @@ import { fail, isRegistered, requireSignedIn } from "./lib/access";
 import { MATRIC_REGEX, SCHOOL_DOMAIN } from "../lib/constants";
 import { matricToDocId } from "../lib/matric";
 
+const requirePendingEligibleVoter = async (ctx: QueryCtx, viewer: Doc<"users">) => {
+  if (!isRegistered(viewer) || viewer.role !== "voter") {
+    throw fail("A registered voter account is required.");
+  }
+  if (viewer.emailLoginConfirmed !== false) {
+    throw fail("There are no voter details waiting for confirmation.");
+  }
+
+  const matricKey = matricToDocId(viewer.matricNumber);
+  const eligibleVoter = await ctx.db
+    .query("eligibleVoters")
+    .withIndex("by_matric_key", (q) => q.eq("matricKey", matricKey))
+    .unique();
+  if (eligibleVoter?.claimedByUserId !== viewer._id) {
+    throw fail("Your voter eligibility could not be verified. Please contact your association admin.");
+  }
+  return viewer;
+};
+
 /**
  * Shared by `lookup` and `register`: the caller must be a school account that
  * hasn't registered yet, and the matric must be listed and unclaimed.
@@ -107,12 +126,7 @@ export const emailSignInConfirmation = query({
   args: {},
   handler: async (ctx) => {
     const viewer = await requireSignedIn(ctx);
-    if (!isRegistered(viewer) || viewer.role !== "voter") {
-      throw fail("A registered voter account is required.");
-    }
-    if (viewer.emailLoginConfirmed !== false) {
-      throw fail("There are no voter details waiting for confirmation.");
-    }
+    await requirePendingEligibleVoter(ctx, viewer);
 
     return {
       fullName: viewer.fullName,
@@ -128,12 +142,7 @@ export const confirmEmailSignIn = mutation({
   args: {},
   handler: async (ctx) => {
     const viewer = await requireSignedIn(ctx);
-    if (!isRegistered(viewer) || viewer.role !== "voter") {
-      throw fail("A registered voter account is required.");
-    }
-    if (viewer.emailLoginConfirmed !== false) {
-      throw fail("There are no voter details waiting for confirmation.");
-    }
+    await requirePendingEligibleVoter(ctx, viewer);
 
     await ctx.db.patch(viewer._id, { emailLoginConfirmed: true });
   },

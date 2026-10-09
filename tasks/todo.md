@@ -29,6 +29,7 @@
 ### Task 3: Show “Is this you?” and “Go back” after OTP sign-in
 
 - [x] Display name, matric number, department, and level from the server query.
+- [x] Recheck that the matric is still backed by an eligibility row claimed by the signed-in user.
 - [x] Confirm clears the pending gate and allows navigation into the app.
 - [x] Go back signs out and returns to login.
 

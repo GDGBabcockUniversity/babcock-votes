@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api } from "./_generated/api";
 import { addElection, addUnregisteredUser, addUser, asUser, newTest } from "./test.helpers";
+import { matricToDocId } from "../lib/matric";
 
 /** ConvexError messages arrive as `error.data`. */
 const failsWith = (message: string) => ({ data: expect.stringContaining(message) });
@@ -291,6 +292,20 @@ describe("registration", () => {
     const { t, voter, election } = await setup();
     await t.run((ctx) => ctx.db.patch(voter, { emailLoginConfirmed: false }));
     const signedIn = asUser(t, voter);
+
+    await expect(
+      signedIn.query(api.registration.emailSignInConfirmation, {}),
+    ).rejects.toMatchObject(failsWith("eligibility could not be verified"));
+    await t.run(async (ctx) => {
+      const user = (await ctx.db.get(voter))!;
+      await ctx.db.insert("eligibleVoters", {
+        matricKey: matricToDocId(user.matricNumber!),
+        fullName: user.fullName!,
+        departmentId: user.departmentId!,
+        level: user.level!,
+        claimedByUserId: voter,
+      });
+    });
 
     expect(await signedIn.query(api.registration.emailSignInConfirmation, {})).toMatchObject({
       fullName: "voter",

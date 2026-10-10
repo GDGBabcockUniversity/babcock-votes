@@ -1,5 +1,7 @@
 # Babcock Votes
 
+[![Keyway Secrets](https://www.keyway.sh/badge.svg?repo=GDGBabcockUniversity/babcock-votes)](https://www.keyway.sh/vaults/GDGBabcockUniversity/babcock-votes)
+
 Next.js app for department elections. Backend: [Convex](https://convex.dev) (database, auth, file storage, server functions).
 
 ## Architecture

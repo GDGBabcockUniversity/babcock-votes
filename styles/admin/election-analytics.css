@@ -1,0 +1,107 @@
+.admin-analytics-page {
+  padding: 2.5rem 2rem;
+  max-width: 1200px;
+}
+.admin-analytics-back {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+.admin-analytics-back:hover {
+  color: var(--text-primary);
+}
+.admin-analytics-title {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  line-height: 1.15;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.admin-analytics-empty-card {
+  background: var(--gold-tint);
+  border: 1px dashed var(--gold);
+  border-radius: var(--radius-md);
+  padding: 2rem;
+}
+.admin-analytics-empty-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  color: var(--text-primary);
+}
+.admin-analytics-empty-text {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.admin-analytics-code-badge {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-default);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+.admin-analytics-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+.admin-analytics-stat-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.admin-analytics-stat-val {
+  font-size: 1.75rem;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.admin-analytics-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+}
+.admin-analytics-card-title {
+  font-size: 1.125rem;
+  color: var(--text-primary);
+}
+.admin-analytics-chart-wrap {
+  height: 300px;
+}
+.admin-winner-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+}
+.admin-winner-pos {
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.admin-winner-name {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+.admin-winner-sub {
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+}
+.admin-tooltip {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 4px 12px rgb(from #000 r g b / 0.2);
+}
+.admin-tooltip-label {
+  font-size: 0.75rem;
+  color: var(--text-primary);
+}
+.admin-tooltip-val {
+  font-size: 0.75rem;
+  color: var(--gold);
+}

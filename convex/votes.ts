@@ -33,7 +33,29 @@ export const cast = mutation({
   },
   handler: async (ctx, args) => {
     const voter = await requireRegistered(ctx);
-    await castBallot(ctx, voter, args.electionId, args.selections);
+    return await castBallot(ctx, voter, args.electionId, args.selections);
+  },
+});
+
+export const getReceipt = query({
+  args: { electionId: v.string() },
+  handler: async (ctx, args) => {
+    const viewer = await getViewer(ctx);
+    const electionId = ctx.db.normalizeId("elections", args.electionId);
+    if (!viewer || !electionId) return null;
+
+    const vote = await ctx.db
+      .query("votes")
+      .withIndex("by_election_voter", (q) =>
+        q.eq("electionId", electionId).eq("voterId", viewer._id),
+      )
+      .first();
+
+    if (!vote) return null;
+    return {
+      votedAt: vote.votedAt,
+      receiptCode: vote.receiptCode ?? `BV26-${vote._id.slice(-8).toUpperCase()}`,
+    };
   },
 });
 
@@ -47,7 +69,11 @@ export const tallies = query({
     const electionId = ctx.db.normalizeId("elections", args.electionId);
     const election = electionId ? await ctx.db.get(electionId) : null;
     if (!election) throw fail("Election not found.");
-    await requireResultsAccess(ctx, election.departmentId);
+    if (election.status !== "closed") {
+      await requireResultsAccess(ctx, election.departmentId);
+    } else {
+      await requireRegistered(ctx);
+    }
 
     const [positions, candidates] = await Promise.all([
       loadPositions(ctx, election._id),

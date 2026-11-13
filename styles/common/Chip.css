@@ -1,0 +1,19 @@
+.chip {
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+.chip.tone-ok {
+  background-color: var(--status-ok-soft);
+  color: var(--status-ok);
+}
+.chip.tone-neutral {
+  background-color: var(--bg-sunken);
+  color: var(--text-secondary);
+}
+.chip.tone-ink {
+  background-color: var(--gold-tint);
+  color: var(--gold-ink);
+}

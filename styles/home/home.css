@@ -1,0 +1,40 @@
+.home-page {
+  max-width: 75rem;
+  padding: 2.5rem 2rem;
+}
+@media (max-width: 768px) {
+  .home-page {
+    padding: 1.5rem 1rem;
+  }
+}
+.home-intro-greeting {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  line-height: 2.875rem;
+  color: var(--text-primary);
+}
+.home-intro-desc {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.625rem;
+  color: var(--text-secondary);
+}
+.home-section-title {
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  color: var(--text-primary);
+}
+.home-section-link {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--gold-ink);
+}
+.home-empty {
+  padding: 3rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--text-muted);
+}

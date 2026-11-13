@@ -70,6 +70,10 @@ export const castBallot = async (
   }
 
   const votedAt = Date.now();
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const p1 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const p2 = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+  const receiptCode = `BV26-${p1}-${p2}`;
   for (const position of eligiblePositions) {
     await ctx.db.insert("votes", {
       electionId,
@@ -77,6 +81,8 @@ export const castBallot = async (
       candidateId: selections[position._id] ?? "abstain",
       voterId: voter._id,
       votedAt,
+      receiptCode,
     });
   }
+  return { votedAt, receiptCode };
 };

@@ -48,9 +48,11 @@ export const PAGES = {
   main: {
     home: "/",
     elections: "/elections",
-    electionDetail: (id: string) => `/elections/${id}`,
+    profile: "/profile",
+    preview: (id: string) => `/elections/${id}`,
     vote: (id: string) => `/elections/${id}/vote`,
     confirmation: (id: string) => `/elections/${id}/confirmation`,
+    results: (id: string) => `/elections/${id}/results`,
   },
   admin: {
     dashboard: "/admin",

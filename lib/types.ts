@@ -9,6 +9,7 @@ export interface User {
   level: string;
   role: "voter" | "dept_admin" | "super_admin" | "viewer";
   createdAt: Millis;
+  image?: string | null;
 }
 
 export interface EligibleVoter {

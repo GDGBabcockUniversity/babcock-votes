@@ -1,10 +1,19 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import "@t007/input/style.css";
+import "@t007/dialog/style.css";
+import "@t007/toast/style.css";
+import "@t007/utils/styles/ripple.css";
+import "@t007/utils/styles/scroll-assist.css";
 import "./globals.css";
+import "./overrides.css";
 import { cn } from "@/lib/utils";
 import { Analytics } from "@vercel/analytics/next";
 import { AuthProvider } from "@/context/auth-context";
-import { ConvexClientProvider } from "@/components/convex-client-provider";
+import { ConvexClientProvider } from "@/context/convex-client-provider";
+import { ThemeInitializer } from "@/components/common/ThemeInitializer";
+import KeyHandler from "@/components/common/KeyHandler";
+import NextTopLoader from "nextjs-toploader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,25 +25,25 @@ export const metadata: Metadata = {
   description: "The official voting platform for Babcock University",
 };
 
-// Runs before first paint so the saved (or system) theme is applied without a flash.
-const themeScript = `try{var t=localStorage.getItem("theme");if(t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.classList.add("dark")}catch(e){}`;
-
 const RootLayout = ({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) => {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={geistSans.variable}>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <ThemeInitializer />
       </head>
-      <body
-        className={cn(geistSans.variable, "antialiased")}
-      >
+      <body className={cn(geistSans.variable, "antialiased t007-input-bleeding-edge")}>
+        <NextTopLoader showSpinner={false} color="var(--gold)" zIndex={2147483647} shadow={false} height={2.6} />
         <ConvexClientProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <KeyHandler />
+            {children}
+          </AuthProvider>
         </ConvexClientProvider>
+        <div id="root-portal" />
         <Analytics />
       </body>
     </html>

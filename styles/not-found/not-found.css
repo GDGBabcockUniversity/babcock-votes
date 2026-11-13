@@ -1,0 +1,86 @@
+/* 404 Page Container */
+.not-found-page {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  min-height: 100dvh;
+  padding: 1rem 2.5rem;
+}
+@media (max-width: 48rem) {
+  .not-found-page {
+    padding: 1.5rem 1.25rem;
+  }
+}
+.not-found-header {
+  height: 3rem;
+}
+.not-found-brand {
+  color: var(--text-primary);
+}
+.not-found-brand-logo {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--text-primary);
+}
+.not-found-brand-title {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  color: var(--text-primary);
+}
+
+/* Center Hero & Art */
+.not-found-center {
+  max-width: 38rem;
+}
+.not-found-thumbprint-wrapper {
+  width: 32rem;
+  height: 32rem;
+}
+@media (max-width: 48rem) {
+  .not-found-thumbprint-wrapper {
+    width: 22rem;
+    height: 22rem;
+  }
+}
+.not-found-code {
+  font-family: var(--font-serif);
+  font-size: 7.5rem;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--gold);
+}
+@media (max-width: 48rem) {
+  .not-found-code {
+    font-size: 5rem;
+  }
+}
+.not-found-headline {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  line-height: 2.625rem;
+  color: var(--text-primary);
+}
+@media (max-width: 48rem) {
+  .not-found-headline {
+    font-size: 1.75rem;
+    line-height: 2.125rem;
+  }
+}
+.not-found-desc {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.625rem;
+  color: var(--text-secondary);
+  max-width: 28rem;
+}
+.not-found-actions {
+  margin-top: 0.75rem;
+}
+
+/* Footer */
+.not-found-footer {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+  color: var(--text-muted);
+}

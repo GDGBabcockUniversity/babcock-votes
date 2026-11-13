@@ -1,0 +1,51 @@
+.elections-page {
+  max-width: 75rem;
+  padding: 2.5rem 2rem;
+}
+@media (max-width: 768px) {
+  .elections-page {
+    padding: 1.5rem 1rem;
+  }
+}
+.elections-title {
+  font-family: var(--font-serif);
+  font-size: 2.5rem;
+  line-height: 2.875rem;
+  color: var(--text-primary);
+}
+.elections-subtitle {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.625rem;
+  color: var(--text-secondary);
+}
+.elections-filter-pill {
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-full);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+.elections-filter-pill:hover:not(.active) {
+  background-color: var(--bg-sunken);
+}
+.elections-filter-pill.active {
+  background-color: var(--bg-inverse);
+  border-color: var(--bg-inverse);
+  color: var(--text-inverse);
+}
+.elections-filter-pill .pill-count {
+  color: var(--text-muted);
+}
+.elections-filter-pill.active .pill-count {
+  color: var(--text-inverse);
+}
+.elections-empty {
+  padding: 4rem 1rem;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+}

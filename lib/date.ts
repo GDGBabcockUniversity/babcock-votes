@@ -18,3 +18,20 @@ export const formatShortDate = (
     day: "2-digit",
     year: "numeric",
   }) ?? "";
+
+export const formatFullDateTime = (
+  value: Parameters<typeof toDate>[0],
+  locale = "en-US",
+) => {
+  const d = toDate(value);
+  if (!d) return "";
+  return d.toLocaleDateString(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+};

@@ -1,0 +1,48 @@
+.election-card {
+  min-height: 11.375rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  transition: all 150ms ease;
+}
+.election-card.open {
+  border: 1.5px solid var(--gold);
+}
+.election-card.voted,
+.election-card.upcoming,
+.election-card.closed {
+  border: 1px solid var(--border-default);
+}
+.election-card:hover {
+  box-shadow: var(--shadow-tab);
+}
+.election-card-dates {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+}
+.election-card-dates-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+.election-card-title {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  color: var(--text-primary);
+}
+.election-card-meta {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+  color: var(--text-secondary);
+}
+.election-card-action {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--gold-ink);
+  margin-top: 0.25rem;
+}

@@ -1,0 +1,60 @@
+.election-preview-page {
+  max-width: 75rem;
+  padding: 2.5rem 2rem;
+}
+@media (max-width: 768px) {
+  .election-preview-page {
+    padding: 1.5rem 1rem;
+  }
+}
+.election-preview-header {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+}
+.election-preview-title {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  line-height: 2.625rem;
+  color: var(--text-primary);
+}
+.election-preview-meta {
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.election-preview-desc {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+  color: var(--text-secondary);
+}
+.election-preview-notice {
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 0.875rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--text-secondary);
+}
+.election-preview-section-title {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  line-height: 1.875rem;
+  color: var(--text-primary);
+}
+.manifesto-modal-body {
+  max-height: 70dvh;
+  overflow-y: auto;
+}
+.manifesto-text {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.625rem;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}

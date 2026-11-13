@@ -1,0 +1,48 @@
+/* Register Page Styling */
+.reg-voter-card {
+  padding: 1.25rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-sunken);
+}
+.reg-voter-row {
+  padding: 0.625rem 0;
+  border-top: 1px solid var(--border-default);
+}
+.reg-voter-row:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+.reg-voter-row:last-child {
+  padding-bottom: 0;
+}
+.reg-voter-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--text-muted);
+}
+.reg-voter-val {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--text-primary);
+}
+.reg-actions {
+  margin-top: 0.5rem;
+}
+.reg-account-note {
+  margin-top: 1.5rem;
+}
+.reg-signout-link {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+  color: var(--text-muted);
+}
+.reg-signout-link:hover {
+  color: var(--text-primary);
+}
+.reg-signout-link strong {
+  color: var(--text-primary);
+}

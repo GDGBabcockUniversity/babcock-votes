@@ -43,7 +43,6 @@ export const Actions: React.FC<ActionsProps> = ({ children, position = "bottom-l
   let trigger: React.ReactNode = null;
   const actions: React.ReactNode[] = [];
 
-  // eslint-disable-next-line react-hooks/refs
   React.Children.forEach(children, (child, index) => {
     if (!React.isValidElement(child)) return;
     const name = (child.type as { displayName?: string }).displayName;

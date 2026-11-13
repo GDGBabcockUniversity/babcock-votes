@@ -1,4 +1,3 @@
-import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation } from "./_generated/server";
 
 export const inspectState = internalQuery({
@@ -107,7 +106,7 @@ export const setupTestElections = internalMutation({
     }
 
     // 4. Create new "NACOS Departmental Executive Election 2026"
-    let nacos = await ctx.db
+    const nacos = await ctx.db
       .query("elections")
       .filter((q) => q.eq(q.field("title"), "NACOS Departmental Executive Election 2026"))
       .first();
@@ -257,5 +256,4 @@ export const resetAllVotes = mutation({
     return { clearedVotes: allVotes.length };
   },
 });
-
 

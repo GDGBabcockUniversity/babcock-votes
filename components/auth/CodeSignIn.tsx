@@ -1,13 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Link from "next/link";
 import { Input, useFormManager } from "@t007/input/react";
 import { Button } from "@/components/common/Button";
 import { useConvex } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAuth } from "@/context/auth-context";
 import { errorMessage } from "@/lib/errors";
-import { MATRIC_REGEX, PAGES } from "@/lib/constants";
+import { MATRIC_REGEX } from "@/lib/constants";
 
 type Step = "matric" | "code";
 const RESEND_SECONDS = 60;

@@ -1,0 +1,62 @@
+.election-results-page {
+  max-width: 75rem;
+  padding: 2.5rem 2rem;
+}
+@media (max-width: 768px) {
+  .election-results-page {
+    padding: 1.5rem 1rem;
+  }
+}
+.election-results-title {
+  font-family: var(--font-serif);
+  font-size: 2.25rem;
+  line-height: 2.625rem;
+  color: var(--text-primary);
+}
+.election-results-subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--text-secondary);
+}
+.election-results-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.5rem;
+}
+.election-stat-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--text-muted);
+}
+.election-stat-value {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  color: var(--text-primary);
+}
+.election-position-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+.election-candidate-row {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-default);
+}
+.election-candidate-row:last-child {
+  border-bottom: none;
+}
+.election-vote-bar-track {
+  height: 0.5rem;
+  background: var(--bg-sunken);
+  border-radius: var(--radius-full);
+}
+.election-vote-bar-fill {
+  background: var(--gold);
+  border-radius: var(--radius-full);
+  transition: width 300ms ease;
+}

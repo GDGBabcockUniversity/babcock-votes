@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as candidates from "../candidates.js";
+import type * as devSeed from "../devSeed.js";
 import type * as elections from "../elections.js";
 import type * as eligibleVoters from "../eligibleVoters.js";
 import type * as files from "../files.js";
@@ -43,6 +44,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   auth: typeof auth;
   candidates: typeof candidates;
+  devSeed: typeof devSeed;
   elections: typeof elections;
   eligibleVoters: typeof eligibleVoters;
   files: typeof files;

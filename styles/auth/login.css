@@ -1,0 +1,221 @@
+/* Auth & Login styling */
+.auth-page {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+/* Left Hero / Election Panel */
+.auth-hero {
+  padding: 3rem 4.5rem;
+  background-color: var(--bg-sunken);
+}
+.auth-brand-logo {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--text-primary);
+}
+.auth-brand-title {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  color: var(--text-primary);
+}
+.auth-thumbprint-wrapper {
+  top: 2.5rem;
+  left: 7.15rem;
+  width: 42.4rem;
+  height: 42.4rem;
+}
+.auth-thumbprint-art {
+  width: 35rem;
+  height: 35rem;
+}
+.auth-hero-content {
+  max-width: 38rem;
+  margin-bottom: 2.5rem;
+}
+.auth-hero-headline {
+  font-family: var(--font-serif);
+  font-size: 4.5rem;
+  line-height: 4.75rem;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.auth-hero-desc {
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.625rem;
+  color: var(--text-secondary);
+  max-width: 28.75rem;
+}
+.auth-principles {
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--border-default);
+}
+.auth-principle-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--gold);
+}
+.auth-principle-text {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--text-primary);
+}
+
+/* Right Form Panel */
+.auth-form-panel {
+  padding: 1.5rem 2.5rem 2rem;
+  background-color: var(--bg-page);
+}
+@media (max-width: 48rem) {
+  .auth-form-panel {
+    padding: 1.25rem 1.25rem 1.5rem;
+  }
+}
+.auth-form-center {
+  margin: 1.5rem 0;
+}
+.auth-form-box {
+  max-width: 25rem;
+}
+.auth-title {
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  line-height: 2.25rem;
+  color: var(--text-primary);
+}
+.auth-subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--text-secondary);
+}
+
+/* Tabs */
+.auth-tabs {
+  padding: 0.25rem;
+  background-color: var(--bg-sunken);
+  border-radius: var(--radius-md);
+}
+.auth-tab {
+  padding: 0.5625rem 0;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--text-secondary);
+  transition: all 150ms ease;
+}
+.auth-tab.active {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-tab);
+}
+
+/* Divider */
+.auth-divider-line {
+  height: 1px;
+  background-color: var(--border-default);
+}
+.auth-divider-text {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+  color: var(--text-muted);
+}
+
+/* Input Fields & Errors */
+.auth-field-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+  color: var(--text-primary);
+}
+.auth-forgot {
+  margin-bottom: 1.25rem;
+}
+.t007-input-global-error .auth-forgot {
+  margin-bottom: 0.5rem;
+}
+.auth-forgot-link {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--gold-ink);
+}
+.auth-help-note {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+  color: var(--text-muted);
+}
+.auth-error-msg {
+  color: var(--t007-input-error-color);
+  font-size: var(--t007-input-helper-font-size);
+  margin-bottom: 0.75rem;
+}
+/* Footer */
+.auth-footer {
+  padding-top: 1.5rem;
+}
+
+/* OTP Code Box */
+.otp-input-digits {
+  letter-spacing: 0.4em;
+}
+.otp-box {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-sunken);
+}
+.otp-box-subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.otp-box-email {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  color: var(--text-primary);
+}
+.otp-box-hint {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--text-muted);
+}
+.otp-change-link {
+  color: var(--text-secondary);
+}
+.otp-change-link:hover {
+  color: var(--text-primary);
+}
+.otp-resend-link {
+  color: var(--gold-ink);
+}
+.voter-code-card {
+  padding: 2rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  max-width: 28rem;
+}
+.voter-code-title {
+  font-family: var(--font-serif);
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  color: var(--text-primary);
+}
+.voter-code-subtitle {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}

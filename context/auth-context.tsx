@@ -50,7 +50,7 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { isLoading, isAuthenticated } = useConvexAuth();
-  const { signIn, signOut: convexSignOut } = useAuthActions()
+  const { signIn, signOut: convexSignOut } = useAuthActions();
   const me = useQuery(api.users.me);
 
   const [authError, setAuthError] = useState("");
@@ -61,17 +61,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Anyone without a profile who isn't on the school domain is turned away
   // (the server also refuses to create such accounts; this covers old sessions).
-  const rejected =
-    !!authUser && !userProfile && !authUser.email.endsWith(`@${SCHOOL_DOMAIN}`);
+  const rejected = !!authUser && !userProfile && !authUser.email.endsWith(`@${SCHOOL_DOMAIN}`);
 
   useEffect(() => {
     if (!rejected) return;
     // Sign out first; the message is set once that resolves.
-    void convexSignOut().then(() =>
-      setAuthError(
-        `Only @${SCHOOL_DOMAIN} email addresses are allowed. Please sign in with your school email.`,
-      ),
-    );
+    void convexSignOut().then(() => setAuthError(`Only @${SCHOOL_DOMAIN} email addresses are allowed. Please sign in with your school email.`));
   }, [rejected, convexSignOut]);
 
   const signInWithGoogle = async () => {

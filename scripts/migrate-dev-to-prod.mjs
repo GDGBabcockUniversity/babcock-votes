@@ -176,8 +176,16 @@ console.log(
 );
 
 let migrationFailed = 0;
-const electionRows = elections.rows.map(({ logoUrl, ...row }) => row);
-const candidateRows = candidates.rows.map(({ photoUrl, ...row }) => row);
+const electionRows = elections.rows.map((row) => {
+  const copy = { ...row };
+  delete copy.logoUrl;
+  return copy;
+});
+const candidateRows = candidates.rows.map((row) => {
+  const copy = { ...row };
+  delete copy.photoUrl;
+  return copy;
+});
 const electionResult = await to.mutation("upsertElections", { rows: electionRows });
 migrationFailed += electionResult.unresolved.length;
 console.log(

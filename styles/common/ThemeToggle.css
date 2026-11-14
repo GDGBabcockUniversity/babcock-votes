@@ -1,0 +1,36 @@
+.theme-toggle {
+  padding: 0.1875rem;
+  background-color: var(--bg-sunken);
+  border-radius: var(--radius-full);
+}
+.theme-toggle-btn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+}
+:is(:root:not(.dark) .theme-btn-light, :root.dark .theme-btn-dark) {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-tab);
+}
+.theme-toggle-single {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+.theme-toggle-single:hover {
+  background-color: var(--bg-sunken);
+}
+.theme-toggle-icon {
+  width: 1rem;
+  height: 1rem;
+}
+.theme-toggle-single :is(:root:not(.dark) .theme-icon-moon, :root.dark .theme-icon-sun) {
+  position: absolute;
+  width: 0;
+  height: 0;
+}

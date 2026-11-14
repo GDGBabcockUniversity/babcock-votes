@@ -1,0 +1,23 @@
+.side-bar-item {
+  height: 2.75rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+}
+.side-bar-item:hover {
+  background-color: var(--bg-sunken);
+  color: var(--text-primary);
+}
+.side-bar-item.active {
+  background-color: var(--bg-sunken);
+  color: var(--gold);
+}
+.side-bar-icon-wrapper {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.side-bar-label {
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}

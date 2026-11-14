@@ -122,6 +122,7 @@ export default defineSchema({
     candidateId: v.union(v.id("candidates"), v.literal("abstain")),
     voterId: v.id("users"),
     votedAt: v.number(),
+    receiptCode: v.optional(v.string()),
   })
     .index("by_voter_position", ["voterId", "positionId"])
     .index("by_candidate", ["candidateId"])

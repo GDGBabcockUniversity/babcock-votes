@@ -575,6 +575,76 @@ export const createPartTimeAccount = action({
   },
 });
 
+export const provisionSuperAdmin = action({
+  args: {
+    secret: v.string(),
+    email: v.string(),
+    password: v.string(),
+    matricNumber: v.string(),
+    fullName: v.string(),
+  },
+  handler: async (ctx, args): Promise<{ userId: Id<"users"> }> => {
+    assertOps(args.secret);
+    const email = args.email.toLowerCase();
+    const { user } = await createAccount(ctx, {
+      provider: "password",
+      account: { id: email, secret: args.password },
+      profile: { email, emailVerificationTime: Date.now() },
+      shouldLinkViaEmail: true,
+    });
+    await ctx.runMutation(internal.ops.setupAdminUserDoc, {
+      userId: user._id,
+      email,
+      fullName: args.fullName,
+      matricNumber: args.matricNumber,
+    });
+    return { userId: user._id };
+  },
+});
+
+export const setupAdminUserDoc = internalMutation({
+  args: {
+    userId: v.id("users"),
+    email: v.string(),
+    fullName: v.string(),
+    matricNumber: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const matricKey = matricToDocId(args.matricNumber);
+    await ctx.db.patch(args.userId, {
+      fullName: args.fullName,
+      matricNumber: args.matricNumber,
+      matricKey,
+      departmentId: "computer_science",
+      level: "300",
+      role: "super_admin",
+      registeredAt: Date.now(),
+      emailLoginConfirmed: true,
+    });
+
+    const existingVoter = await ctx.db
+      .query("eligibleVoters")
+      .withIndex("by_matric_key", (q) => q.eq("matricKey", matricKey))
+      .first();
+
+    if (existingVoter) {
+      await ctx.db.patch(existingVoter._id, {
+        claimedByUserId: args.userId,
+        claimedEmail: args.email,
+      });
+    } else {
+      await ctx.db.insert("eligibleVoters", {
+        fullName: args.fullName,
+        departmentId: "computer_science",
+        level: "300",
+        matricKey,
+        claimedByUserId: args.userId,
+        claimedEmail: args.email,
+      });
+    }
+  },
+});
+
 export const assertClaimable = internalQuery({
   args: { matricNumber: v.string() },
   handler: async (ctx, args) => {

@@ -1,0 +1,48 @@
+.admin-table {
+  border-collapse: collapse;
+}
+.admin-table thead {
+  background-color: var(--bg-sunken);
+}
+.admin-table th {
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-default);
+  background-color: var(--bg-sunken);
+}
+.admin-table td {
+  padding: 0.625rem 1rem;
+  height: 3.75rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-default);
+  vertical-align: middle;
+}
+.admin-table tr:last-child td {
+  border-bottom: none;
+}
+:is(.admin-table, table) tbody:empty {
+  display: table-caption;
+  caption-side: bottom;
+  height: 3.25rem;
+}
+:is(.admin-table, table) tbody:empty::after {
+  content: attr(data-empty);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  padding-inline: 1rem;
+}
+.admin-table tbody tr:hover td {
+  background-color: rgb(from var(--text-primary) r g b / 0.035);
+}
+.admin-table td:has(button.actions-fallback-trigger) {
+  width: 3.5rem;
+}
+@import "./Skeleton.css";

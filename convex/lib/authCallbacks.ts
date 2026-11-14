@@ -85,7 +85,7 @@ export const createOrUpdateUser = async (
       );
     }
   } else if (args.type === "credentials") {
-    if (!provisioned || !email?.endsWith(`@${PART_TIME_EMAIL_DOMAIN}`)) {
+    if (!provisioned || (!email?.endsWith(`@${PART_TIME_EMAIL_DOMAIN}`) && !email?.endsWith(`@${SCHOOL_DOMAIN}`))) {
       throw new ConvexError(INVALID_CREDENTIALS);
     }
   } else {

@@ -1,0 +1,60 @@
+:where(:root) {
+  --avatar-size: 2.25rem;
+  --avatar-radius: var(--radius-full);
+  --avatar-color: var(--gold-ink);
+  --avatar-bg: rgb(from var(--gold) r g b / 0.16);
+  --avatar-border: 1px solid var(--border-default);
+}
+.avatar-wrapper {
+  width: var(--avatar-size);
+  height: var(--avatar-size);
+  min-width: var(--avatar-size);
+  min-height: var(--avatar-size);
+  border-radius: var(--avatar-radius);
+  border: var(--avatar-border);
+  background-color: var(--avatar-bg);
+  color: var(--avatar-color);
+  font-family: var(--font-sans);
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease;
+}
+.avatar-wrapper.radius-none {
+  --avatar-radius: 0;
+}
+.avatar-wrapper.radius-sm {
+  --avatar-radius: var(--radius-sm);
+}
+.avatar-wrapper.radius-md {
+  --avatar-radius: var(--radius-md);
+}
+.avatar-wrapper.radius-lg {
+  --avatar-radius: var(--radius-lg);
+}
+.avatar-wrapper.radius-full {
+  --avatar-radius: var(--radius-full);
+}
+.avatar-wrapper.size-sm {
+  --avatar-size: 2rem;
+  font-size: 0.8125rem;
+}
+.avatar-wrapper.size-md {
+  --avatar-size: 2.5rem;
+  font-size: 0.9375rem;
+}
+.avatar-wrapper.size-lg {
+  --avatar-size: 3.5rem;
+  font-size: 1.25rem;
+}
+.avatar-wrapper.size-xl {
+  --avatar-size: 5.5rem;
+  font-size: 1.875rem;
+}
+.avatar-initials {
+  font-family: var(--font-sans);
+  letter-spacing: 0.04em;
+}
+.avatar-icon svg {
+  color: currentColor;
+}

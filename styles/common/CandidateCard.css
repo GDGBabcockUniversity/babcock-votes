@@ -1,0 +1,77 @@
+.candidate-card {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background-color: var(--bg-surface);
+  padding: 1rem;
+}
+.candidate-card.compact {
+  padding: 0.875rem;
+}
+.candidate-card.selected {
+  border: 2px solid var(--gold);
+  background-color: var(--gold-tint);
+}
+.candidate-card.default:hover {
+  border-color: var(--border-strong);
+}
+.candidate-avatar {
+  --avatar-size: 5rem;
+  font-size: 1.625rem;
+}
+.candidate-avatar.compact {
+  --avatar-size: 3.75rem;
+  font-size: 1.25rem;
+}
+.candidate-name-slot {
+  min-width: 0;
+}
+.candidate-name {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  color: var(--text-primary);
+  margin: 0;
+  overflow: auto hidden;
+  scrollbar-width: none;
+}
+.candidate-name.compact {
+  font-size: 1.25rem;
+  line-height: 1.625rem;
+}
+.candidate-dept {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.1875rem;
+  color: var(--text-secondary);
+}
+.candidate-pitch {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.375rem;
+  color: var(--text-secondary);
+}
+.candidate-stamp {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+}
+.candidate-stamp.compact {
+  width: 3rem;
+  height: 3rem;
+}
+.candidate-stamp.unselected {
+  border: 1.5px solid var(--border-strong);
+}
+.candidate-stamp.selected {
+  border: 2px solid var(--gold);
+  color: var(--gold);
+}
+.candidate-stamp-icon {
+  width: 2rem;
+  height: 2rem;
+}
+.candidate-stamp.compact .candidate-stamp-icon {
+  width: 1.75rem;
+  height: 1.75rem;
+}
